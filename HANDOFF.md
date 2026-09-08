@@ -300,3 +300,30 @@ Verification evidence:
   `JobPayload`, `RecurringJobAttribute`, `RecurringJobDescriptor`,
   `BackgroundJobsOptions`, and `AddPlatformJobs`. 33 unit +
   TestServer tests; three new architecture guardrails.
+# Completed: platform-application-starter
+
+- Added `Platform.Starter` with explicit web, identity, admin, billing, AI, notifications, and
+  SMS capability switches; web is enabled by default, optional capabilities remain disabled,
+  provider names are explicit in production, and consumer registrations remain replaceable.
+- Added `UsePlatformApplication` and `MapPlatformApplicationEndpoints` with documented runtime
+  and admin mapping order, plus safe starter status/configuration validation.
+- Added the `Platform.Starter.Sample` conformance host and a `dotnet new`-compatible scaffold
+  with API, domain, infrastructure, test, configuration, and Razor/React client seam files.
+- Added starter registration/production-validation tests, package documentation, adoption and
+  rollback guidance, and archived the change at
+  `openspec/changes/archive/2026-09-08-platform-application-starter/` with synchronized
+  `openspec/specs/platform-application-starter/spec.md`.
+
+Verification evidence:
+
+- `/home/paul/.dotnet/dotnet restore Platform.sln --ignore-failed-sources -p:NuGetAudit=false --nologo -m:1` — succeeded.
+- `/home/paul/.dotnet/dotnet build Platform.sln -c Release --no-restore --nologo -m:1` — 0 warnings, 0 errors.
+- `/home/paul/.dotnet/dotnet test Platform.sln -c Release --no-build --no-restore --nologo -m:1` — 457 tests passed, 0 failed, 0 skipped.
+- `Platform.Starter` pack succeeded; the temporary local package-chain template verification generated `GeneratedStarter`, restored it, and built it with 0 warnings and 0 errors.
+- `openspec validate --changes --strict --no-interactive` — 4 passed, 0 failed; `git diff --check` and cached diff check — clean.
+- Implementation commit: `60211ae` (`Implement platform application starter`).
+
+## Next change
+
+`platform-ui-design-system` is the next active change returned by `openspec list`. Implement
+only that change in the next cycle.
