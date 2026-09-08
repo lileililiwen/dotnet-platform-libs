@@ -256,6 +256,25 @@ only; cloud and filesystem dependencies remain in separate adapters.
 Applications own authorization, tenant prefixes, metadata tables, retention, scanning, and object
 migration. See [`platform-storage.md`](platform-storage.md).
 
+## Platform.Quota
+
+`Platform.Quota` provides provider-neutral capacity checks and an atomic reservation lifecycle. It
+depends on `Platform.Core` and dependency-injection abstractions only; it does not define plans,
+prices, invoices, wallets, ledgers, or persistence models.
+
+- `QuotaSubject`, `QuotaResource`, and `QuotaOperationKey` — bounded opaque identifiers.
+- `QuotaWindow`, `QuotaDecision`, `QuotaSnapshot`, and `QuotaReservation` — explicit window and
+  explanatory usage models.
+- `IQuotaStore` — `CheckAsync`, idempotent `ReserveAsync`, `SettleAsync`, `ReleaseAsync`, and
+  snapshot inspection.
+- `InMemoryQuotaStore` — thread-safe `IClock`-driven implementation with expiration and
+  `GetReservation` inspection.
+- `IQuotaLimitResolver` — optional seam for application-owned entitlement-to-limit resolution.
+- `Platform.Quota.Testing` — `QuotaScenarioBuilder` for deterministic test setup.
+
+See [`platform-quota.md`](platform-quota.md) for unit conversion, reconciliation, migration, and
+ownership boundaries.
+
 ## Platform.Idempotency
 
 Framework-neutral idempotency contract. Depends on `Platform.Core`, `Microsoft.Extensions.Options`, and `Microsoft.Extensions.DependencyInjection.Abstractions`; targets `net8.0`. Does not reference ASP.NET Core, EF Core, StackExchange.Redis, or application projects.

@@ -27,3 +27,6 @@ provider, serializer, and operational policy. Include tenant and schema-version 
 Storage follows the same boundary: the sample does not select a bucket or filesystem root. A host
 can register `Platform.Storage.Local` or `Platform.Storage.S3` explicitly after deciding its
 authorization, retention, and metadata ownership.
+
+Quota resources and limits remain application-owned; the sample does not enable quota enforcement,
+define plan names, or create persistence models.

@@ -24,6 +24,8 @@ This repository is a platform library, not a replacement for every application's
 | `Platform.Storage` | Production | `Platform.Core` | Provider-neutral object storage contracts, safe keys, limits, presigned operations, and provider status. |
 | `Platform.Storage.Local` | Optional production adapter | `Platform.Storage` | Atomic local filesystem object storage for development and single-host deployments. |
 | `Platform.Storage.S3` | Optional production adapter | `Platform.Storage` | AWS/S3-compatible storage adapter with application-provided client, presigning, timeout, and failure classification. |
+| `Platform.Quota` | Production | `Platform.Core` | Provider-neutral quota checks, atomic reservation lifecycle, explanations, and in-memory store. |
+| `Platform.Quota.Testing` | Test/support | `Platform.Quota` | Deterministic quota scenarios and reservation inspection helpers. |
 | `Platform.Idempotency` | Production | `Platform.Core` | Framework-neutral idempotency contract: `IdempotencyRecord`, `IIdempotencyStore`, `InMemoryIdempotencyStore`, `RequestFingerprint` (stable SHA-256 over method/route/body-hash), `IdempotencyOptions` (with documented metric-name constants), `IdempotencyMetrics`, and `AddPlatformIdempotency` opt-in registration (no-op when `Enabled` is `false`). |
 | `Platform.RateLimiting` | Production | `Platform.Core` | Framework-neutral rate-limit contract: `IRateLimiter`, `InMemoryRateLimiter` (per-key windowed counter), `RateLimitDecision`, `RateLimitKey`, `RateLimitPolicies` (documented default catalog), `IRateLimitBypassResolver`, `IRateLimiterBackendStatusProvider`, `RateLimitingOptions`, and `AddPlatformRateLimiting` opt-in registration. |
 | `Platform.Testing` | Test-only | `Platform.Core`, `Platform.AspNetCore`, `Platform.Billing.Contracts` | Deterministic test doubles: `ControllableClock`, `SubscriptionBuilder`, `EntitlementBuilder`, `FakeEntitlementStore`, `RecordingUsageMeter`. Production projects must not reference this package. |
@@ -52,6 +54,7 @@ tests/
   platform-eventing-durable.md  Durable eventing adoption and ownership guidance
   platform-caching.md           Cache authority, key/version, failure, and adoption guidance
   platform-storage.md           Object storage ownership, safety, limits, and migration guidance
+  platform-quota.md             Quota lifecycle, concurrency, and application ownership guidance
 openspec/
   changes/archive/              Archived proposals
   specs/                        Generated capability specs

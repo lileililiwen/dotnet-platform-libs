@@ -20,6 +20,8 @@ public class DependencyDirectionTests
         "src/Platform.Storage/Platform.Storage.csproj",
         "src/Platform.Storage.Local/Platform.Storage.Local.csproj",
         "src/Platform.Storage.S3/Platform.Storage.S3.csproj",
+        "src/Platform.Quota/Platform.Quota.csproj",
+        "src/Platform.Quota.Testing/Platform.Quota.Testing.csproj",
         "src/Platform.Idempotency/Platform.Idempotency.csproj",
         "src/Platform.Jobs/Platform.Jobs.csproj",
         "src/Platform.Mailing/Platform.Mailing.csproj",
@@ -59,6 +61,7 @@ public class DependencyDirectionTests
         "Platform.Caching.Tests",
         "Platform.Caching.Adapter.Tests",
         "Platform.Storage.Tests",
+        "Platform.Quota.Tests",
         "Platform.Testing.Tests",
         "Platform.Web.Tests",
         "Platform.Persistence.EfCore.Tests",
@@ -552,6 +555,24 @@ public class DependencyDirectionTests
             package.StartsWith("AWSSDK", StringComparison.OrdinalIgnoreCase)
                 || package.StartsWith("Amazon", StringComparison.OrdinalIgnoreCase)
                 || package.StartsWith("Microsoft.AspNetCore", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void Platform_Quota_only_references_Platform_Core()
+    {
+        var path = "src/Platform.Quota/Platform.Quota.csproj";
+        Assert.Equal(["Platform.Core"], ReadProjectReferences(path));
+        Assert.DoesNotContain(ReadPackageReferences(path), package =>
+            package.StartsWith("Microsoft.AspNetCore", StringComparison.OrdinalIgnoreCase)
+                || package.StartsWith("Microsoft.EntityFrameworkCore", StringComparison.OrdinalIgnoreCase)
+                || package.StartsWith("StackExchange.Redis", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void Platform_Quota_Testing_references_only_quota()
+    {
+        Assert.Equal(["Platform.Quota"], ReadProjectReferences("src/Platform.Quota.Testing/Platform.Quota.Testing.csproj"));
+        Assert.Empty(ReadPackageReferences("src/Platform.Quota.Testing/Platform.Quota.Testing.csproj"));
     }
 
     [Theory]
