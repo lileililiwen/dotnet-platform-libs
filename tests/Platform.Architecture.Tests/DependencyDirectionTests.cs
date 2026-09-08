@@ -12,6 +12,8 @@ public class DependencyDirectionTests
         "src/Platform.AspNetCore/Platform.AspNetCore.csproj",
         "src/Platform.Billing.Contracts/Platform.Billing.Contracts.csproj",
         "src/Platform.Eventing/Platform.Eventing.csproj",
+        "src/Platform.Eventing.Contracts/Platform.Eventing.Contracts.csproj",
+        "src/Platform.Eventing.EfCore/Platform.Eventing.EfCore.csproj",
         "src/Platform.Idempotency/Platform.Idempotency.csproj",
         "src/Platform.Jobs/Platform.Jobs.csproj",
         "src/Platform.Mailing/Platform.Mailing.csproj",
@@ -46,6 +48,8 @@ public class DependencyDirectionTests
         "Platform.Core.Tests",
         "Platform.AspNetCore.Tests",
         "Platform.Billing.Contracts.Tests",
+        "Platform.Eventing.Contracts.Tests",
+        "Platform.Eventing.EfCore.Tests",
         "Platform.Testing.Tests",
         "Platform.Web.Tests",
         "Platform.Persistence.EfCore.Tests",
@@ -177,7 +181,8 @@ public class DependencyDirectionTests
     {
         if (relativePath.Contains("Persistence.EfCore", StringComparison.OrdinalIgnoreCase)
             || relativePath.Contains("Persistence.Postgres", StringComparison.OrdinalIgnoreCase)
-            || relativePath.Contains("Identity.EntityFrameworkCore", StringComparison.OrdinalIgnoreCase))
+            || relativePath.Contains("Identity.EntityFrameworkCore", StringComparison.OrdinalIgnoreCase)
+            || relativePath.Contains("Eventing.EfCore", StringComparison.OrdinalIgnoreCase))
             return;
         if (relativePath.Contains("Billing.Stripe", StringComparison.OrdinalIgnoreCase)
             || relativePath.Contains("Billing.LemonSqueezy", StringComparison.OrdinalIgnoreCase)) return;
@@ -498,6 +503,32 @@ public class DependencyDirectionTests
         Assert.True(
             references.Length == 1 && references[0].Equals("Platform.Core", StringComparison.OrdinalIgnoreCase),
             "Platform.Eventing must reference only Platform.Core but references: " + string.Join(", ", references));
+    }
+
+    [Fact]
+    public void Platform_Eventing_Contracts_only_references_Platform_Core()
+    {
+        var path = "src/Platform.Eventing.Contracts/Platform.Eventing.Contracts.csproj";
+        var references = ReadProjectReferences(path);
+
+        Assert.True(
+            references.Length == 1 && references[0].Equals("Platform.Core", StringComparison.OrdinalIgnoreCase),
+            "Platform.Eventing.Contracts must reference only Platform.Core but references: " + string.Join(", ", references));
+        Assert.DoesNotContain(ReadPackageReferences(path), package =>
+            package.StartsWith("Microsoft.AspNetCore", StringComparison.OrdinalIgnoreCase)
+                || package.StartsWith("Microsoft.EntityFrameworkCore", StringComparison.OrdinalIgnoreCase)
+                || package.StartsWith("RabbitMQ", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void Platform_Eventing_EfCore_references_only_core_and_eventing_contracts()
+    {
+        var references = ReadProjectReferences("src/Platform.Eventing.EfCore/Platform.Eventing.EfCore.csproj");
+
+        Assert.Equal(2, references.Length);
+        Assert.Contains("Platform.Core", references, StringComparer.OrdinalIgnoreCase);
+        Assert.Contains("Platform.Eventing.Contracts", references, StringComparer.OrdinalIgnoreCase);
+        Assert.DoesNotContain(references, reference => reference.Contains("Platform.Eventing.Tests", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]

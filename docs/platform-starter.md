@@ -36,3 +36,8 @@ after exception handling and before application endpoints, then adopt identity/a
 capabilities one at a time. Pin all Platform packages to the same minor version. Rollback is
 the reverse: disable the capability, remove its endpoint mapping, restore the prior consumer
 registration, and redeploy; no platform migration is required.
+
+Durable eventing is intentionally not enabled by `Platform.Starter`. Applications that own an
+EF Core context can opt into `Platform.Eventing.Contracts` and `Platform.Eventing.EfCore`, register
+their own `IDurableEventPublisher`, and then add the hosted dispatcher. This keeps transport,
+migrations, event schemas, and replay policy application-owned.

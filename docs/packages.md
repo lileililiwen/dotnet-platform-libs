@@ -199,6 +199,15 @@ Transport-agnostic event-bus contract. Depends on `Platform.Core`, `Microsoft.Ex
 ### Registration
 
 - `AddPlatformEventing(IServiceCollection)` and `AddPlatformEventing(IServiceCollection, Action<EventingOptions>)` — bind `EventingOptions` and register `IIntegrationEventEnvelopeSerializer` and `IIntegrationEventEnvelopeDeserializer`. Also call `TryAddSingleton<IClock>(_ => new SystemClock())` so the package works when no host clock is registered.
+
+## Platform.Eventing.Contracts and Platform.Eventing.EfCore
+
+`Platform.Eventing.Contracts` provides framework-neutral durable outbox/inbox
+records, lease and retry states, store interfaces, `IDurableEventPublisher`,
+and thread-safe in-memory stores. `Platform.Eventing.EfCore` is optional and
+maps those records into an application-owned EF Core context; it does not own
+migrations or select a transport. See
+[`platform-eventing-durable.md`](platform-eventing-durable.md).
 - `AddPlatformEventingInProcess(IServiceCollection)` — additionally registers `InProcessEventBus` and binds it to `IEventBus`.
 
 ## Platform.Idempotency

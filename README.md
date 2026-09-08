@@ -16,6 +16,8 @@ This repository is a platform library, not a replacement for every application's
 | `Platform.Jobs` | Production | `Platform.Core` | Engine-neutral scheduling contract: `IJobDispatcher`, `IRecurringJobHandler`, `IRecurringJobRegistry`, `IJobTelemetry`, `RecurringJobAttribute`, `RecurringJobDescriptor`, `BackgroundJobsOptions`, and `AddPlatformJobs` opt-in registration. |
 | `Platform.Mailing` | Production | `Platform.Core` | Provider-neutral mailing contract: `MailAddress`, `MailAttachment`, `MailMessage`, `MailSendOutcome`, `MailSendResult`, `IMailService`, `MailTemplateId`, `IMailTemplateRenderer<TModel>`, `RenderedMailTemplate`, `MailingOptions`, and `AddPlatformMailing` opt-in registration. |
 | `Platform.Eventing` | Production | `Platform.Core` | Transport-agnostic event-bus contract: `IIntegrationEvent`, `IntegrationEvent`, `IntegrationEventEnvelope`, default `System.Text.Json` serializer/deserializer, `IIntegrationEventHandler<TEvent>`, `IEventBus`, `InProcessEventBus` (bounded `Channel<T>`), `EventingOptions`, and `AddPlatformEventing` / `AddPlatformEventingInProcess` opt-in registration. |
+| `Platform.Eventing.Contracts` | Production | `Platform.Core` | Framework-neutral durable eventing contracts and in-memory outbox/inbox stores. |
+| `Platform.Eventing.EfCore` | Optional production adapter | `Platform.Eventing.Contracts`, `Platform.Core` | Application-owned EF Core outbox/inbox mappings, stores, and hosted outbox dispatcher. |
 | `Platform.Idempotency` | Production | `Platform.Core` | Framework-neutral idempotency contract: `IdempotencyRecord`, `IIdempotencyStore`, `InMemoryIdempotencyStore`, `RequestFingerprint` (stable SHA-256 over method/route/body-hash), `IdempotencyOptions` (with documented metric-name constants), `IdempotencyMetrics`, and `AddPlatformIdempotency` opt-in registration (no-op when `Enabled` is `false`). |
 | `Platform.RateLimiting` | Production | `Platform.Core` | Framework-neutral rate-limit contract: `IRateLimiter`, `InMemoryRateLimiter` (per-key windowed counter), `RateLimitDecision`, `RateLimitKey`, `RateLimitPolicies` (documented default catalog), `IRateLimitBypassResolver`, `IRateLimiterBackendStatusProvider`, `RateLimitingOptions`, and `AddPlatformRateLimiting` opt-in registration. |
 | `Platform.Testing` | Test-only | `Platform.Core`, `Platform.AspNetCore`, `Platform.Billing.Contracts` | Deterministic test doubles: `ControllableClock`, `SubscriptionBuilder`, `EntitlementBuilder`, `FakeEntitlementStore`, `RecordingUsageMeter`. Production projects must not reference this package. |
@@ -38,9 +40,10 @@ tests/
   Platform.Billing.Contracts.Tests/
   Platform.Testing.Tests/
   Platform.Architecture.Tests/  Dependency-direction and isolation guardrails
-docs/
+  docs/
   build-test-pack.md            Restore, build, test, pack, and validate commands
   packages.md                   Per-package contract reference
+  platform-eventing-durable.md  Durable eventing adoption and ownership guidance
 openspec/
   changes/archive/              Archived proposals
   specs/                        Generated capability specs
