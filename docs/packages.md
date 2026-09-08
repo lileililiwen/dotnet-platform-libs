@@ -318,3 +318,10 @@ Test-only helpers. Depends on `Platform.Core`, `Platform.AspNetCore`, and `Platf
 `Platform.Starter` composes the opt-in web, identity, administration, billing, and mailing
 boundaries. It owns no application persistence or provider implementation. See
 [`platform-starter.md`](platform-starter.md).
+
+# Platform UI
+
+`Platform.UI.Razor` ships token-backed Razor static assets. The token source and generated
+React artifacts live under `ui/`: `@platform/design-tokens`, `@platform/react-ui`, and
+`@platform/react-shell`. React and Razor share semantic tokens and state conventions while
+retaining independent implementations.
