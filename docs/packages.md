@@ -325,3 +325,10 @@ boundaries. It owns no application persistence or provider implementation. See
 React artifacts live under `ui/`: `@platform/design-tokens`, `@platform/react-ui`, and
 `@platform/react-shell`. React and Razor share semantic tokens and state conventions while
 retaining independent implementations.
+
+# Platform.Notifications
+
+`Platform.Notifications` provides channel-neutral email/SMS intents, delivery outcomes,
+bounded retries, idempotency integration, and job scheduling helpers. `Platform.Notifications.Testing`
+contains the deterministic in-memory provider. Providers and templates remain application-owned;
+see [`platform-notifications.md`](platform-notifications.md).
