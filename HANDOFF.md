@@ -1,5 +1,35 @@
 # Handoff
 
+## Completed: platform-admin-capability
+
+- Added `Platform.Admin.Contracts` with bounded admin query/page contracts, safe user/role/
+  permission/session/audit/provider/subscription projections, explicit permission catalog,
+  host-owned store/tenant/audit/impersonation extension points, and endpoint metadata.
+- Added opt-in `Platform.Admin.AspNetCore` registration and endpoint mapping for user, role,
+  permission, session, audit, provider, subscription, mutation, and optional impersonation
+  surfaces. Routes require explicit permissions; query bounds, tenant checks, safe results, and
+  structured mutation/impersonation audit events are enforced.
+- Added `Platform.Admin.Testing` in-memory store and recording audit sink, TestServer/unit
+  coverage, architecture guards, and `docs/platform-admin.md`.
+- Archived the completed change at `openspec/changes/archive/2026-09-08-platform-admin-capability/`
+  and synchronized `openspec/specs/platform-admin-capability/spec.md`.
+
+Verification evidence:
+
+- `dotnet restore Platform.sln --ignore-failed-sources -p:NuGetAudit=false --nologo -m:1` — succeeded.
+- `dotnet build Platform.sln -c Release --no-restore --nologo -m:1` — 0 warnings, 0 errors.
+- `dotnet test Platform.sln -c Release --no-build --no-restore --nologo -m:1` — 428 tests passed,
+  0 failed, 0 skipped.
+- `dotnet pack src/Platform.Admin.Contracts/Platform.Admin.Contracts.csproj -c Release --no-build --no-restore --nologo -m:1` — succeeded.
+- `dotnet pack src/Platform.Admin.AspNetCore/Platform.Admin.AspNetCore.csproj -c Release --no-build --no-restore --nologo -m:1` — succeeded.
+- `openspec validate --changes --strict --no-interactive` — 7 passed, 0 failed before archive.
+- `git diff --check` and cached diff check — clean.
+
+## Next change
+
+`platform-billing-provider-abstractions` is the next active change in the Phase 4 dependency order.
+Implement only that change in the next cycle.
+
 ## Completed: platform-identity-authorization
 
 - Added provider-neutral identity contracts for current users, credentials, external identities, verification, sessions, provider status, and security-sensitive audit hooks.
