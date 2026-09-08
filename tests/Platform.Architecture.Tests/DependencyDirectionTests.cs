@@ -25,6 +25,9 @@ public class DependencyDirectionTests
         "src/Platform.Identity.AspNetCore/Platform.Identity.AspNetCore.csproj",
         "src/Platform.Identity.EntityFrameworkCore/Platform.Identity.EntityFrameworkCore.csproj",
         "src/Platform.Identity.Testing/Platform.Identity.Testing.csproj",
+        "src/Platform.Admin.Contracts/Platform.Admin.Contracts.csproj",
+        "src/Platform.Admin.AspNetCore/Platform.Admin.AspNetCore.csproj",
+        "src/Platform.Admin.Testing/Platform.Admin.Testing.csproj",
     };
 
     private static readonly string[] TestOnlyAssemblyNames =
@@ -38,6 +41,7 @@ public class DependencyDirectionTests
         "Platform.Persistence.EfCore.Tests",
         "Platform.Persistence.Postgres.Tests",
         "Platform.Identity.Tests",
+        "Platform.Admin.Tests",
     };
 
     private static readonly string[] FrameworkIndependentProjects =
@@ -275,6 +279,20 @@ public class DependencyDirectionTests
     }
 
     [Fact]
+    public void Platform_Admin_Contracts_has_no_package_or_project_references()
+    {
+        Assert.Empty(ReadPackageReferences("src/Platform.Admin.Contracts/Platform.Admin.Contracts.csproj"));
+        Assert.Empty(ReadProjectReferences("src/Platform.Admin.Contracts/Platform.Admin.Contracts.csproj"));
+    }
+
+    [Fact]
+    public void Platform_Admin_Testing_references_only_admin_contracts()
+    {
+        var references = ReadProjectReferences("src/Platform.Admin.Testing/Platform.Admin.Testing.csproj");
+        Assert.Equal(["Platform.Admin.Contracts"], references);
+    }
+
+    [Fact]
     public void Identity_contract_packages_do_not_reference_provider_sdks()
     {
         var paths = new[]
@@ -295,7 +313,8 @@ public class DependencyDirectionTests
             var references = ReadFrameworkReferences(project);
             if (project.EndsWith("Platform.AspNetCore.csproj", StringComparison.OrdinalIgnoreCase)
                 || project.EndsWith("Platform.Web.csproj", StringComparison.OrdinalIgnoreCase)
-                || project.EndsWith("Platform.Identity.AspNetCore.csproj", StringComparison.OrdinalIgnoreCase))
+                || project.EndsWith("Platform.Identity.AspNetCore.csproj", StringComparison.OrdinalIgnoreCase)
+                || project.EndsWith("Platform.Admin.AspNetCore.csproj", StringComparison.OrdinalIgnoreCase))
             {
                 Assert.True(
                     references.Length == 1 && references[0].Equals("Microsoft.AspNetCore.App", StringComparison.OrdinalIgnoreCase),
