@@ -45,3 +45,7 @@ migrations, event schemas, and replay policy application-owned.
 Caching is also opt-in. Use `Platform.Caching` for local defaults, or register the separate
 `Platform.Caching.Hybrid` or `Platform.Caching.Redis` adapter when the host explicitly chooses a
 provider. The starter does not choose Redis, serializers, cache authority, or tenant key policy.
+
+Storage is likewise opt-in. Applications may register `Platform.Storage.Local` for development or
+`Platform.Storage.S3` with an application-owned AWS/S3-compatible client. The starter does not own
+bucket names, filesystem roots, authorization, product file metadata, retention, or migrations.

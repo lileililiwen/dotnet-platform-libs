@@ -17,6 +17,9 @@ public class DependencyDirectionTests
         "src/Platform.Caching/Platform.Caching.csproj",
         "src/Platform.Caching.Hybrid/Platform.Caching.Hybrid.csproj",
         "src/Platform.Caching.Redis/Platform.Caching.Redis.csproj",
+        "src/Platform.Storage/Platform.Storage.csproj",
+        "src/Platform.Storage.Local/Platform.Storage.Local.csproj",
+        "src/Platform.Storage.S3/Platform.Storage.S3.csproj",
         "src/Platform.Idempotency/Platform.Idempotency.csproj",
         "src/Platform.Jobs/Platform.Jobs.csproj",
         "src/Platform.Mailing/Platform.Mailing.csproj",
@@ -55,6 +58,7 @@ public class DependencyDirectionTests
         "Platform.Eventing.EfCore.Tests",
         "Platform.Caching.Tests",
         "Platform.Caching.Adapter.Tests",
+        "Platform.Storage.Tests",
         "Platform.Testing.Tests",
         "Platform.Web.Tests",
         "Platform.Persistence.EfCore.Tests",
@@ -537,6 +541,26 @@ public class DependencyDirectionTests
                 || package.StartsWith("Microsoft.EntityFrameworkCore", StringComparison.OrdinalIgnoreCase)
                 || package.StartsWith("StackExchange.Redis", StringComparison.OrdinalIgnoreCase)
                 || package.StartsWith("Microsoft.Extensions.Caching.Hybrid", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void Platform_Storage_only_references_Platform_Core()
+    {
+        var path = "src/Platform.Storage/Platform.Storage.csproj";
+        Assert.Equal(["Platform.Core"], ReadProjectReferences(path));
+        Assert.DoesNotContain(ReadPackageReferences(path), package =>
+            package.StartsWith("AWSSDK", StringComparison.OrdinalIgnoreCase)
+                || package.StartsWith("Amazon", StringComparison.OrdinalIgnoreCase)
+                || package.StartsWith("Microsoft.AspNetCore", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Theory]
+    [InlineData("src/Platform.Storage.Local/Platform.Storage.Local.csproj")]
+    [InlineData("src/Platform.Storage.S3/Platform.Storage.S3.csproj")]
+    public void Platform_Storage_adapters_reference_only_base_storage(string path)
+    {
+        Assert.Equal(["Platform.Storage"], ReadProjectReferences(path));
+        Assert.DoesNotContain(ReadProjectReferences(path), reference => reference.Contains("Test", StringComparison.OrdinalIgnoreCase));
     }
 
     [Theory]

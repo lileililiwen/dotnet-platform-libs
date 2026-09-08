@@ -238,6 +238,24 @@ HybridCache, ASP.NET Core, EF Core, or JSON dependency.
 See [`platform-caching.md`](platform-caching.md) for authority, versioning, tenant isolation,
 failure policy, and migration guidance.
 
+## Platform.Storage
+
+`Platform.Storage` provides provider-neutral object upload, download, metadata, delete, and
+presigned-operation contracts. It depends on `Platform.Core` and dependency-injection abstractions
+only; cloud and filesystem dependencies remain in separate adapters.
+
+- `StorageObjectKey` — bounded key rejecting control characters, traversal, absolute paths, and
+  empty segments.
+- `StorageUploadRequest`, `StorageDownloadResult`, `PresignRequest`, and `PresignedOperation` —
+  explicit content, method, expiry, and size constraints.
+- `IObjectStorage` — async object lifecycle boundary; `IStorageProviderStatus` exposes safe health.
+- `Platform.Storage.Local` / `LocalFileStorage` — atomic local filesystem adapter.
+- `Platform.Storage.S3` / `S3Storage` — optional AWS/S3-compatible adapter using an application-owned
+  client and bucket configuration.
+
+Applications own authorization, tenant prefixes, metadata tables, retention, scanning, and object
+migration. See [`platform-storage.md`](platform-storage.md).
+
 ## Platform.Idempotency
 
 Framework-neutral idempotency contract. Depends on `Platform.Core`, `Microsoft.Extensions.Options`, and `Microsoft.Extensions.DependencyInjection.Abstractions`; targets `net8.0`. Does not reference ASP.NET Core, EF Core, StackExchange.Redis, or application projects.

@@ -23,3 +23,7 @@ builder.Services.AddPlatformCaching("sample");
 
 Choose `Platform.Caching.Hybrid` or `Platform.Caching.Redis` explicitly when the host owns the
 provider, serializer, and operational policy. Include tenant and schema-version segments in keys.
+
+Storage follows the same boundary: the sample does not select a bucket or filesystem root. A host
+can register `Platform.Storage.Local` or `Platform.Storage.S3` explicitly after deciding its
+authorization, retention, and metadata ownership.
