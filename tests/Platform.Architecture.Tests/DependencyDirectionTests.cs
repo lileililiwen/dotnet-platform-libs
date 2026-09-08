@@ -20,6 +20,11 @@ public class DependencyDirectionTests
         "src/Platform.Testing/Platform.Testing.csproj",
         "src/Platform.Persistence.EfCore/Platform.Persistence.EfCore.csproj",
         "src/Platform.Persistence.Postgres/Platform.Persistence.Postgres.csproj",
+        "src/Platform.Identity.Contracts/Platform.Identity.Contracts.csproj",
+        "src/Platform.Authorization/Platform.Authorization.csproj",
+        "src/Platform.Identity.AspNetCore/Platform.Identity.AspNetCore.csproj",
+        "src/Platform.Identity.EntityFrameworkCore/Platform.Identity.EntityFrameworkCore.csproj",
+        "src/Platform.Identity.Testing/Platform.Identity.Testing.csproj",
     };
 
     private static readonly string[] TestOnlyAssemblyNames =
@@ -32,6 +37,7 @@ public class DependencyDirectionTests
         "Platform.Web.Tests",
         "Platform.Persistence.EfCore.Tests",
         "Platform.Persistence.Postgres.Tests",
+        "Platform.Identity.Tests",
     };
 
     private static readonly string[] FrameworkIndependentProjects =
@@ -152,7 +158,8 @@ public class DependencyDirectionTests
     public void Production_project_does_not_reference_forbidden_frameworks(string relativePath)
     {
         if (relativePath.Contains("Persistence.EfCore", StringComparison.OrdinalIgnoreCase)
-            || relativePath.Contains("Persistence.Postgres", StringComparison.OrdinalIgnoreCase))
+            || relativePath.Contains("Persistence.Postgres", StringComparison.OrdinalIgnoreCase)
+            || relativePath.Contains("Identity.EntityFrameworkCore", StringComparison.OrdinalIgnoreCase))
             return;
         var packages = ReadPackageReferences(relativePath);
         var violations = packages
@@ -247,6 +254,39 @@ public class DependencyDirectionTests
             "Platform.Billing.Contracts must remain dependency-light but references: " + string.Join(", ", packages));
     }
 
+    [Theory]
+    [InlineData("src/Platform.Identity.Contracts/Platform.Identity.Contracts.csproj")]
+    [InlineData("src/Platform.Authorization/Platform.Authorization.csproj")]
+    public void Identity_contract_projects_have_no_package_or_project_references(string relativePath)
+    {
+        Assert.Empty(ReadPackageReferences(relativePath));
+        Assert.Empty(ReadProjectReferences(relativePath));
+    }
+
+    [Fact]
+    public void Platform_Identity_EntityFrameworkCore_references_only_identity_contracts_and_persistence()
+    {
+        var references = ReadProjectReferences("src/Platform.Identity.EntityFrameworkCore/Platform.Identity.EntityFrameworkCore.csproj");
+        Assert.Equal(2, references.Length);
+        Assert.Contains("Platform.Identity.Contracts", references, StringComparer.OrdinalIgnoreCase);
+        Assert.Contains("Platform.Persistence.EfCore", references, StringComparer.OrdinalIgnoreCase);
+        Assert.DoesNotContain(ReadPackageReferences("src/Platform.Identity.EntityFrameworkCore/Platform.Identity.EntityFrameworkCore.csproj"),
+            package => package.StartsWith("Stripe", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void Identity_contract_packages_do_not_reference_provider_sdks()
+    {
+        var paths = new[]
+        {
+            "src/Platform.Identity.Contracts/Platform.Identity.Contracts.csproj",
+            "src/Platform.Authorization/Platform.Authorization.csproj",
+        };
+        var forbidden = new[] { "Microsoft.AspNetCore", "Microsoft.EntityFrameworkCore", "Stripe", "Twilio", "OpenIddict" };
+        foreach (var path in paths)
+            Assert.DoesNotContain(ReadPackageReferences(path), package => forbidden.Any(package.StartsWith));
+    }
+
     [Fact]
     public void Only_Platform_AspNetCore_declares_a_FrameworkReference()
     {
@@ -254,7 +294,8 @@ public class DependencyDirectionTests
         {
             var references = ReadFrameworkReferences(project);
             if (project.EndsWith("Platform.AspNetCore.csproj", StringComparison.OrdinalIgnoreCase)
-                || project.EndsWith("Platform.Web.csproj", StringComparison.OrdinalIgnoreCase))
+                || project.EndsWith("Platform.Web.csproj", StringComparison.OrdinalIgnoreCase)
+                || project.EndsWith("Platform.Identity.AspNetCore.csproj", StringComparison.OrdinalIgnoreCase))
             {
                 Assert.True(
                     references.Length == 1 && references[0].Equals("Microsoft.AspNetCore.App", StringComparison.OrdinalIgnoreCase),

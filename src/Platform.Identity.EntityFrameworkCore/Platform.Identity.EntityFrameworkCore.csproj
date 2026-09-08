@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Description>Optional schema-independent EF Core identity store contracts.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <ProjectReference Include="../Platform.Identity.Contracts/Platform.Identity.Contracts.csproj" />
+    <ProjectReference Include="../Platform.Persistence.EfCore/Platform.Persistence.EfCore.csproj" />
+  </ItemGroup>
+</Project>
