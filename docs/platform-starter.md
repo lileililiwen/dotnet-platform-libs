@@ -41,3 +41,7 @@ Durable eventing is intentionally not enabled by `Platform.Starter`. Application
 EF Core context can opt into `Platform.Eventing.Contracts` and `Platform.Eventing.EfCore`, register
 their own `IDurableEventPublisher`, and then add the hosted dispatcher. This keeps transport,
 migrations, event schemas, and replay policy application-owned.
+
+Caching is also opt-in. Use `Platform.Caching` for local defaults, or register the separate
+`Platform.Caching.Hybrid` or `Platform.Caching.Redis` adapter when the host explicitly chooses a
+provider. The starter does not choose Redis, serializers, cache authority, or tenant key policy.

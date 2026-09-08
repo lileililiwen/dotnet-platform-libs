@@ -14,6 +14,9 @@ public class DependencyDirectionTests
         "src/Platform.Eventing/Platform.Eventing.csproj",
         "src/Platform.Eventing.Contracts/Platform.Eventing.Contracts.csproj",
         "src/Platform.Eventing.EfCore/Platform.Eventing.EfCore.csproj",
+        "src/Platform.Caching/Platform.Caching.csproj",
+        "src/Platform.Caching.Hybrid/Platform.Caching.Hybrid.csproj",
+        "src/Platform.Caching.Redis/Platform.Caching.Redis.csproj",
         "src/Platform.Idempotency/Platform.Idempotency.csproj",
         "src/Platform.Jobs/Platform.Jobs.csproj",
         "src/Platform.Mailing/Platform.Mailing.csproj",
@@ -50,6 +53,8 @@ public class DependencyDirectionTests
         "Platform.Billing.Contracts.Tests",
         "Platform.Eventing.Contracts.Tests",
         "Platform.Eventing.EfCore.Tests",
+        "Platform.Caching.Tests",
+        "Platform.Caching.Adapter.Tests",
         "Platform.Testing.Tests",
         "Platform.Web.Tests",
         "Platform.Persistence.EfCore.Tests",
@@ -182,7 +187,9 @@ public class DependencyDirectionTests
         if (relativePath.Contains("Persistence.EfCore", StringComparison.OrdinalIgnoreCase)
             || relativePath.Contains("Persistence.Postgres", StringComparison.OrdinalIgnoreCase)
             || relativePath.Contains("Identity.EntityFrameworkCore", StringComparison.OrdinalIgnoreCase)
-            || relativePath.Contains("Eventing.EfCore", StringComparison.OrdinalIgnoreCase))
+            || relativePath.Contains("Eventing.EfCore", StringComparison.OrdinalIgnoreCase)
+            || relativePath.Contains("Caching.Hybrid", StringComparison.OrdinalIgnoreCase)
+            || relativePath.Contains("Caching.Redis", StringComparison.OrdinalIgnoreCase))
             return;
         if (relativePath.Contains("Billing.Stripe", StringComparison.OrdinalIgnoreCase)
             || relativePath.Contains("Billing.LemonSqueezy", StringComparison.OrdinalIgnoreCase)) return;
@@ -518,6 +525,27 @@ public class DependencyDirectionTests
             package.StartsWith("Microsoft.AspNetCore", StringComparison.OrdinalIgnoreCase)
                 || package.StartsWith("Microsoft.EntityFrameworkCore", StringComparison.OrdinalIgnoreCase)
                 || package.StartsWith("RabbitMQ", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void Platform_Caching_only_references_Platform_Core()
+    {
+        var path = "src/Platform.Caching/Platform.Caching.csproj";
+        Assert.Equal(["Platform.Core"], ReadProjectReferences(path));
+        Assert.DoesNotContain(ReadPackageReferences(path), package =>
+            package.StartsWith("Microsoft.AspNetCore", StringComparison.OrdinalIgnoreCase)
+                || package.StartsWith("Microsoft.EntityFrameworkCore", StringComparison.OrdinalIgnoreCase)
+                || package.StartsWith("StackExchange.Redis", StringComparison.OrdinalIgnoreCase)
+                || package.StartsWith("Microsoft.Extensions.Caching.Hybrid", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Theory]
+    [InlineData("src/Platform.Caching.Hybrid/Platform.Caching.Hybrid.csproj")]
+    [InlineData("src/Platform.Caching.Redis/Platform.Caching.Redis.csproj")]
+    public void Platform_Caching_adapters_reference_only_base_caching(string path)
+    {
+        Assert.Equal(["Platform.Caching"], ReadProjectReferences(path));
+        Assert.DoesNotContain(ReadProjectReferences(path), reference => reference.Contains("Test", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]

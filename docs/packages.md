@@ -210,6 +210,34 @@ migrations or select a transport. See
 [`platform-eventing-durable.md`](platform-eventing-durable.md).
 - `AddPlatformEventingInProcess(IServiceCollection)` — additionally registers `InProcessEventBus` and binds it to `IEventBus`.
 
+## Platform.Caching
+
+`Platform.Caching` is the provider-neutral cache boundary. It depends on `Platform.Core`,
+`Microsoft.Extensions.Options`, and dependency-injection abstractions; it has no Redis,
+HybridCache, ASP.NET Core, EF Core, or JSON dependency.
+
+### Contracts and keys
+
+- `ICacheStore` — asynchronous get, get-or-create, set, remove, and portable tag invalidation.
+- `CacheReadResult<T>` / `CacheOperationResult` — explicit hit, miss, unavailable, and operation
+  states with safe `CacheFailure` metadata.
+- `CacheEntryOptions` — absolute expiration and validated portable tags.
+- `CacheKey` / `CacheKeyBuilder` — bounded whitespace-free physical keys with explicit application
+  and tenant prefixes.
+- `ICacheProviderStatus` — safe provider health state for fail-open/fail-closed application policy.
+- `CacheTelemetry` — stable activity, metric, hit, miss, and failure names that do not include raw
+  keys or values.
+
+### Implementations
+
+- `InMemoryCacheStore` — thread-safe local store using `IClock`, absolute expiry, and tag removal.
+- `Platform.Caching.Hybrid` / `HybridCacheStore` — optional Microsoft HybridCache adapter.
+- `Platform.Caching.Redis` / `RedisCacheStore` — optional Redis adapter using an application-owned
+  `ICacheValueSerializer`, bounded operation waits, tag sets, and unavailable-provider results.
+
+See [`platform-caching.md`](platform-caching.md) for authority, versioning, tenant isolation,
+failure policy, and migration guidance.
+
 ## Platform.Idempotency
 
 Framework-neutral idempotency contract. Depends on `Platform.Core`, `Microsoft.Extensions.Options`, and `Microsoft.Extensions.DependencyInjection.Abstractions`; targets `net8.0`. Does not reference ASP.NET Core, EF Core, StackExchange.Redis, or application projects.

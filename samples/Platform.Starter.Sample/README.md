@@ -13,3 +13,13 @@ The application must call `ConfigurePlatformEventing` from its own
 `DbContext.OnModelCreating`, own the migrations for the outbox/inbox tables,
 and implement the transport publisher. No product event types, transport
 credentials, or migrations belong in this sample.
+
+For cache adoption, register `Platform.Caching` with an application namespace. The in-memory
+store is the default and is not authoritative:
+
+```csharp
+builder.Services.AddPlatformCaching("sample");
+```
+
+Choose `Platform.Caching.Hybrid` or `Platform.Caching.Redis` explicitly when the host owns the
+provider, serializer, and operational policy. Include tenant and schema-version segments in keys.
