@@ -1,5 +1,37 @@
 # Handoff
 
+## Completed: platform-durable-eventing
+
+- Added framework-neutral `Platform.Eventing.Contracts` outbox/inbox envelopes, state
+  transitions, retry/dead-letter policies, lease claims, duplicate decisions, and in-memory
+  stores.
+- Added optional `Platform.Eventing.EfCore` mappings and stores with application-owned table
+  names, transactional claims, lease recovery, bounded dispatch, safe failure logging, and
+  hosted-service registration. It does not own an application DbContext, migrations, transport,
+  or product event catalog.
+- Added SQLite, independent-context, concurrent-claim, dispatcher, contract, and architecture
+  coverage. Added durable-eventing package, starter, sample, and adoption documentation.
+- Archived the completed change at
+  `openspec/changes/archive/2026-09-08-platform-durable-eventing/`. No main spec existed to
+  synchronize.
+
+Verification evidence:
+
+- `/home/paul/.dotnet/dotnet restore Platform.sln --ignore-failed-sources -p:NuGetAudit=false --nologo -m:1` — succeeded.
+- `/home/paul/.dotnet/dotnet build Platform.sln -c Release --no-restore --nologo -m:1` — succeeded; the existing `Platform.Testing.Tests` xUnit2013 warning remains.
+- `/home/paul/.dotnet/dotnet test Platform.sln -c Release --no-build --no-restore --nologo -m:1` — 509 tests passed, 0 failed, 0 skipped.
+- `/home/paul/.dotnet/dotnet pack Platform.sln -c Release --no-build --no-restore --nologo -m:1` — succeeded; both eventing packages were produced and the existing non-packable sample warning remains.
+- Targeted `Platform.Eventing.EfCore.Tests` — 6 passed, 0 failed, 0 skipped.
+- `openspec validate --changes --strict --no-interactive` — 5 passed, 0 failed after archive.
+- `Platform.Architecture.Tests` — 134 passed, 0 failed.
+- `git diff --check` — clean before commit.
+- Implementation commit: `9d38717` (`Implement durable eventing foundation`).
+
+## Next change
+
+`platform-caching` is the next active change in the shared-platform dependency order. Implement
+only that change in the next cycle.
+
 ## Completed: platform-ai-provider-abstractions
 
 - Added `Platform.Ai.Contracts` with provider-neutral text generation, streaming,
