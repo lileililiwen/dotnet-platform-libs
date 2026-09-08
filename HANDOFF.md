@@ -1,6 +1,85 @@
 # Handoff
 
-## Completed: platform-observability
+## Completed: platform-persistence-multitenancy
+
+- Added framework-neutral tenant contracts in `Platform.Core/Tenancy`:
+  `ITenantInfo`, `ITenantResolver` + `TenantResolutionResult` + `TenantResolutionStatus`,
+  `IAmbientTenantScope`, `ITenantScopeFactory`, `ITenantConnectionResolver` +
+  `TenantConnectionDescriptor`, `ITenantConnectionReadinessProbe` +
+  `TenantConnectionReadinessResult`, and `TenantScopeNotResolvedException`. `Platform.Core`
+  has no new package dependencies.
+- Added `Platform.Persistence.Multitenancy` (`net8.0`, version `0.1.0`):
+  `AmbientTenantScope` with a generation counter, `AmbientTenantScopeStore` over
+  `AsyncLocal<>`, `ITenantScopeAccessor` + `TenantScopeAccessor`, `TenantScopeFactory` with
+  snapshotted prior-scope restoration, `TenantScopeMiddleware` + `UsePlatformMultitenancy`,
+  `IGlobalTenantEntity` marker, `TenantModelBuilderExtensions.ApplyDefaultTenantFilters`
+  with documented `GlobalFilterBehavior` override (`Apply`, `IgnoreGlobalScope`, `Skip`),
+  `ScopedTenantConnectionProvider` (cached within a single generation, fail-closed by
+  default, `IDisposable`), `TenantConnectionReadinessCheck` +
+  `AddPlatformTenantConnectionReadinessCheck` registering under the `ready` tag, and
+  `AddPlatformPersistenceMultitenancy` with bounded `MultitenancyOptions`. Every default
+  is registered with `TryAdd` so applications can replace the resolver, connection
+  resolver, scope factory, and readiness probe before registration.
+- Package references `Platform.Core`, `Platform.AspNetCore`, `Platform.Persistence.EfCore`,
+  EF Core, and `Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions`. No Finbuckle,
+  Npgsql, Stripe, StackExchange.Redis, or VisualFlow references; the
+  `Microsoft.AspNetCore.App` framework reference is declared on the adapter only.
+- Added `tests/Platform.Persistence.Multitenancy.Tests` (31 tests) covering options
+  defaults and validation, replaceable factory registration, accessor/store wiring,
+  scope factory tenant installation and restoration, global-operation scope
+  installation, nested scope restoration, identifier length and empty/whitespace
+  validation, concurrent `AsyncLocal` isolation across `Task.Run` boundaries, EF model
+  filter application per `ITenantScoped` entity, `IGlobalTenantEntity` opt-out,
+  `IgnoreGlobalScope` and `Skip` behaviors, scoped connection routing (resolved tenant,
+  global operation, fail-closed on unresolved, shared fallback when fail-closed is
+  disabled, generation-based caching), TestServer middleware coverage (resolved header,
+  bounded length rejection, disabled installation, per-request scope replacement), and
+  readiness check aggregation (healthy, unhealthy) and tag registration.
+- Extended `Platform.Architecture.Tests` (209 tests, +3 new):
+  `Platform_Persistence_Multitenancy_does_not_reference_forbidden_packages` (fails on
+  any ASP.NET Core, Npgsql, Finbuckle, StackExchange.Redis, or Stripe package
+  reference), `Platform_Persistence_Multitenancy_references_only_platform_core_aspnetcore_and_persistence`
+  (fails on any project reference other than `Platform.Core`, `Platform.AspNetCore`,
+  and `Platform.Persistence.EfCore`), and `Platform_Core_tenant_contracts_have_no_package_dependencies`
+  (confirms `Platform.Core` remains dependency-light). The
+  `Only_Platform_AspNetCore_declares_a_FrameworkReference` and
+  `Production_project_does_not_reference_forbidden_frameworks` rules were extended to
+  cover the new package.
+- Added `docs/platform-persistence-multitenancy.md` with adoption, background-handler,
+  connection-routing, readiness, and rollback guidance. Updated `docs/packages.md`
+  and `docs/platform-persistence.md` to reference the new package.
+- Archived the change at
+  `openspec/changes/archive/2026-09-08-platform-persistence-multitenancy/` with
+  synchronized `openspec/specs/platform-persistence-multitenancy/spec.md` covering
+  explicit tenant scope, default tenant isolation, fail-closed tenant access, and
+  the connection routing seam. No tenant entities, migrations, connection strings, or
+  tenant catalog persistence were added; the pre-existing
+  `Platform.Persistence.EfCore` `ITenantScope`/`ITenantScoped` contracts remain
+  compatible.
+
+## Verification evidence
+
+- `dotnet restore Platform.sln --ignore-failed-sources -p:NuGetAudit=false --nologo -m:1` — succeeded.
+- `dotnet build Platform.sln -c Release --no-restore --nologo -m:1` — 0 warnings, 0 errors; the
+  pre-existing `Platform.Testing.Tests` xUnit2013 warning was unchanged.
+- `dotnet test Platform.sln -c Release --no-build --nologo -m:1` — 759 tests passed, 0 failed,
+  0 skipped, including the new `Platform.Persistence.Multitenancy.Tests` (31 tests) and the
+  extended `Platform.Architecture.Tests` (209 tests, +3 new multitenancy assertions).
+- `dotnet pack src/Platform.Persistence.Multitenancy/Platform.Persistence.Multitenancy.csproj
+  -c Release --no-build --no-restore --nologo -m:1` — produced
+  `Platform.Persistence.Multitenancy.0.1.0.nupkg` with `<dependencies>` containing only
+  `Platform.Core`, `Platform.AspNetCore`, `Platform.Persistence.EfCore`, EF Core, and
+  `Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions`, plus the
+  `Microsoft.AspNetCore.App` framework reference.
+- `openspec validate --changes --strict --no-interactive` — 9 passed, 0 failed after archive.
+- `openspec validate --specs --strict --no-interactive` — 23 passed, 0 failed after archive.
+- `git diff --check` — clean for the staged change.
+- Implementation commit: `f082250` (`Implement shared persistence multitenancy`).
+
+## Next change
+
+`platform-consumer-conformance` is the next active change returned by
+`openspec list`. Implement only that change in the next cycle.
 
 - Added `Platform.Observability` (`net8.0`, ASP.NET Core) with bounded
   `PlatformObservabilityOptions` (service identity, correlation, label length
