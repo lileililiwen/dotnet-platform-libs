@@ -2,11 +2,11 @@
 
 ## Current state
 
-Foundation, core contracts, ASP.NET Core integration, and entitlement contracts are in place. `Platform.Billing.Contracts` exposes provider-neutral identifiers, subscription and entitlement snapshots, structured feature-check decisions, a replaceable usage-meter interface, and an idempotent processed-event store. The package ships with zero third-party dependencies. One active change remains in `openspec/changes/`.
+All five OpenSpec changes are implemented and archived. The repository ships four production packages (`Platform.Core`, `Platform.AspNetCore`, `Platform.Billing.Contracts`) and one test-only package (`Platform.Testing`). The architecture guardrails ensure production projects do not reference the test package, and the test package does not embed xUnit, NUnit, or a mocking framework. The pilot adoption change (`pilot-adoption-singleatee`) was removed from the change folder before this handoff and remains in `git status` as a pre-existing deletion that is not part of this work.
 
 ## Next change
 
-Run `openspec list`, select `platform-testing-toolkit`, and implement only that change.
+No active changes remain. `openspec list` is empty; the next work, if any, starts with a fresh OpenSpec proposal.
 
 ## Required sequence
 
@@ -20,58 +20,53 @@ Run `openspec list`, select `platform-testing-toolkit`, and implement only that 
 8. Commit 2: only the `HANDOFF.md` update.
 9. Stop; do not start another change or push.
 
-## Completed: platform-entitlement-contracts
+## Completed: platform-testing-toolkit
 
-- Added opaque identifiers in
-  `Platform.Billing.Contracts.Identifiers`: `PlanId`, `FeatureKey`,
-  `SubjectKey` (with `Anonymous` marker and `IsAnonymous`),
-  `ProviderName`, `ProviderEventId` — all with non-empty
-  validation.
-- Added `Platform.Billing.Contracts.Subscriptions`:
-  `SubscriptionStatus` enum (`Free`, `Active`, `Suspended`,
-  `PastDue`, `Canceled`, `Unknown`) and immutable `Subscription`
-  record with `IsActive` (only `Free` and `Active` count as active)
-  and `IsWithinPeriod(now)`.
-- Added `Platform.Billing.Contracts.Entitlements`: immutable
-  `Entitlement` record (Subject, optional Tenant, optional
-  Subscription, `IReadOnlySet<FeatureKey>`, optional Limits,
-  CapturedAt) with `Grants`/`LimitFor` helpers; static
-  `EntitlementDefaults` factory for `Anonymous`, `Inactive`, and
-  `Unknown` (an unknown subscription is preserved on the snapshot
-  for diagnostics but grants no features).
-- Added `Platform.Billing.Contracts.Features`:
-  `FeatureCheckReason` enum (`Allowed`, `NotAuthenticated`,
-  `NotSubscribed`, `PlanMismatch`, `LimitExceeded`, `Unknown`),
-  `FeatureCheckResult` record (Feature, Reason, optional
-  RequiredPlan/CurrentUsage/Limit), and `FeatureCheck.Evaluate`
-  mapping an `Entitlement` snapshot into a structured decision.
-- Added `Platform.Billing.Contracts.Usage`: `IUsageMeter` interface
-  (`CheckAsync`/`RecordAsync` with `CancellationToken`) and
-  `UsageCheckResult` with `IsWithinLimit`; the platform does not
-  prescribe storage, cache, or counting implementation.
-- Added `Platform.Billing.Contracts.Events`: `ProviderEvent`,
-  `ProcessedEvent`, `ProcessedEventDecision` enum (`FirstDelivery`
-  /`Duplicate`), and `IProcessedEventStore.MarkProcessedAsync` for
-  idempotent redelivery handling.
+- Added `ControllableClock` (`Platform.Testing.Time`): deterministic
+  `IClock` that never reads system time, with `Set` and `Advance`
+  (including negative durations) under a lock; rejects non-UTC
+  values.
+- Added `SubscriptionBuilder` and `EntitlementBuilder`
+  (`Platform.Testing.Entitlements`): fluent builders for
+  `Subscription` and `Entitlement` snapshots with safe inactive
+  defaults; the entitlement builder exposes
+  `Granting`/`WithLimit`/`CapturedAt` helpers and anchors the
+  captured-at time at the supplied `IClock`.
+- Added `FakeEntitlementStore`: inspectable in-memory store with
+  `Configure`, `Get`, `Invalidate`, `InvalidatedSubjects`, and
+  `Reset`; the store is framework-neutral and exposes its state for
+  tests to assert.
+- Added `RecordingUsageMeter` (`Platform.Testing.Usage`):
+  `IUsageMeter` implementation that records every call (subject,
+  feature, units, operation kind) and accumulates totals per
+  (subject, feature); `SetLimit` configures per-feature limits that
+  flow through `UsageCheckResult.Limit`; `Reset` clears totals and
+  calls but preserves limits.
+- Added `UsageCall` record for inspecting recorded calls in
+  invocation order.
+- The test package has zero xUnit, NUnit, or mocking-framework
+  dependencies; it depends on the three platform contracts only.
 
 ## Verification evidence
 
 - `dotnet build Platform.sln -c Release` — 0 warnings, 0 errors.
-- `dotnet test Platform.sln -c Release --nologo` — 119 tests passed
-  (49 Billing.Contracts, 28 Core, 22 AspNetCore, 19 Architecture,
-  1 Testing), 0 failed, 0 skipped.
-- `dotnet pack src/Platform.Billing.Contracts/Platform.Billing.Contracts.csproj
-  -c Release --no-build --nologo` — produced
-  `Platform.Billing.Contracts.0.1.0.nupkg`; inspected `.nuspec`
-  and confirmed `<dependencies>` is empty for `net8.0` (zero
-  third-party package dependencies).
-- Public API inspection (grep across `src/Platform.Billing.Contracts`):
-  no `Microsoft.AspNetCore`, `Microsoft.EntityFrameworkCore`,
-  `Stripe`, or `System.Web` references.
+- `dotnet test Platform.sln -c Release --nologo` — 154 tests passed
+  (49 Billing.Contracts, 36 Testing, 28 Core, 22 AspNetCore, 19
+  Architecture), 0 failed, 0 skipped.
+- `dotnet pack src/Platform.Testing/Platform.Testing.csproj -c
+  Release --no-build --nologo` — produced
+  `Platform.Testing.0.1.0.nupkg`; inspected `.nuspec` and confirmed
+  `<dependencies>` contains only the three platform contract
+  packages (`Platform.Core`, `Platform.AspNetCore`,
+  `Platform.Billing.Contracts`).
+- Production isolation: `Platform.Core`,
+  `Platform.Billing.Contracts`, and `Platform.AspNetCore` declare no
+  `<PackageReference>` or `<ProjectReference>` to
+  `Platform.Testing` (enforced by
+  `Platform.Architecture.Tests`).
 - `git diff --check` — clean.
-- `openspec validate --changes --strict --no-interactive` — 1 passed,
+- `openspec validate --changes --strict --no-interactive` — 0 items
+  (no active changes remain); 0 failed.
+- `openspec validate --specs --strict --no-interactive` — 5 passed,
   0 failed.
-- `openspec validate --specs   --strict --no-interactive` — 4 passed,
-  0 failed.
-- `openspec list` — `platform-entitlement-contracts` no longer
-  present; 1 active change remains.
+- `openspec list` — empty.
