@@ -11,6 +11,7 @@ public class DependencyDirectionTests
         "src/Platform.Core/Platform.Core.csproj",
         "src/Platform.AspNetCore/Platform.AspNetCore.csproj",
         "src/Platform.Billing.Contracts/Platform.Billing.Contracts.csproj",
+        "src/Platform.Jobs/Platform.Jobs.csproj",
         "src/Platform.Testing/Platform.Testing.csproj",
     };
 
@@ -35,6 +36,19 @@ public class DependencyDirectionTests
         "Microsoft.EntityFrameworkCore",
         "Stripe",
         "Stripe.net",
+    };
+
+    private static readonly string[] ForbiddenJobsPackagePrefixes =
+    {
+        "Microsoft.AspNetCore",
+        "Microsoft.EntityFrameworkCore",
+        "Hangfire",
+        "Quartz",
+    };
+
+    private static readonly string[] ForbiddenJobsProjectSegments =
+    {
+        "VisualFlow",
     };
 
     public static IEnumerable<object[]> ProductionProjectsData() =>
@@ -146,6 +160,53 @@ public class DependencyDirectionTests
                     $"{project} must not declare FrameworkReferences but declares: {string.Join(", ", references)}");
             }
         }
+    }
+
+    [Fact]
+    public void Platform_Jobs_does_not_reference_forbidden_packages()
+    {
+        var packages = ReadPackageReferences("src/Platform.Jobs/Platform.Jobs.csproj");
+        var violations = packages
+            .Where(p => ForbiddenJobsPackagePrefixes.Any(prefix =>
+                p.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
+            .ToArray();
+
+        Assert.True(
+            violations.Length == 0,
+            "Platform.Jobs must not reference forbidden packages but references: " + string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void Platform_Jobs_only_references_Platform_Core()
+    {
+        var references = ReadProjectReferences("src/Platform.Jobs/Platform.Jobs.csproj");
+
+        Assert.True(
+            references.Length == 1 && references[0].Equals("Platform.Core", StringComparison.OrdinalIgnoreCase),
+            "Platform.Jobs must reference only Platform.Core but references: " + string.Join(", ", references));
+    }
+
+    [Fact]
+    public void Platform_Jobs_does_not_reference_visual_flow_projects()
+    {
+        var fullPath = Path.Combine(RepositoryRoot, "src/Platform.Jobs/Platform.Jobs.csproj");
+        var document = XDocument.Load(fullPath);
+
+        var projectReferences = document
+            .Descendants()
+            .Where(e => string.Equals(e.Name.LocalName, "ProjectReference", StringComparison.OrdinalIgnoreCase))
+            .Select(e => e.Attribute("Include")?.Value ?? string.Empty)
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .ToArray();
+
+        var violations = projectReferences
+            .Where(reference => ForbiddenJobsProjectSegments.Any(segment =>
+                reference.Contains(segment, StringComparison.OrdinalIgnoreCase)))
+            .ToArray();
+
+        Assert.True(
+            violations.Length == 0,
+            "Platform.Jobs must not reference VisualFlow projects but references: " + string.Join(", ", violations));
     }
 
     private static string LocateRepositoryRoot()
