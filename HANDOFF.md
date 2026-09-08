@@ -1,5 +1,35 @@
 # Handoff
 
+## Completed: platform-billing-provider-abstractions
+
+- Extended billing contracts with provider-neutral checkout, portal, subscription lookup,
+  cancellation, webhook normalization, provider status, entitlement storage, plan catalogs,
+  and application-owned provider-reference mappings.
+- Added `Platform.Billing` orchestration for `(provider, event id)` deduplication, stale-event
+  rejection, expiry-aware feature decisions, and usage-limit explanations.
+- Added `Platform.Billing.Testing` deterministic in-memory entitlement, usage, and provider
+  fakes; lifecycle, duplicate, out-of-order, cancellation, expiry, usage, architecture, and
+  provider-boundary tests; and `docs/platform-billing.md`.
+- Archived the change at
+  `openspec/changes/archive/2026-09-08-platform-billing-provider-abstractions/` and synchronized
+  `openspec/specs/platform-billing-provider-abstractions/spec.md`.
+
+Verification evidence:
+
+- `dotnet restore Platform.sln --ignore-failed-sources -p:NuGetAudit=false --nologo -m:1` — succeeded.
+- `dotnet build Platform.sln -c Release --no-restore --nologo -m:1` — 0 warnings, 0 errors.
+- `dotnet test Platform.sln -c Release --no-build --no-restore --nologo -m:1` — 435 tests passed,
+  0 failed, 0 skipped.
+- `dotnet pack` for `Platform.Billing.Contracts`, `Platform.Billing`, and
+  `Platform.Billing.Testing` — all succeeded.
+- `openspec validate --changes --strict --no-interactive` — 6 passed, 0 failed before archive.
+- `git diff --check` and cached diff check — clean.
+
+## Next change
+
+`platform-billing-provider-adapters` is the next active change in the Phase 4 dependency order.
+Implement only that change in the next cycle.
+
 ## Completed: platform-admin-capability
 
 - Added `Platform.Admin.Contracts` with bounded admin query/page contracts, safe user/role/
