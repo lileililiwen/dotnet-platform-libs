@@ -127,6 +127,27 @@ public class DependencyDirectionTests
             "Platform.Billing.Contracts must remain dependency-light but references: " + string.Join(", ", packages));
     }
 
+    [Fact]
+    public void Only_Platform_AspNetCore_declares_a_FrameworkReference()
+    {
+        foreach (var project in ProductionProjects)
+        {
+            var references = ReadFrameworkReferences(project);
+            if (project.EndsWith("Platform.AspNetCore.csproj", StringComparison.OrdinalIgnoreCase))
+            {
+                Assert.True(
+                    references.Length == 1 && references[0].Equals("Microsoft.AspNetCore.App", StringComparison.OrdinalIgnoreCase),
+                    $"Platform.AspNetCore must declare only Microsoft.AspNetCore.App but declares: {string.Join(", ", references)}");
+            }
+            else
+            {
+                Assert.True(
+                    references.Length == 0,
+                    $"{project} must not declare FrameworkReferences but declares: {string.Join(", ", references)}");
+            }
+        }
+    }
+
     private static string LocateRepositoryRoot()
     {
         var current = new DirectoryInfo(AppContext.BaseDirectory);
@@ -167,6 +188,19 @@ public class DependencyDirectionTests
         return document
             .Descendants()
             .Where(e => string.Equals(e.Name.LocalName, "PackageReference", StringComparison.OrdinalIgnoreCase))
+            .Select(e => e.Attribute("Include")?.Value ?? string.Empty)
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .ToArray();
+    }
+
+    private static string[] ReadFrameworkReferences(string relativePath)
+    {
+        var fullPath = Path.Combine(RepositoryRoot, relativePath);
+        var document = XDocument.Load(fullPath);
+
+        return document
+            .Descendants()
+            .Where(e => string.Equals(e.Name.LocalName, "FrameworkReference", StringComparison.OrdinalIgnoreCase))
             .Select(e => e.Attribute("Include")?.Value ?? string.Empty)
             .Where(value => !string.IsNullOrWhiteSpace(value))
             .ToArray();
