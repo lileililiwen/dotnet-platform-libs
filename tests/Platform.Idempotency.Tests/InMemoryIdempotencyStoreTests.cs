@@ -122,7 +122,7 @@ public class InMemoryIdempotencyStoreTests
     }
 
     [Fact]
-    public async Task Ctor_rejects_null_dependencies()
+    public void Ctor_rejects_null_dependencies()
     {
         var options = Options(new IdempotencyOptions());
         var clock = new FixedClock(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
