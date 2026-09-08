@@ -43,3 +43,12 @@ optionsBuilder.UsePlatformPostgres(connectionString);
 The adapter owns only Npgsql configuration. It does not create a context, run migrations, or add
 application entities. Removing the adapter and its options call returns the host to provider-neutral
 EF Core configuration.
+
+## Multitenancy
+
+Add `Platform.Persistence.Multitenancy` to install a scoped current-tenant abstraction, an
+ASP.NET Core middleware that resolves the tenant per request, and the default-on
+`ApplyDefaultTenantFilters` model customizer. The package owns no tenant entities, no catalog,
+and no migrations; applications supply the `ITenantResolver`, `ITenantConnectionResolver`,
+`ITenantConnectionReadinessProbe`, and the tenant list. See
+`docs/platform-persistence-multitenancy.md` for the full adoption guide and rollback steps.

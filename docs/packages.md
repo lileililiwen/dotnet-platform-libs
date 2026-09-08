@@ -363,6 +363,35 @@ entities, contexts, migrations, tenants, or business filters.
 Optional Npgsql adapter over `Platform.Persistence.EfCore`. It contains only PostgreSQL options
 configuration (`UsePlatformPostgres`) and does not add contexts, migrations, or domain behavior.
 
+## Platform.Persistence.Multitenancy
+
+Optional multitenancy adapter over `Platform.Persistence.EfCore` and `Platform.AspNetCore`.
+Targets `net8.0`. Depends on `Platform.Core`, `Platform.AspNetCore`, `Platform.Persistence.EfCore`,
+EF Core, and health-check abstractions. The package owns no tenant entities, tenant catalog,
+migrations, or database credentials.
+
+### Tenancy contracts (`Platform.Core`)
+
+- `ITenantInfo` — application-supplied tenant metadata.
+- `TenantResolutionResult`, `TenantResolutionStatus` — resolution outcome (resolved, global operation, or unresolved).
+- `ITenantResolver` — application-owned resolver; the platform never inspects HTTP headers or claims directly.
+- `IAmbientTenantScope`, `AmbientTenantScope` — current ambient state; the package adds a generation counter so cached collaborators can detect replacement.
+- `ITenantScopeFactory` — installs and restores ambient scopes for background handlers and explicit global operations.
+- `ITenantConnectionResolver`, `TenantConnectionDescriptor` — connection routing seam for shared and dedicated tenant databases.
+- `ITenantConnectionReadinessProbe`, `TenantConnectionReadinessResult` — readiness probe contract.
+- `TenantScopeNotResolvedException` — fail-closed outcome when no scope is in effect.
+
+### Adapter
+
+- `AddPlatformPersistenceMultitenancy` and `MultitenancyOptions` — bounded registration with safe defaults.
+- `AmbientTenantScopeStore`, `ITenantScopeAccessor` — scoped accessor over an `AsyncLocal<AmbientTenantScope>`.
+- `TenantScopeFactory` — default `ITenantScopeFactory` with snapshotted prior-scope restoration.
+- `TenantScopeMiddleware` and `UsePlatformMultitenancy` — ASP.NET Core middleware that resolves and installs the ambient scope.
+- `IGlobalTenantEntity` — explicit global marker that opts an entity out of the default filter.
+- `TenantModelBuilderExtensions.ApplyDefaultTenantFilters(scope[, behavior, overrideTenantId])` — explicit per-`DbContext` model customizer.
+- `ScopedTenantConnectionProvider` — returns the connection descriptor for the current scope; caches within a single generation.
+- `TenantConnectionReadinessCheck` and `AddPlatformTenantConnectionReadinessCheck` — readiness aggregation for tenant connections.
+
 ## Platform.Testing
 
 Test-only helpers. Depends on `Platform.Core`, `Platform.AspNetCore`, and `Platform.Billing.Contracts`. No xUnit, NUnit, or mocking-framework dependencies. Targets `net8.0`. Production projects must not reference this package.
@@ -396,6 +425,7 @@ Test-only helpers. Depends on `Platform.Core`, `Platform.AspNetCore`, and `Platf
 | `tests/Platform.Idempotency.Tests` | Unit tests for `RequestFingerprint` stability + method normalisation + body-hash helper, `IdempotencyOptions` defaults and metric-name constants, `InMemoryIdempotencyStore` round-trip / null-or-empty-key / oversize-key / retention sweep / expired-record-as-miss / null-dependency guards, plus a `TestServer` integration test for `AddPlatformIdempotency` defaults, configuration overrides, save/try-get round-trip, eviction sweep driven by a `MutableClock`, and the no-op path when `Idempotency:Enabled = false`. |
 | `tests/Platform.RateLimiting.Tests` | Unit tests for `RateLimitPolicies` default catalog + `Find` + invalid-entry dropping + null guard, `RateLimitingOptions` defaults, `InMemoryRateLimiter` (first request, burst over limit, window roll-over, per-subject isolation, unknown/empty policy / subject rejection, null dependency guards), `ConfigurationRateLimitBypassResolver`, and `InMemoryRateLimiterBackendStatusProvider`, plus a `TestServer` integration test for `AddPlatformRateLimiting` defaults, configuration overrides, limiter decisions through DI, and the readiness surface. |
 | `tests/Platform.Persistence.EfCore.Tests` | In-memory and SQLite tests for explicit options, audit/soft-delete interception, tenant filters, paging/specification helpers, concurrent independent contexts, read-only migration status, and readiness behavior. |
+| `tests/Platform.Persistence.Multitenancy.Tests` | Multitenancy options validation, scope factory installation/restoration, EF Core model filter application, global-entity opt-out, scoped connection routing (tenant/global/shared), connection caching, HTTP middleware TestServer coverage (resolved/disabled/length-bounded), and tenant readiness check aggregation. |
 | `tests/Platform.Persistence.Postgres.Tests` | Provider-boundary test for PostgreSQL options configuration. |
 | `tests/Platform.Testing.Tests` | Unit tests for `ControllableClock`, `SubscriptionBuilder`, `EntitlementBuilder`, `FakeEntitlementStore`, and `RecordingUsageMeter`. |
 | `tests/Platform.Webhooks.Tests` | Synthetic signature, replay, normalization, and HTTP mapping coverage for the inbound and outbound flows. |

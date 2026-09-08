@@ -56,6 +56,7 @@ public class DependencyDirectionTests
         "src/Platform.Webhooks.AspNetCore/Platform.Webhooks.AspNetCore.csproj",
         "src/Platform.Webhooks.EfCore/Platform.Webhooks.EfCore.csproj",
         "src/Platform.Observability/Platform.Observability.csproj",
+        "src/Platform.Persistence.Multitenancy/Platform.Persistence.Multitenancy.csproj",
     };
 
     private static readonly string[] TestOnlyAssemblyNames =
@@ -83,6 +84,7 @@ public class DependencyDirectionTests
         "Platform.Ai.Adapter.Tests",
         "Platform.Webhooks.Tests",
         "Platform.Observability.Tests",
+        "Platform.Persistence.Multitenancy.Tests",
     };
 
     private static readonly string[] FrameworkIndependentProjects =
@@ -215,6 +217,7 @@ public class DependencyDirectionTests
     {
         if (relativePath.Contains("Persistence.EfCore", StringComparison.OrdinalIgnoreCase)
             || relativePath.Contains("Persistence.Postgres", StringComparison.OrdinalIgnoreCase)
+            || relativePath.Contains("Persistence.Multitenancy", StringComparison.OrdinalIgnoreCase)
             || relativePath.Contains("Identity.EntityFrameworkCore", StringComparison.OrdinalIgnoreCase)
             || relativePath.Contains("Eventing.EfCore", StringComparison.OrdinalIgnoreCase)
             || relativePath.Contains("Webhooks.EfCore", StringComparison.OrdinalIgnoreCase)
@@ -404,7 +407,8 @@ public class DependencyDirectionTests
                 || project.EndsWith("Platform.Web.Cors.csproj", StringComparison.OrdinalIgnoreCase)
                 || project.EndsWith("Platform.Web.Resilience.csproj", StringComparison.OrdinalIgnoreCase)
                 || project.EndsWith("Platform.Web.OpenApi.csproj", StringComparison.OrdinalIgnoreCase)
-                || project.EndsWith("Platform.Observability.csproj", StringComparison.OrdinalIgnoreCase))
+                || project.EndsWith("Platform.Observability.csproj", StringComparison.OrdinalIgnoreCase)
+                || project.EndsWith("Platform.Persistence.Multitenancy.csproj", StringComparison.OrdinalIgnoreCase))
             {
                 Assert.True(
                     references.Length == 1 && references[0].Equals("Microsoft.AspNetCore.App", StringComparison.OrdinalIgnoreCase),
@@ -920,6 +924,41 @@ public class DependencyDirectionTests
         Assert.Equal(2, references.Length);
         Assert.Contains("Platform.Core", references, StringComparer.OrdinalIgnoreCase);
         Assert.Contains("Platform.Web.Telemetry", references, StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Platform_Persistence_Multitenancy_does_not_reference_forbidden_packages()
+    {
+        var path = "src/Platform.Persistence.Multitenancy/Platform.Persistence.Multitenancy.csproj";
+        var packages = ReadPackageReferences(path);
+        var violations = packages
+            .Where(p => p.StartsWith("Microsoft.AspNetCore", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("Npgsql", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("Finbuckle", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("StackExchange.Redis", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("Stripe", StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+        Assert.True(
+            violations.Length == 0,
+            "Platform.Persistence.Multitenancy must not reference forbidden packages but references: " + string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void Platform_Persistence_Multitenancy_references_only_platform_core_aspnetcore_and_persistence()
+    {
+        var references = ReadProjectReferences("src/Platform.Persistence.Multitenancy/Platform.Persistence.Multitenancy.csproj");
+        Assert.Equal(3, references.Length);
+        Assert.Contains("Platform.Core", references, StringComparer.OrdinalIgnoreCase);
+        Assert.Contains("Platform.AspNetCore", references, StringComparer.OrdinalIgnoreCase);
+        Assert.Contains("Platform.Persistence.EfCore", references, StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Platform_Core_tenant_contracts_have_no_package_dependencies()
+    {
+        var path = "src/Platform.Core/Platform.Core.csproj";
+        var packages = ReadPackageReferences(path);
+        Assert.Empty(packages);
     }
 
     private static string LocateRepositoryRoot()
