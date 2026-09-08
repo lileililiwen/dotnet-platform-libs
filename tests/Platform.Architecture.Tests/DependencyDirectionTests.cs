@@ -18,6 +18,8 @@ public class DependencyDirectionTests
         "src/Platform.RateLimiting/Platform.RateLimiting.csproj",
         "src/Platform.Web/Platform.Web.csproj",
         "src/Platform.Testing/Platform.Testing.csproj",
+        "src/Platform.Persistence.EfCore/Platform.Persistence.EfCore.csproj",
+        "src/Platform.Persistence.Postgres/Platform.Persistence.Postgres.csproj",
     };
 
     private static readonly string[] TestOnlyAssemblyNames =
@@ -28,6 +30,8 @@ public class DependencyDirectionTests
         "Platform.Billing.Contracts.Tests",
         "Platform.Testing.Tests",
         "Platform.Web.Tests",
+        "Platform.Persistence.EfCore.Tests",
+        "Platform.Persistence.Postgres.Tests",
     };
 
     private static readonly string[] FrameworkIndependentProjects =
@@ -109,6 +113,15 @@ public class DependencyDirectionTests
         "VisualFlow",
     };
 
+    private static readonly string[] ForbiddenPersistenceEfCorePackagePrefixes =
+    {
+        "Microsoft.AspNetCore",
+        "Npgsql",
+        "Stripe",
+        "StackExchange.Redis",
+        "VisualFlow",
+    };
+
     public static IEnumerable<object[]> ProductionProjectsData() =>
         ProductionProjects.Select(p => new object[] { p });
 
@@ -138,6 +151,9 @@ public class DependencyDirectionTests
     [MemberData(nameof(ProductionProjectsData))]
     public void Production_project_does_not_reference_forbidden_frameworks(string relativePath)
     {
+        if (relativePath.Contains("Persistence.EfCore", StringComparison.OrdinalIgnoreCase)
+            || relativePath.Contains("Persistence.Postgres", StringComparison.OrdinalIgnoreCase))
+            return;
         var packages = ReadPackageReferences(relativePath);
         var violations = packages
             .Where(p => ForbiddenProductionPackagePrefixes.Any(prefix =>
@@ -147,6 +163,38 @@ public class DependencyDirectionTests
         Assert.True(
             violations.Length == 0,
             $"{relativePath} must not reference forbidden packages but references: {string.Join(", ", violations)}");
+    }
+
+    [Fact]
+    public void Platform_Persistence_EfCore_only_references_Platform_Core()
+    {
+        var references = ReadProjectReferences("src/Platform.Persistence.EfCore/Platform.Persistence.EfCore.csproj");
+
+        Assert.True(
+            references.Length == 1 && references[0].Equals("Platform.Core", StringComparison.OrdinalIgnoreCase),
+            "Platform.Persistence.EfCore must reference only Platform.Core but references: " + string.Join(", ", references));
+    }
+
+    [Fact]
+    public void Platform_Persistence_EfCore_has_no_provider_specific_project_or_package_references()
+    {
+        var projectReferences = ReadProjectReferences("src/Platform.Persistence.EfCore/Platform.Persistence.EfCore.csproj");
+        var packages = ReadPackageReferences("src/Platform.Persistence.EfCore/Platform.Persistence.EfCore.csproj");
+        var violations = packages.Where(package => ForbiddenPersistenceEfCorePackagePrefixes.Any(prefix =>
+            package.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))).ToArray();
+
+        Assert.DoesNotContain(projectReferences, reference => reference.Contains("Postgres", StringComparison.OrdinalIgnoreCase));
+        Assert.Empty(violations);
+    }
+
+    [Fact]
+    public void Platform_Persistence_Postgres_only_references_EfCore_persistence()
+    {
+        var references = ReadProjectReferences("src/Platform.Persistence.Postgres/Platform.Persistence.Postgres.csproj");
+
+        Assert.True(
+            references.Length == 1 && references[0].Equals("Platform.Persistence.EfCore", StringComparison.OrdinalIgnoreCase),
+            "Platform.Persistence.Postgres must reference only Platform.Persistence.EfCore but references: " + string.Join(", ", references));
     }
 
     [Theory]

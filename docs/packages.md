@@ -246,6 +246,28 @@ Framework-neutral rate-limit contract. Depends on `Platform.Core`, `Microsoft.Ex
 
 - `AddPlatformRateLimiting(IServiceCollection)` and `AddPlatformRateLimiting(IServiceCollection, Action<RateLimitingOptions>)` — bind `RateLimitingOptions` and register `IRateLimiter`, `IRateLimitBypassResolver`, `IRateLimiterBackendStatusProvider`, and `IClock` when no implementation is already present.
 
+## Platform.Persistence.EfCore
+
+Optional provider-neutral EF Core conventions. Depends on `Platform.Core`, EF Core, relational
+abstractions, and health-check abstractions; targets `net8.0`. It does not own application
+entities, contexts, migrations, tenants, or business filters.
+
+- `IAuditableEntity`, `ISoftDeletable`, `ITenantScoped`, and `ITenantScope` — minimal contracts
+  for explicitly selected application entities and scopes.
+- `PlatformSaveChangesInterceptor` — opt-in audit and soft-delete interception using replaceable
+  `IClock` and `IActorAccessor` services.
+- `PageRequest`, `PageResult<T>`, `PageExtensions`, `Specification<T>`, and
+  `SpecificationEvaluator` — bounded paging and predicate composition over consumer queryables.
+- `EfCoreMigrationStatusReader`, `MigrationStatus`, and `EfCoreReadinessCheck` — read-only
+  connection/migration status; no implicit migration application.
+- `AddPlatformPersistenceEfCore` and `ModelBuilderExtensions` — explicit registration and
+  per-entity soft-delete/tenant filter helpers.
+
+## Platform.Persistence.Postgres
+
+Optional Npgsql adapter over `Platform.Persistence.EfCore`. It contains only PostgreSQL options
+configuration (`UsePlatformPostgres`) and does not add contexts, migrations, or domain behavior.
+
 ## Platform.Testing
 
 Test-only helpers. Depends on `Platform.Core`, `Platform.AspNetCore`, and `Platform.Billing.Contracts`. No xUnit, NUnit, or mocking-framework dependencies. Targets `net8.0`. Production projects must not reference this package.
@@ -278,4 +300,6 @@ Test-only helpers. Depends on `Platform.Core`, `Platform.AspNetCore`, and `Platf
 | `tests/Platform.Eventing.Tests` | Unit tests for the envelope shape, the default `IntegrationEventEnvelopeSerializer` and `IntegrationEventEnvelopeDeserializer`, the `InProcessEventBus` (typed dispatch, consumer-failure isolation, idempotent disposal, bounded-capacity null guard), and `EventingOptions` defaults, plus a `TestServer` integration test for `AddPlatformEventing` and `AddPlatformEventingInProcess` defaults, configuration overrides, and a consumer-published envelope flowing to a typed `IIntegrationEventHandler<>`. |
 | `tests/Platform.Idempotency.Tests` | Unit tests for `RequestFingerprint` stability + method normalisation + body-hash helper, `IdempotencyOptions` defaults and metric-name constants, `InMemoryIdempotencyStore` round-trip / null-or-empty-key / oversize-key / retention sweep / expired-record-as-miss / null-dependency guards, plus a `TestServer` integration test for `AddPlatformIdempotency` defaults, configuration overrides, save/try-get round-trip, eviction sweep driven by a `MutableClock`, and the no-op path when `Idempotency:Enabled = false`. |
 | `tests/Platform.RateLimiting.Tests` | Unit tests for `RateLimitPolicies` default catalog + `Find` + invalid-entry dropping + null guard, `RateLimitingOptions` defaults, `InMemoryRateLimiter` (first request, burst over limit, window roll-over, per-subject isolation, unknown/empty policy / subject rejection, null dependency guards), `ConfigurationRateLimitBypassResolver`, and `InMemoryRateLimiterBackendStatusProvider`, plus a `TestServer` integration test for `AddPlatformRateLimiting` defaults, configuration overrides, limiter decisions through DI, and the readiness surface. |
+| `tests/Platform.Persistence.EfCore.Tests` | In-memory and SQLite tests for explicit options, audit/soft-delete interception, tenant filters, paging/specification helpers, concurrent independent contexts, read-only migration status, and readiness behavior. |
+| `tests/Platform.Persistence.Postgres.Tests` | Provider-boundary test for PostgreSQL options configuration. |
 | `tests/Platform.Testing.Tests` | Unit tests for `ControllableClock`, `SubscriptionBuilder`, `EntitlementBuilder`, `FakeEntitlementStore`, and `RecordingUsageMeter`. |
