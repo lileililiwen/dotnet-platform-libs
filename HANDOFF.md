@@ -353,3 +353,28 @@ Verification evidence:
 
 `platform-notifications-sms` is the next active change returned by `openspec list`. Implement
 only that change in the next cycle.
+# Completed: platform-notifications-sms
+
+- Added `Platform.Notifications` channel-neutral email/SMS intents, normalized outcomes,
+  provider-status contracts, safe failure categories, bounded transient retries, and stable
+  idempotency-key suppression.
+- Added explicit integration with existing mailing, jobs, and idempotency contracts; production
+  registration adds no provider, while `Platform.Notifications.Testing` supplies a deterministic
+  in-memory email/SMS provider for development and tests.
+- Added scheduling helpers, retry/duplicate/unconfigured-provider/redaction tests, package docs,
+  and archived the change at
+  `openspec/changes/archive/2026-09-08-platform-notifications-sms/` with synchronized
+  `openspec/specs/platform-notifications-sms/spec.md`.
+
+Verification evidence:
+
+- `/home/paul/.dotnet/dotnet restore Platform.sln --ignore-failed-sources -p:NuGetAudit=false --nologo -m:1` — succeeded.
+- `/home/paul/.dotnet/dotnet build Platform.sln -c Release --no-restore --nologo -m:1` — 0 errors; one pre-existing xUnit2013 warning in `Platform.Testing.Tests`.
+- `/home/paul/.dotnet/dotnet test Platform.sln -c Release --no-build --no-restore --nologo -m:1` — 469 tests passed, 0 failed, 0 skipped.
+- Both notification packages packed successfully; `openspec validate --changes --strict --no-interactive` — 2 passed, 0 failed; `git diff --check` and cached diff check — clean.
+- Implementation commit: `a8a4510` (`Implement platform notifications and SMS`).
+
+## Next change
+
+`platform-ai-provider-abstractions` is the next active change returned by `openspec list`.
+Implement only that change in the next cycle.
