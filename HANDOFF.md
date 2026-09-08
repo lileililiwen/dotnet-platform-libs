@@ -1,5 +1,34 @@
 # Handoff
 
+## Completed: platform-storage
+
+- Added `Platform.Storage` with provider-neutral object lifecycle contracts, validated object keys,
+  upload limits, metadata, presigned operations, safe outcomes, and provider status.
+- Added `Platform.Storage.Local` with bounded-root validation, atomic temporary-file writes,
+  deterministic metadata/download/delete behavior, and safe disposal.
+- Added optional `Platform.Storage.S3` using an application-provided `IAmazonS3` client, bounded
+  waits, presigning, not-found handling, and redacted transient provider failures.
+- Added storage architecture guards, local/S3 presign and contract coverage, package-folder
+  guidance, and documentation for authorization, tenants, retention, metadata, and migration.
+- Archived the completed change at
+  `openspec/changes/archive/2026-09-08-platform-storage/`. No main spec existed to synchronize.
+
+Verification evidence:
+
+- `/home/paul/.dotnet/dotnet restore Platform.sln --ignore-failed-sources -p:NuGetAudit=false --nologo -m:1` — succeeded.
+- `/home/paul/.dotnet/dotnet build Platform.sln -c Release --no-restore --nologo -m:1` — succeeded; the existing `Platform.Testing.Tests` xUnit2013 warning remains.
+- `/home/paul/.dotnet/dotnet test Platform.sln -c Release --no-build --no-restore --nologo -m:1` — 546 tests passed, 0 failed, 0 skipped.
+- `/home/paul/.dotnet/dotnet pack Platform.sln -c Release --no-build --no-restore --nologo -m:1` — succeeded; storage packages were produced and the existing non-packable sample warning remains.
+- Targeted storage suite — 5 passed, 0 failed, 0 skipped; `Platform.Architecture.Tests` — 158 passed, 0 failed.
+- `openspec validate --changes --strict --no-interactive` — 3 passed, 0 failed after archive.
+- `git diff --check` — clean before commit.
+- Implementation commit: `e566c38` (`Implement shared object storage`).
+
+## Next change
+
+`platform-quota` is the next active change in the shared-platform dependency order. Implement only
+that change in the next cycle.
+
 ## Completed: platform-caching
 
 - Added `Platform.Caching` with provider-neutral async cache contracts, explicit hit/miss/
