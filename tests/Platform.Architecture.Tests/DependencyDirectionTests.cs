@@ -15,6 +15,7 @@ public class DependencyDirectionTests
         "src/Platform.Idempotency/Platform.Idempotency.csproj",
         "src/Platform.Jobs/Platform.Jobs.csproj",
         "src/Platform.Mailing/Platform.Mailing.csproj",
+        "src/Platform.RateLimiting/Platform.RateLimiting.csproj",
         "src/Platform.Testing/Platform.Testing.csproj",
     };
 
@@ -90,6 +91,18 @@ public class DependencyDirectionTests
     };
 
     private static readonly string[] ForbiddenIdempotencyProjectSegments =
+    {
+        "VisualFlow",
+    };
+
+    private static readonly string[] ForbiddenRateLimitingPackagePrefixes =
+    {
+        "Microsoft.AspNetCore",
+        "Microsoft.EntityFrameworkCore",
+        "StackExchange.Redis",
+    };
+
+    private static readonly string[] ForbiddenRateLimitingProjectSegments =
     {
         "VisualFlow",
     };
@@ -391,6 +404,53 @@ public class DependencyDirectionTests
         Assert.True(
             violations.Length == 0,
             "Platform.Idempotency must not reference VisualFlow projects but references: " + string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void Platform_RateLimiting_does_not_reference_forbidden_packages()
+    {
+        var packages = ReadPackageReferences("src/Platform.RateLimiting/Platform.RateLimiting.csproj");
+        var violations = packages
+            .Where(p => ForbiddenRateLimitingPackagePrefixes.Any(prefix =>
+                p.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
+            .ToArray();
+
+        Assert.True(
+            violations.Length == 0,
+            "Platform.RateLimiting must not reference forbidden packages but references: " + string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void Platform_RateLimiting_only_references_Platform_Core()
+    {
+        var references = ReadProjectReferences("src/Platform.RateLimiting/Platform.RateLimiting.csproj");
+
+        Assert.True(
+            references.Length == 1 && references[0].Equals("Platform.Core", StringComparison.OrdinalIgnoreCase),
+            "Platform.RateLimiting must reference only Platform.Core but references: " + string.Join(", ", references));
+    }
+
+    [Fact]
+    public void Platform_RateLimiting_does_not_reference_visual_flow_projects()
+    {
+        var fullPath = Path.Combine(RepositoryRoot, "src/Platform.RateLimiting/Platform.RateLimiting.csproj");
+        var document = XDocument.Load(fullPath);
+
+        var projectReferences = document
+            .Descendants()
+            .Where(e => string.Equals(e.Name.LocalName, "ProjectReference", StringComparison.OrdinalIgnoreCase))
+            .Select(e => e.Attribute("Include")?.Value ?? string.Empty)
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .ToArray();
+
+        var violations = projectReferences
+            .Where(reference => ForbiddenRateLimitingProjectSegments.Any(segment =>
+                reference.Contains(segment, StringComparison.OrdinalIgnoreCase)))
+            .ToArray();
+
+        Assert.True(
+            violations.Length == 0,
+            "Platform.RateLimiting must not reference VisualFlow projects but references: " + string.Join(", ", violations));
     }
 
     private static string LocateRepositoryRoot()
