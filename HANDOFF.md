@@ -2,11 +2,28 @@
 
 ## Current state
 
-All five Phase 3 pilot-adoption OpenSpec changes are implemented and archived (`platform-extraction-jobs`, `platform-extraction-mailing`, `platform-extraction-eventing`, `platform-extraction-idempotency`, `platform-extraction-ratelimiting`). The repository ships nine production packages (`Platform.Core`, `Platform.AspNetCore`, `Platform.Billing.Contracts`, `Platform.Jobs`, `Platform.Mailing`, `Platform.Eventing`, `Platform.Idempotency`, `Platform.RateLimiting`) and one test-only package (`Platform.Testing`). The architecture guardrails ensure production projects do not reference the test package, the test package does not embed xUnit, NUnit, or a mocking framework, and the framework-neutral packages do not reference ASP.NET Core, EF Core, scheduling engines, mail providers, templating engines, RabbitMQ, StackExchange.Redis, or VisualFlow projects.
+Phase 4 change `platform-web-runtime-foundation` is implemented and archived. The repository now ships `Platform.Web` as an opt-in runtime layer over `Platform.AspNetCore`; it provides validated options, safe redaction/configuration/provider-status seams, correlation hardening, security headers, request limits, timeout cancellation, and independent `/live` and `/ready` endpoints. It does not register identity, persistence, or external providers.
 
 ## Next change
 
-No active changes remain. `openspec list` is empty. The next work, if any, starts with a fresh OpenSpec proposal.
+`platform-persistence-efcore` is the next dependency-ordered active change. Nine Phase 4 changes remain active; implement only one change per cycle.
+
+## Completed: platform-web-runtime-foundation
+
+- Added `src/Platform.Web` (`net8.0`) with only a `Platform.AspNetCore` project reference and the ASP.NET Core framework reference.
+- Added `AddPlatformWeb`, `UsePlatformWeb`, and `MapPlatformRuntimeEndpoints` with explicit, replaceable DI registrations.
+- Added safe option validation, configuration validator/redactor/provider-status contracts, security headers, request-size enforcement, request timeout cancellation, hardened incoming correlation values, and stable liveness/readiness JSON responses.
+- Added 8 `Platform.Web.Tests` unit and TestServer tests plus architecture coverage for package/project direction and framework references.
+- Added `docs/platform-web.md` covering bootstrap, ordering, configuration, replacement, and migration boundaries.
+
+Verification evidence:
+
+- `dotnet restore Platform.sln` — succeeded.
+- `dotnet build Platform.sln -c Release --nologo --no-restore -m:1` — 0 warnings, 0 errors. Parallel build attempts had an SDK project-reference resolution failure with no reported diagnostics; serial build succeeded.
+- `dotnet test Platform.sln -c Release --nologo` — 366 tests passed, 0 failed; one pre-existing xUnit2013 warning in `Platform.Testing.Tests`.
+- `dotnet pack src/Platform.Web/Platform.Web.csproj -c Release --no-build --no-restore --nologo -m:1` — produced `Platform.Web.0.1.0.nupkg`.
+- `openspec validate --changes --strict --no-interactive` — 10 passed, 0 failed.
+- `git diff --check` — clean.
 
 ## Required sequence
 
