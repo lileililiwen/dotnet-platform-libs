@@ -1,5 +1,38 @@
 # Handoff
 
+## Completed: platform-billing-provider-adapters
+
+- Added optional `Platform.Billing.Stripe` and `Platform.Billing.LemonSqueezy` HTTP adapters
+  implementing the provider-neutral billing boundary, application-owned plan mappings,
+  checkout/session operations, subscription lookup, provider status, and provider-specific
+  webhook verification/normalization.
+- Added safe provider failure categories and classification for transient, permanent,
+  configuration, authentication, and malformed-response failures. Secrets and provider response
+  bodies are excluded from failure metadata.
+- Added synthetic signature, normalization, HTTP mapping, duplicate/replay, health, and provider
+  architecture coverage in `Platform.Billing.ProviderAdapters.Tests` and extended dependency
+  direction tests.
+- Added package/reference documentation and archived the change at
+  `openspec/changes/archive/2026-09-08-platform-billing-provider-adapters/` with synchronized
+  `openspec/specs/platform-billing-provider-adapters/spec.md`.
+
+Verification evidence:
+
+- `/home/paul/.dotnet/dotnet restore Platform.sln --ignore-failed-sources -p:NuGetAudit=false --nologo -m:1` — succeeded.
+- `/home/paul/.dotnet/dotnet build Platform.sln -c Release --no-restore --nologo -m:1` — 0 warnings, 0 errors.
+- `/home/paul/.dotnet/dotnet test Platform.sln -c Release --no-build --no-restore --nologo -m:1` — 457 tests passed, 0 failed, 0 skipped.
+- Adapter package pack commands for `Platform.Billing.Stripe` and `Platform.Billing.LemonSqueezy` — both succeeded.
+- `openspec validate --changes --strict --no-interactive` — 5 passed, 0 failed before archive; `openspec validate --specs --strict --no-interactive` — 15 passed, 0 failed after archive.
+- Scoped `dotnet format --verify-no-changes --no-restore` for both adapter projects and the adapter test project — clean.
+- Repository-wide `dotnet format Platform.sln --verify-no-changes --no-restore --verbosity minimal` remains blocked by pre-existing whitespace findings in `src/Platform.AspNetCore/DependencyInjection/ServiceCollectionExtensions.cs` and `tests/Platform.Identity.Tests/IdentityAspNetCoreTests.cs`, plus the known xUnit2013 warning in `tests/Platform.Testing.Tests/Usage/RecordingUsageMeterTests.cs`; these files were not changed.
+- `git diff --check` and cached diff check — clean for the scoped change.
+- Implementation commit: `355b96b` (`Implement billing provider adapters`).
+
+## Next change
+
+`platform-application-starter` is the next active change returned by `openspec list`. Implement
+only that change in the next cycle.
+
 ## Completed: platform-billing-provider-abstractions
 
 - Extended billing contracts with provider-neutral checkout, portal, subscription lookup,
