@@ -11,6 +11,7 @@ public class DependencyDirectionTests
         "src/Platform.Core/Platform.Core.csproj",
         "src/Platform.AspNetCore/Platform.AspNetCore.csproj",
         "src/Platform.Billing.Contracts/Platform.Billing.Contracts.csproj",
+        "src/Platform.Eventing/Platform.Eventing.csproj",
         "src/Platform.Jobs/Platform.Jobs.csproj",
         "src/Platform.Mailing/Platform.Mailing.csproj",
         "src/Platform.Testing/Platform.Testing.csproj",
@@ -64,6 +65,18 @@ public class DependencyDirectionTests
     };
 
     private static readonly string[] ForbiddenMailingProjectSegments =
+    {
+        "VisualFlow",
+    };
+
+    private static readonly string[] ForbiddenEventingPackagePrefixes =
+    {
+        "Microsoft.AspNetCore",
+        "Microsoft.EntityFrameworkCore",
+        "RabbitMQ",
+    };
+
+    private static readonly string[] ForbiddenEventingProjectSegments =
     {
         "VisualFlow",
     };
@@ -271,6 +284,53 @@ public class DependencyDirectionTests
         Assert.True(
             violations.Length == 0,
             "Platform.Mailing must not reference VisualFlow projects but references: " + string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void Platform_Eventing_does_not_reference_forbidden_packages()
+    {
+        var packages = ReadPackageReferences("src/Platform.Eventing/Platform.Eventing.csproj");
+        var violations = packages
+            .Where(p => ForbiddenEventingPackagePrefixes.Any(prefix =>
+                p.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
+            .ToArray();
+
+        Assert.True(
+            violations.Length == 0,
+            "Platform.Eventing must not reference forbidden packages but references: " + string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void Platform_Eventing_only_references_Platform_Core()
+    {
+        var references = ReadProjectReferences("src/Platform.Eventing/Platform.Eventing.csproj");
+
+        Assert.True(
+            references.Length == 1 && references[0].Equals("Platform.Core", StringComparison.OrdinalIgnoreCase),
+            "Platform.Eventing must reference only Platform.Core but references: " + string.Join(", ", references));
+    }
+
+    [Fact]
+    public void Platform_Eventing_does_not_reference_visual_flow_projects()
+    {
+        var fullPath = Path.Combine(RepositoryRoot, "src/Platform.Eventing/Platform.Eventing.csproj");
+        var document = XDocument.Load(fullPath);
+
+        var projectReferences = document
+            .Descendants()
+            .Where(e => string.Equals(e.Name.LocalName, "ProjectReference", StringComparison.OrdinalIgnoreCase))
+            .Select(e => e.Attribute("Include")?.Value ?? string.Empty)
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .ToArray();
+
+        var violations = projectReferences
+            .Where(reference => ForbiddenEventingProjectSegments.Any(segment =>
+                reference.Contains(segment, StringComparison.OrdinalIgnoreCase)))
+            .ToArray();
+
+        Assert.True(
+            violations.Length == 0,
+            "Platform.Eventing must not reference VisualFlow projects but references: " + string.Join(", ", violations));
     }
 
     private static string LocateRepositoryRoot()
