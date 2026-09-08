@@ -1,12 +1,30 @@
 # Handoff
 
+## Completed: platform-identity-authorization
+
+- Added provider-neutral identity contracts for current users, credentials, external identities, verification, sessions, provider status, and security-sensitive audit hooks.
+- Added `Platform.Authorization` permission definitions/catalogs and authorization decision contracts; consuming modules own product permissions and roles.
+- Added `Platform.Identity.AspNetCore` authentication scheme ownership, claims projection, current-user accessor, permission policies, and replaceable registration helpers.
+- Added optional `Platform.Identity.EntityFrameworkCore` store contracts/adapters and deterministic `Platform.Identity.Testing` fake providers.
+- Added identity contract, provider-failure, authorization, audit-hook, and architecture tests plus `docs/platform-identity.md`.
+- Archived the completed change at `openspec/changes/archive/2026-09-08-platform-identity-authorization/` and synchronized `openspec/specs/platform-identity-authorization/spec.md`.
+
+Verification evidence:
+
+- `dotnet build Platform.sln -c Release --nologo -m:1` — 0 warnings, 0 errors.
+- `dotnet test Platform.sln -c Release --nologo --no-build` — 411 tests passed, 0 failed, 0 skipped.
+- `dotnet pack src/Platform.Identity.AspNetCore/Platform.Identity.AspNetCore.csproj -c Release --no-restore --nologo -m:1` — produced `Platform.Identity.AspNetCore.0.1.0.nupkg`.
+- `dotnet pack ... --no-build --no-restore` also reproduced an SDK 10.0.400 failure inside `_GetFrameworkAssemblyReferences` with no diagnostic; the normal pack path rebuilt project references and completed successfully.
+- `openspec validate --changes --strict --no-interactive` — 8 passed, 0 failed before archive.
+- `git diff --check` and `git diff --cached --check` — clean.
+
 ## Current state
 
-Phase 4 changes `platform-web-runtime-foundation` and `platform-persistence-efcore` are implemented and archived. The repository now ships `Platform.Web` as an opt-in runtime layer over `Platform.AspNetCore`, plus optional provider-neutral EF Core persistence conventions and a separate PostgreSQL adapter. Persistence provides explicit audit, soft-delete, tenant-filter, paging, specification, migration-status, and readiness seams; it does not own application entities, contexts, migrations, tenant types, or business filters.
+Phase 4 changes `platform-web-runtime-foundation`, `platform-persistence-efcore`, and `platform-identity-authorization` are implemented and archived. The repository now ships `Platform.Web` as an opt-in runtime layer over `Platform.AspNetCore`, optional provider-neutral EF Core persistence conventions, a separate PostgreSQL adapter, and replaceable identity/authorization packages. Persistence and identity do not own application entities, contexts, migrations, tenant types, product roles, or business permissions.
 
 ## Next change
 
-`platform-identity-authorization` is the next dependency-ordered active change. Eight Phase 4 changes remain active; implement only one change per cycle.
+`platform-application-starter` is the next active change returned by `openspec list`. Seven Phase 4 changes remain active; implement only one change per cycle.
 
 ## Completed: platform-persistence-efcore
 
