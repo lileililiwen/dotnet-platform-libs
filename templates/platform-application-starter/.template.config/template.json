@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Platform Team",
+  "classifications": ["Web", "ASP.NET Core", "Platform"],
+  "identity": "Platform.ApplicationStarter",
+  "name": "Platform application starter",
+  "shortName": "platform-app",
+  "sourceName": "StarterApp",
+  "preferNameDirectory": true,
+  "symbols": {
+    "client": {
+      "type": "parameter",
+      "datatype": "string",
+      "defaultValue": "razor",
+      "replaces": "__CLIENT__"
+    }
+  }
+}
