@@ -1,6 +1,6 @@
 # Roadmap
 
-The roadmap is organized into three phases. Items marked **Done** are implemented, archived, and have generated capability specs in `openspec/specs/`.
+The roadmap is organized into four phases. Items marked **Done** are implemented, archived, and have generated capability specs in `openspec/specs/`.
 
 ## Phase 1: Foundation — Done
 
@@ -31,10 +31,47 @@ The roadmap is organized into three phases. Items marked **Done** are implemente
 - automatic synchronization of every application to the newest package version;
 - application-specific backends for the new framework-neutral packages (Hangfire/Quartz, SendGrid/Mailgun/SMTP, RabbitMQ/Service Bus, Redis/Postgres idempotency, Redis rate-limit).
 
+## Phase 4: Application platform roadmap — Done
+
+The next phase turns the current capability packages into a coherent, Spring-Boot-like
+application platform for independent demo and development products. Each item is an
+independently adoptable OpenSpec change; implementation still proceeds one active change
+at a time.
+
+11. `platform-web-runtime-foundation` — shared configuration validation, security headers, observability, request limits, and a consistent web bootstrap. **Done**
+12. `platform-persistence-efcore` — optional EF Core persistence conventions, migrations/readiness helpers, auditing, soft-delete, pagination, and specifications. **Done**
+13. `platform-identity-authorization` — replaceable identity contracts, current-user context, provider seams, permission catalog, policy helpers, and test doubles. **Done**
+14. `platform-admin-capability` — reusable user, role, permission, session, audit, provider-health, and subscription overview contracts/endpoints. **Done**
+15. `platform-billing-provider-abstractions` — normalized subscription, checkout, portal, webhook, entitlement, usage, and provider-event orchestration contracts. **Done**
+16. `platform-billing-provider-adapters` — optional Stripe and Lemon Squeezy adapters with signature verification, normalization, idempotency, and provider health. **Done**
+17. `platform-ai-provider-abstractions` — provider-neutral generation, structured output, streaming, embeddings, usage, cost, policy, safe failures, adapters, and deterministic testing. **Done**
+18. `platform-notifications-sms` — notification intent, SMS contracts, provider-neutral delivery results, test adapters, and retry/failure semantics. **Done**
+19. `platform-ui-design-system` — shared design tokens, Razor web assets, accessible state components, API client conventions, and admin/dashboard shell contracts. **Done**
+20. `platform-application-starter` — composite application bootstrap, project template, sample host, configuration defaults, and adoption guides. **Done**
+
+### Phase 4 dependency order
+
+`platform-web-runtime-foundation` → `platform-persistence-efcore` →
+`platform-identity-authorization` → `platform-admin-capability` →
+`platform-billing-provider-abstractions` → `platform-billing-provider-adapters`.
+
+`platform-ai-provider-abstractions`, `platform-notifications-sms`, and
+`platform-ui-design-system` can begin after the web/runtime contracts are stable.
+`platform-application-starter` is intentionally last because it composes the earlier
+capabilities and must not become a second monolithic starter-kit architecture.
+
+### Phase 4 non-goals
+
+- no shared product-domain entities, invoice rules, plan names, prompts, or business permissions;
+- no mandatory EF Core, PostgreSQL, Redis, Hangfire, Stripe, Lemon Squeezy, OpenAI, Claude, or SMS dependency in the base packages;
+- no separately deployed platform service;
+- no forced migration of every application;
+- no promise that React and Razor share implementation code; they share tokens, contracts, and interaction semantics.
+
 ## Status summary
 
 - Active changes: none (`openspec list` is empty).
-- Archived changes: ten (see `openspec/changes/archive/`).
-- Generated specs: ten (see `openspec/specs/`).
-- Production packages: eight (`Platform.Core`, `Platform.AspNetCore`, `Platform.Billing.Contracts`, `Platform.Jobs`, `Platform.Mailing`, `Platform.Eventing`, `Platform.Idempotency`, `Platform.RateLimiting`) plus the test-only `Platform.Testing`.
-- Tests: 354 passing across nine test projects (`Platform.Architecture.Tests`, `Platform.Core.Tests`, `Platform.AspNetCore.Tests`, `Platform.Billing.Contracts.Tests`, `Platform.Jobs.Tests`, `Platform.Mailing.Tests`, `Platform.Eventing.Tests`, `Platform.Idempotency.Tests`, `Platform.RateLimiting.Tests`, `Platform.Testing.Tests`).
+- Archived changes: twenty (see `openspec/changes/archive/`).
+- Generated specs: nineteen (see `openspec/specs/`).
+- Source projects: thirty production/adaptor projects plus six testing-support projects, including the AI packages described in `docs/platform-ai.md`.
+- Tests: 484 passing across 22 test projects.
