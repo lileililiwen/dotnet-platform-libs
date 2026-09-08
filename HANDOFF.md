@@ -1,5 +1,35 @@
 # Handoff
 
+## Completed: platform-caching
+
+- Added `Platform.Caching` with provider-neutral async cache contracts, explicit hit/miss/
+  unavailable results, absolute expiration, tag invalidation, tenant/application key builders,
+  safe provider status, stable telemetry names, and a thread-safe `IClock`-driven in-memory store.
+- Added optional `Platform.Caching.Hybrid` and `Platform.Caching.Redis` packages. HybridCache stays
+  isolated to its adapter; Redis uses application-owned serialization, bounded operation waits,
+  tag sets, and redacted transient failure results.
+- Added `Contracts`, `Keys`, `Telemetry`, and `DependencyInjection` organization inside the base
+  package, adapter architecture guards, cache/starter/sample documentation, and hit/miss,
+  expiry, tag invalidation, DI, and unavailable-backend tests.
+- Archived the completed change at
+  `openspec/changes/archive/2026-09-08-platform-caching/`. No main spec existed to synchronize.
+
+Verification evidence:
+
+- `/home/paul/.dotnet/dotnet restore Platform.sln --ignore-failed-sources -p:NuGetAudit=false --nologo -m:1` — succeeded.
+- `/home/paul/.dotnet/dotnet build Platform.sln -c Release --no-restore --nologo -m:1` — succeeded; the existing `Platform.Testing.Tests` xUnit2013 warning remains.
+- `/home/paul/.dotnet/dotnet test Platform.sln -c Release --no-build --no-restore --nologo -m:1` — 529 tests passed, 0 failed, 0 skipped.
+- `/home/paul/.dotnet/dotnet pack Platform.sln -c Release --no-build --no-restore --nologo -m:1` — succeeded; caching packages were produced and the existing non-packable sample warning remains.
+- Targeted caching suites — 8 passed, 0 failed, 0 skipped; `Platform.Architecture.Tests` — 146 passed, 0 failed.
+- `openspec validate --changes --strict --no-interactive` — 4 passed, 0 failed after archive.
+- `git diff --check` — clean before commit.
+- Implementation commit: `6f35f56` (`Implement shared caching adapters`).
+
+## Next change
+
+`platform-storage` is the next active change in the shared-platform dependency order. Implement
+only that change in the next cycle.
+
 ## Completed: platform-durable-eventing
 
 - Added framework-neutral `Platform.Eventing.Contracts` outbox/inbox envelopes, state
