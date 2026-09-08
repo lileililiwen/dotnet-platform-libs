@@ -1,5 +1,36 @@
 # Handoff
 
+## Completed: platform-quota
+
+- Added `Platform.Quota` with opaque subject/resource identifiers, explicit UTC windows,
+  explanatory check decisions, bounded options, reservation/settlement/release lifecycle
+  outcomes, and idempotent operation keys.
+- Added a thread-safe `IClock`-driven in-memory store with atomic reservation capacity checks,
+  expiration, safe invalid-transition outcomes, snapshots, and deterministic inspection helpers.
+- Added the optional entitlement-to-limit resolver seam without importing plan, invoice, wallet,
+  persistence, or provider entities. Added `Platform.Quota.Testing` scenario builders and kept
+  package folders organized as `Contracts`, `Stores`, `Evaluation`, and `DependencyInjection`.
+- Added quota tests, architecture guards, package/starter/sample documentation, and archived the
+  completed change at `openspec/changes/archive/2026-09-09-platform-quota/`. No main spec existed
+  to synchronize. No billing plans, migrations, ledgers, or product persistence were included.
+
+Verification evidence:
+
+- `/home/paul/.dotnet/dotnet restore Platform.sln --ignore-failed-sources -p:NuGetAudit=false --nologo -m:1` — succeeded.
+- `/home/paul/.dotnet/dotnet build Platform.sln -c Release --no-restore --nologo -m:1` — succeeded; the existing `Platform.Testing.Tests` xUnit2013 warning remains.
+- `/home/paul/.dotnet/dotnet test Platform.sln -c Release --no-build --no-restore --nologo -m:1` — 559 tests passed, 0 failed, 0 skipped.
+- `/home/paul/.dotnet/dotnet test tests/Platform.Quota.Tests/Platform.Quota.Tests.csproj --no-restore --nologo -m:1` — 5 passed, 0 failed, 0 skipped.
+- `Platform.Architecture.Tests` — 166 passed, 0 failed, 0 skipped.
+- `/home/paul/.dotnet/dotnet pack Platform.sln -c Release --no-build --no-restore --nologo -m:1` — succeeded; `Platform.Quota` and `Platform.Quota.Testing` packages were produced and the existing non-packable sample warning remains.
+- `openspec validate --changes --strict --no-interactive` — 2 passed, 0 failed after archive.
+- `git diff --check` — clean before commit.
+- Implementation commit: `35d407b` (`Implement shared quota lifecycle`).
+
+## Next change
+
+`platform-webhooks` is the next active change in the shared-platform dependency order. Implement
+only that change in the next cycle.
+
 ## Completed: platform-storage
 
 - Added `Platform.Storage` with provider-neutral object lifecycle contracts, validated object keys,
