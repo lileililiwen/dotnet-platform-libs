@@ -32,6 +32,12 @@ public class DependencyDirectionTests
         "src/Platform.Billing.Testing/Platform.Billing.Testing.csproj",
         "src/Platform.Billing.Stripe/Platform.Billing.Stripe.csproj",
         "src/Platform.Billing.LemonSqueezy/Platform.Billing.LemonSqueezy.csproj",
+        "src/Platform.Ai.Contracts/Platform.Ai.Contracts.csproj",
+        "src/Platform.Ai/Platform.Ai.csproj",
+        "src/Platform.Ai.Testing/Platform.Ai.Testing.csproj",
+        "src/Platform.Ai.OpenAiCompatible/Platform.Ai.OpenAiCompatible.csproj",
+        "src/Platform.Ai.Anthropic/Platform.Ai.Anthropic.csproj",
+        "src/Platform.Ai.Ollama/Platform.Ai.Ollama.csproj",
     };
 
     private static readonly string[] TestOnlyAssemblyNames =
@@ -48,6 +54,8 @@ public class DependencyDirectionTests
         "Platform.Admin.Tests",
         "Platform.Billing.Tests",
         "Platform.Billing.ProviderAdapters.Tests",
+        "Platform.Ai.Tests",
+        "Platform.Ai.Adapter.Tests",
     };
 
     private static readonly string[] FrameworkIndependentProjects =

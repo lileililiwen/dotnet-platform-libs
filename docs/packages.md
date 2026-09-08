@@ -108,6 +108,17 @@ Provider-neutral subscription and entitlement contracts. Zero third-party depend
 - `ProviderFailureClassifier` and `ProviderFailure` — safe transient, permanent, configuration,
   authentication, and malformed-response categories without secrets or response bodies.
 
+## Platform.Ai
+
+`Platform.Ai.Contracts` provides provider-neutral generation, streaming, structured-output,
+embedding, usage, cost, capability, policy, and failure contracts without provider references.
+`Platform.Ai` provides policy-gated generation and single- or feature-based routing with safe
+telemetry. `Platform.Ai.Testing` provides deterministic fakes and usage recording.
+
+The optional `Platform.Ai.OpenAiCompatible`, `Platform.Ai.Anthropic`, and `Platform.Ai.Ollama`
+packages use raw HTTP only. OpenAI-compatible configuration also supports DeepSeek endpoint
+selection. See [`docs/platform-ai.md`](platform-ai.md) for data-handling and adoption rules.
+
 ## Platform.Jobs
 
 Engine-neutral scheduling contract. Depends on `Platform.Core`, `Microsoft.Extensions.Options`, and `Microsoft.Extensions.DependencyInjection.Abstractions`; targets `net8.0`. Does not reference ASP.NET Core, EF Core, Hangfire, Quartz, or application projects.
