@@ -417,3 +417,11 @@ retaining independent implementations.
 bounded retries, idempotency integration, and job scheduling helpers. `Platform.Notifications.Testing`
 contains the deterministic in-memory provider. Providers and templates remain application-owned;
 see [`platform-notifications.md`](platform-notifications.md).
+
+# Platform.Webhooks
+
+`Platform.Webhooks.Contracts` provides provider-neutral inbound verification, replay
+suppression, outbound subscriptions, delivery attempts, retry options, and safe failure
+metadata. `Platform.Webhooks.AspNetCore` adds the `HttpRequest` reader and a default
+`HttpClient`-backed sender. `Platform.Webhooks.EfCore` exposes inbox and delivery entity
+configurations for the application's `DbContext`. See [`platform-webhooks.md`](platform-webhooks.md).

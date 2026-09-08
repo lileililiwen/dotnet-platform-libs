@@ -48,6 +48,9 @@ public class DependencyDirectionTests
         "src/Platform.Ai.OpenAiCompatible/Platform.Ai.OpenAiCompatible.csproj",
         "src/Platform.Ai.Anthropic/Platform.Ai.Anthropic.csproj",
         "src/Platform.Ai.Ollama/Platform.Ai.Ollama.csproj",
+        "src/Platform.Webhooks.Contracts/Platform.Webhooks.Contracts.csproj",
+        "src/Platform.Webhooks.AspNetCore/Platform.Webhooks.AspNetCore.csproj",
+        "src/Platform.Webhooks.EfCore/Platform.Webhooks.EfCore.csproj",
     };
 
     private static readonly string[] TestOnlyAssemblyNames =
@@ -72,6 +75,7 @@ public class DependencyDirectionTests
         "Platform.Billing.ProviderAdapters.Tests",
         "Platform.Ai.Tests",
         "Platform.Ai.Adapter.Tests",
+        "Platform.Webhooks.Tests",
     };
 
     private static readonly string[] FrameworkIndependentProjects =
@@ -153,6 +157,17 @@ public class DependencyDirectionTests
         "VisualFlow",
     };
 
+    private static readonly string[] ForbiddenWebhooksContractsPackagePrefixes =
+    {
+        "Microsoft.AspNetCore",
+        "Microsoft.EntityFrameworkCore",
+    };
+
+    private static readonly string[] ForbiddenWebhooksAspNetCoreProjectSegments =
+    {
+        "VisualFlow",
+    };
+
     private static readonly string[] ForbiddenPersistenceEfCorePackagePrefixes =
     {
         "Microsoft.AspNetCore",
@@ -195,6 +210,7 @@ public class DependencyDirectionTests
             || relativePath.Contains("Persistence.Postgres", StringComparison.OrdinalIgnoreCase)
             || relativePath.Contains("Identity.EntityFrameworkCore", StringComparison.OrdinalIgnoreCase)
             || relativePath.Contains("Eventing.EfCore", StringComparison.OrdinalIgnoreCase)
+            || relativePath.Contains("Webhooks.EfCore", StringComparison.OrdinalIgnoreCase)
             || relativePath.Contains("Caching.Hybrid", StringComparison.OrdinalIgnoreCase)
             || relativePath.Contains("Caching.Redis", StringComparison.OrdinalIgnoreCase))
             return;
@@ -376,7 +392,8 @@ public class DependencyDirectionTests
             if (project.EndsWith("Platform.AspNetCore.csproj", StringComparison.OrdinalIgnoreCase)
                 || project.EndsWith("Platform.Web.csproj", StringComparison.OrdinalIgnoreCase)
                 || project.EndsWith("Platform.Identity.AspNetCore.csproj", StringComparison.OrdinalIgnoreCase)
-                || project.EndsWith("Platform.Admin.AspNetCore.csproj", StringComparison.OrdinalIgnoreCase))
+                || project.EndsWith("Platform.Admin.AspNetCore.csproj", StringComparison.OrdinalIgnoreCase)
+                || project.EndsWith("Platform.Webhooks.AspNetCore.csproj", StringComparison.OrdinalIgnoreCase))
             {
                 Assert.True(
                     references.Length == 1 && references[0].Equals("Microsoft.AspNetCore.App", StringComparison.OrdinalIgnoreCase),
@@ -719,6 +736,50 @@ public class DependencyDirectionTests
         Assert.True(
             violations.Length == 0,
             "Platform.RateLimiting must not reference VisualFlow projects but references: " + string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void Platform_Webhooks_Contracts_does_not_reference_forbidden_packages()
+    {
+        var path = "src/Platform.Webhooks.Contracts/Platform.Webhooks.Contracts.csproj";
+        var packages = ReadPackageReferences(path);
+        var violations = packages
+            .Where(p => ForbiddenWebhooksContractsPackagePrefixes.Any(prefix =>
+                p.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
+            .ToArray();
+        Assert.True(
+            violations.Length == 0,
+            "Platform.Webhooks.Contracts must not reference forbidden packages but references: " + string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void Platform_Webhooks_Contracts_only_references_Platform_Core()
+    {
+        var path = "src/Platform.Webhooks.Contracts/Platform.Webhooks.Contracts.csproj";
+        Assert.Equal(["Platform.Core"], ReadProjectReferences(path));
+    }
+
+    [Fact]
+    public void Platform_Webhooks_AspNetCore_does_not_reference_visual_flow_projects()
+    {
+        var fullPath = Path.Combine(RepositoryRoot, "src/Platform.Webhooks.AspNetCore/Platform.Webhooks.AspNetCore.csproj");
+        var document = XDocument.Load(fullPath);
+
+        var projectReferences = document
+            .Descendants()
+            .Where(e => string.Equals(e.Name.LocalName, "ProjectReference", StringComparison.OrdinalIgnoreCase))
+            .Select(e => e.Attribute("Include")?.Value ?? string.Empty)
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .ToArray();
+
+        var violations = projectReferences
+            .Where(reference => ForbiddenWebhooksAspNetCoreProjectSegments.Any(segment =>
+                reference.Contains(segment, StringComparison.OrdinalIgnoreCase)))
+            .ToArray();
+
+        Assert.True(
+            violations.Length == 0,
+            "Platform.Webhooks.AspNetCore must not reference VisualFlow projects but references: " + string.Join(", ", violations));
     }
 
     private static string LocateRepositoryRoot()
