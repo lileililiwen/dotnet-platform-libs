@@ -327,3 +327,29 @@ Verification evidence:
 
 `platform-ui-design-system` is the next active change returned by `openspec list`. Implement
 only that change in the next cycle.
+# Completed: platform-ui-design-system
+
+- Added DTCG-compatible token source and generated semantic CSS/TypeScript outputs with light,
+  dark, reduced-motion, focus, spacing, typography, and state tokens.
+- Added ignored-path-safe `@platform/react-ui` primitives/state components and
+  `@platform/react-shell` navigation/auth/permission contracts without copying application
+  pages.
+- Added `Platform.UI.Razor` static web assets, equivalent state conventions, package tests, and
+  solution integration. Added token/component verification scripts and adoption documentation.
+- Archived the change at
+  `openspec/changes/archive/2026-09-08-platform-ui-design-system/` with synchronized
+  `openspec/specs/platform-ui-design-system/spec.md`.
+
+Verification evidence:
+
+- `/home/paul/.dotnet/dotnet restore Platform.sln --ignore-failed-sources -p:NuGetAudit=false --nologo -m:1` — succeeded.
+- `/home/paul/.dotnet/dotnet build Platform.sln -c Release --no-restore --nologo -m:1` — 0 errors; one pre-existing xUnit2013 warning in `Platform.Testing.Tests`.
+- `/home/paul/.dotnet/dotnet test Platform.sln -c Release --no-build --no-restore --nologo -m:1` — 464 tests passed, 0 failed, 0 skipped.
+- `node ui/scripts/generate-tokens.mjs`, `node ui/scripts/verify-ui.mjs`, and React UI component contract tests — passed.
+- `Platform.UI.Razor` pack succeeded; `openspec validate --changes --strict --no-interactive` — 3 passed, 0 failed; `git diff --check` — clean.
+- Implementation commit: `7320bd0` (`Implement platform UI design system`).
+
+## Next change
+
+`platform-notifications-sms` is the next active change returned by `openspec list`. Implement
+only that change in the next cycle.
