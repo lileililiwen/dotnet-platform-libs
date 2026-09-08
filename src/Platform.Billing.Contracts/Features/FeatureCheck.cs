@@ -20,6 +20,13 @@ public static class FeatureCheck
     public static FeatureCheckResult Evaluate(Entitlement entitlement, FeatureKey feature)
     {
         ArgumentNullException.ThrowIfNull(entitlement);
+        return Evaluate(entitlement, feature, entitlement.CapturedAt);
+    }
+
+    /// <summary>Evaluates a snapshot at an explicit instant.</summary>
+    public static FeatureCheckResult Evaluate(Entitlement entitlement, FeatureKey feature, DateTimeOffset now)
+    {
+        ArgumentNullException.ThrowIfNull(entitlement);
 
         if (entitlement.Subject.IsAnonymous)
         {
@@ -29,6 +36,11 @@ public static class FeatureCheck
         if (entitlement.Subscription is null || !entitlement.Subscription.IsActive)
         {
             return Denied(feature, FeatureCheckReason.NotSubscribed);
+        }
+
+        if (!entitlement.Subscription.IsWithinPeriod(now))
+        {
+            return Denied(feature, FeatureCheckReason.Expired);
         }
 
         return entitlement.Grants(feature)

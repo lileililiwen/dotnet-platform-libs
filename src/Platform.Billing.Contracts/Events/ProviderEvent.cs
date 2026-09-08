@@ -12,9 +12,11 @@ namespace Platform.Billing.Contracts.Events;
 /// <param name="Type">The application-defined event type, such as <c>subscription.updated</c>.</param>
 /// <param name="OccurredAt">The UTC time the provider recorded for the event.</param>
 /// <param name="Payload">The opaque provider-specific payload. The platform does not inspect the contents.</param>
+/// <param name="Subject">The normalized subject when the provider event identifies one.</param>
 public sealed record ProviderEvent(
     ProviderEventId Id,
     ProviderName Provider,
     string Type,
     DateTimeOffset OccurredAt,
-    string Payload);
+    string Payload,
+    SubjectKey? Subject = null);

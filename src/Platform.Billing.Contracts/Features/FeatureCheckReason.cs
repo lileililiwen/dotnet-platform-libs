@@ -36,6 +36,9 @@ public enum FeatureCheckReason
     /// </summary>
     LimitExceeded = 4,
 
+    /// <summary>The subscription period has expired.</summary>
+    Expired = 5,
+
     /// <summary>
     /// The entitlement state could not be determined. Consumers
     /// should treat the result as deny and may surface a

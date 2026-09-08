@@ -28,6 +28,8 @@ public class DependencyDirectionTests
         "src/Platform.Admin.Contracts/Platform.Admin.Contracts.csproj",
         "src/Platform.Admin.AspNetCore/Platform.Admin.AspNetCore.csproj",
         "src/Platform.Admin.Testing/Platform.Admin.Testing.csproj",
+        "src/Platform.Billing/Platform.Billing.csproj",
+        "src/Platform.Billing.Testing/Platform.Billing.Testing.csproj",
     };
 
     private static readonly string[] TestOnlyAssemblyNames =
@@ -42,6 +44,7 @@ public class DependencyDirectionTests
         "Platform.Persistence.Postgres.Tests",
         "Platform.Identity.Tests",
         "Platform.Admin.Tests",
+        "Platform.Billing.Tests",
     };
 
     private static readonly string[] FrameworkIndependentProjects =
@@ -290,6 +293,24 @@ public class DependencyDirectionTests
     {
         var references = ReadProjectReferences("src/Platform.Admin.Testing/Platform.Admin.Testing.csproj");
         Assert.Equal(["Platform.Admin.Contracts"], references);
+    }
+
+    [Fact]
+    public void Platform_Billing_only_references_core_and_billing_contracts()
+    {
+        var references = ReadProjectReferences("src/Platform.Billing/Platform.Billing.csproj");
+        Assert.Equal(2, references.Length);
+        Assert.Contains("Platform.Core", references, StringComparer.OrdinalIgnoreCase);
+        Assert.Contains("Platform.Billing.Contracts", references, StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Platform_Billing_Testing_references_only_public_billing_contracts_and_core()
+    {
+        var references = ReadProjectReferences("src/Platform.Billing.Testing/Platform.Billing.Testing.csproj");
+        Assert.Equal(2, references.Length);
+        Assert.Contains("Platform.Core", references, StringComparer.OrdinalIgnoreCase);
+        Assert.Contains("Platform.Billing.Contracts", references, StringComparer.OrdinalIgnoreCase);
     }
 
     [Fact]
