@@ -19,6 +19,8 @@ This repository is a platform library, not a replacement for every application's
 | `Platform.Idempotency` | Production | `Platform.Core` | Framework-neutral idempotency contract: `IdempotencyRecord`, `IIdempotencyStore`, `InMemoryIdempotencyStore`, `RequestFingerprint` (stable SHA-256 over method/route/body-hash), `IdempotencyOptions` (with documented metric-name constants), `IdempotencyMetrics`, and `AddPlatformIdempotency` opt-in registration (no-op when `Enabled` is `false`). |
 | `Platform.RateLimiting` | Production | `Platform.Core` | Framework-neutral rate-limit contract: `IRateLimiter`, `InMemoryRateLimiter` (per-key windowed counter), `RateLimitDecision`, `RateLimitKey`, `RateLimitPolicies` (documented default catalog), `IRateLimitBypassResolver`, `IRateLimiterBackendStatusProvider`, `RateLimitingOptions`, and `AddPlatformRateLimiting` opt-in registration. |
 | `Platform.Testing` | Test-only | `Platform.Core`, `Platform.AspNetCore`, `Platform.Billing.Contracts` | Deterministic test doubles: `ControllableClock`, `SubscriptionBuilder`, `EntitlementBuilder`, `FakeEntitlementStore`, `RecordingUsageMeter`. Production projects must not reference this package. |
+| `Platform.Billing.Stripe` | Optional production adapter | `Platform.Billing` | Raw-HTTP Stripe checkout, portal, subscription lookup, webhook verification/normalization, and status. |
+| `Platform.Billing.LemonSqueezy` | Optional production adapter | `Platform.Billing` | Raw-HTTP Lemon Squeezy checkout, subscription lookup, webhook verification/normalization, and status. |
 
 Product-specific EF Core entities, migrations, Stripe price IDs, invoice rules, plan names, and business workflows remain in consuming applications.
 

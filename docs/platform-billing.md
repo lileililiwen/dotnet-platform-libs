@@ -25,3 +25,17 @@ the durable processed-event and entitlement schemas by implementing the public i
 `Platform.Billing.Testing` provides deterministic in-memory entitlement, usage, and provider
 fakes. Persistent stores and concrete provider adapters are intentionally deferred to separate
 changes.
+
+## Optional provider adapters
+
+`Platform.Billing.Stripe` and `Platform.Billing.LemonSqueezy` are opt-in raw-HTTP adapters.
+Register them explicitly with `AddPlatformStripe` or `AddPlatformLemonSqueezy`, and provide
+application-owned `PlanCatalog` mappings for provider price or variant identifiers. Webhook
+handlers pass the raw body and provider headers to `VerifyAndNormalizeWebhookAsync` before
+calling `BillingEventOrchestrator`. Stripe uses `Stripe-Signature`; Lemon Squeezy uses
+`X-Signature`. Invalid or malformed signatures never produce an event.
+
+Both adapters expose `GetStatusAsync`. Missing credentials report `not_configured`; credentials
+and response bodies are excluded from diagnostics. `ProviderFailureClassifier` classifies network
+and timeout failures as transient. Tests can use a custom `HttpMessageHandler` and fake secrets,
+so local development does not require provider accounts or live credentials.

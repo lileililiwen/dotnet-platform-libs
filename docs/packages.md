@@ -98,6 +98,16 @@ Provider-neutral subscription and entitlement contracts. Zero third-party depend
 - `ProcessedEventDecision` enum — `FirstDelivery`, `Duplicate`.
 - `IProcessedEventStore` — `MarkProcessedAsync(processedEvent, cancellationToken)` returns the idempotency decision.
 
+## Platform.Billing provider adapters
+
+- `Platform.Billing.Stripe` — optional raw-HTTP Stripe adapter with application-owned plan
+  mapping, checkout, portal, subscription lookup, webhook verification/normalization, and status.
+- `Platform.Billing.LemonSqueezy` — optional raw-HTTP Lemon Squeezy adapter with checkout,
+  subscription lookup, webhook verification/normalization, and status. Its unsupported portal
+  and cancellation operations are explicit.
+- `ProviderFailureClassifier` and `ProviderFailure` — safe transient, permanent, configuration,
+  authentication, and malformed-response categories without secrets or response bodies.
+
 ## Platform.Jobs
 
 Engine-neutral scheduling contract. Depends on `Platform.Core`, `Microsoft.Extensions.Options`, and `Microsoft.Extensions.DependencyInjection.Abstractions`; targets `net8.0`. Does not reference ASP.NET Core, EF Core, Hangfire, Quartz, or application projects.

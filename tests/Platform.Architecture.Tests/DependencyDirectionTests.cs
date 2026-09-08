@@ -30,6 +30,8 @@ public class DependencyDirectionTests
         "src/Platform.Admin.Testing/Platform.Admin.Testing.csproj",
         "src/Platform.Billing/Platform.Billing.csproj",
         "src/Platform.Billing.Testing/Platform.Billing.Testing.csproj",
+        "src/Platform.Billing.Stripe/Platform.Billing.Stripe.csproj",
+        "src/Platform.Billing.LemonSqueezy/Platform.Billing.LemonSqueezy.csproj",
     };
 
     private static readonly string[] TestOnlyAssemblyNames =
@@ -45,6 +47,7 @@ public class DependencyDirectionTests
         "Platform.Identity.Tests",
         "Platform.Admin.Tests",
         "Platform.Billing.Tests",
+        "Platform.Billing.ProviderAdapters.Tests",
     };
 
     private static readonly string[] FrameworkIndependentProjects =
@@ -168,6 +171,8 @@ public class DependencyDirectionTests
             || relativePath.Contains("Persistence.Postgres", StringComparison.OrdinalIgnoreCase)
             || relativePath.Contains("Identity.EntityFrameworkCore", StringComparison.OrdinalIgnoreCase))
             return;
+        if (relativePath.Contains("Billing.Stripe", StringComparison.OrdinalIgnoreCase)
+            || relativePath.Contains("Billing.LemonSqueezy", StringComparison.OrdinalIgnoreCase)) return;
         var packages = ReadPackageReferences(relativePath);
         var violations = packages
             .Where(p => ForbiddenProductionPackagePrefixes.Any(prefix =>
@@ -311,6 +316,15 @@ public class DependencyDirectionTests
         Assert.Equal(2, references.Length);
         Assert.Contains("Platform.Core", references, StringComparer.OrdinalIgnoreCase);
         Assert.Contains("Platform.Billing.Contracts", references, StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Theory]
+    [InlineData("src/Platform.Billing.Stripe/Platform.Billing.Stripe.csproj")]
+    [InlineData("src/Platform.Billing.LemonSqueezy/Platform.Billing.LemonSqueezy.csproj")]
+    public void Billing_provider_adapters_reference_only_platform_billing(string relativePath)
+    {
+        Assert.Equal(["Platform.Billing"], ReadProjectReferences(relativePath));
+        Assert.DoesNotContain(ReadProjectReferences(relativePath), reference => reference.Contains("Test", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
