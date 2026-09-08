@@ -428,6 +428,49 @@ metadata. `Platform.Webhooks.AspNetCore` adds the `HttpRequest` reader and a def
 `HttpClient`-backed sender. `Platform.Webhooks.EfCore` exposes inbox and delivery entity
 configurations for the application's `DbContext`. See [`platform-webhooks.md`](platform-webhooks.md).
 
+# Platform.Observability
+
+`Platform.Observability` provides opt-in host observability registration with safe
+correlation, logging enrichment, tracing, metrics, and provider-status contracts. It depends
+on `Platform.Core`, `Platform.Web.Telemetry`, the `Microsoft.AspNetCore.App` framework
+reference, and the four `Microsoft.Extensions.*` abstractions. It does not reference EF Core,
+PostgreSQL, Redis, AWS SDK, OpenTelemetry, Serilog, or Stripe. The platform owns no
+exporter, collector, dashboard, Serilog sink configuration, or product log schema.
+
+- `PlatformObservabilityOptions` — `ApplicationName`, `ApplicationVersion`,
+  `EnvironmentName`, `CorrelationHeader`, `AcceptIncomingCorrelationHeader`,
+  `MaxCorrelationIdLength`, `MaxTagLength`, `MaxOperationLength`,
+  `TruncateOversizedValues`, `EnableRequestEnrichment`, `EnableProviderEnrichment`,
+  `EnableHostLifecycle`, `RecordRequestBodyPreview`. Validated at registration time.
+- `PlatformObservabilityNames` — stable activity source, meter, operation, tag, and
+  outcome names. Do not rename.
+- `IPlatformObservabilityRedactor` / `DefaultPlatformObservabilityRedactor` —
+  redaction contract and `[REDACTED]` placeholder.
+- `PlatformObservabilitySafeValuePolicy` — `BoundTag` (length-bound only) for
+  already-safe values; `RedactTag` and `RedactOperation` (redact + bound) for
+  known-sensitive values; `RequireOperation` and `RequireCorrelationId` validators.
+- `PlatformDiagnostics` — framework-owned `ActivitySource` and `Meter` accessors plus
+  the latest observed duration and counter helpers.
+- `IPlatformActivityRecorder` / `DefaultPlatformActivityRecorder` — bounded
+  activities for host, request, and provider call paths.
+- `IPlatformObservabilityProviderStatusSource` /
+  `DefaultPlatformObservabilityProviderStatusSource` — safe availability reporting.
+- `PlatformObservabilityProviderCall` / `IPlatformObservabilityProviderRecorder` /
+  `DefaultPlatformObservabilityProviderRecorder` — provider call enrichment bridge.
+- `IPlatformCorrelationAccessor` / `HttpPlatformCorrelationAccessor` — correlation
+  identifier accessor.
+- `ICorrelationIdGenerator` / `DefaultCorrelationIdGenerator` — bounded identifier
+  generation and normalization.
+- `PlatformObservabilityCorrelationMiddleware` — echoes the bounded correlation
+  identifier on the response and emits the request enrichment activity.
+- `PlatformObservabilityHostLifetime` — `IHostedLifecycleService` that records host
+  startup and shutdown activities and metrics.
+- `AddPlatformObservability(IServiceCollection)` and the `Action<...>` overload.
+- `UsePlatformObservability(IApplicationBuilder)` — adds the correlation middleware.
+
+See [`platform-observability.md`](platform-observability.md) for adoption and migration
+guidance.
+
 # Platform.Web edge packages
 
 Four small, independently adoptable packages extend `Platform.Web` with adjacent web

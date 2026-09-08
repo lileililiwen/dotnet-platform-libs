@@ -55,6 +55,7 @@ public class DependencyDirectionTests
         "src/Platform.Webhooks.Contracts/Platform.Webhooks.Contracts.csproj",
         "src/Platform.Webhooks.AspNetCore/Platform.Webhooks.AspNetCore.csproj",
         "src/Platform.Webhooks.EfCore/Platform.Webhooks.EfCore.csproj",
+        "src/Platform.Observability/Platform.Observability.csproj",
     };
 
     private static readonly string[] TestOnlyAssemblyNames =
@@ -81,6 +82,7 @@ public class DependencyDirectionTests
         "Platform.Ai.Tests",
         "Platform.Ai.Adapter.Tests",
         "Platform.Webhooks.Tests",
+        "Platform.Observability.Tests",
     };
 
     private static readonly string[] FrameworkIndependentProjects =
@@ -401,7 +403,8 @@ public class DependencyDirectionTests
                 || project.EndsWith("Platform.Webhooks.AspNetCore.csproj", StringComparison.OrdinalIgnoreCase)
                 || project.EndsWith("Platform.Web.Cors.csproj", StringComparison.OrdinalIgnoreCase)
                 || project.EndsWith("Platform.Web.Resilience.csproj", StringComparison.OrdinalIgnoreCase)
-                || project.EndsWith("Platform.Web.OpenApi.csproj", StringComparison.OrdinalIgnoreCase))
+                || project.EndsWith("Platform.Web.OpenApi.csproj", StringComparison.OrdinalIgnoreCase)
+                || project.EndsWith("Platform.Observability.csproj", StringComparison.OrdinalIgnoreCase))
             {
                 Assert.True(
                     references.Length == 1 && references[0].Equals("Microsoft.AspNetCore.App", StringComparison.OrdinalIgnoreCase),
@@ -885,6 +888,35 @@ public class DependencyDirectionTests
     public void Platform_Web_OpenApi_references_only_platform_core_and_telemetry()
     {
         var references = ReadProjectReferences("src/Platform.Web.OpenApi/Platform.Web.OpenApi.csproj");
+        Assert.Equal(2, references.Length);
+        Assert.Contains("Platform.Core", references, StringComparer.OrdinalIgnoreCase);
+        Assert.Contains("Platform.Web.Telemetry", references, StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Platform_Observability_does_not_reference_forbidden_packages()
+    {
+        var path = "src/Platform.Observability/Platform.Observability.csproj";
+        var packages = ReadPackageReferences(path);
+        var violations = packages
+            .Where(p => p.StartsWith("Microsoft.EntityFrameworkCore", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("Npgsql", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("StackExchange.Redis", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("AWSSDK", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("OpenTelemetry", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("Serilog", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("Stripe", StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+
+        Assert.True(
+            violations.Length == 0,
+            "Platform.Observability must not reference forbidden packages but references: " + string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void Platform_Observability_references_only_platform_core_and_web_telemetry()
+    {
+        var references = ReadProjectReferences("src/Platform.Observability/Platform.Observability.csproj");
         Assert.Equal(2, references.Length);
         Assert.Contains("Platform.Core", references, StringComparer.OrdinalIgnoreCase);
         Assert.Contains("Platform.Web.Telemetry", references, StringComparer.OrdinalIgnoreCase);
