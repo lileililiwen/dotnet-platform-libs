@@ -35,7 +35,8 @@ public class EntitlementTests
         var snapshot = EntitlementDefaults.Unknown(subject, subscription, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
 
         Assert.Same(subscription, snapshot.Subscription);
-        Assert.False(snapshot.Subscription.IsActive);
+        Assert.NotNull(snapshot.Subscription);
+        Assert.False(snapshot.Subscription!.IsActive);
         Assert.Empty(snapshot.ActiveFeatures);
     }
 
