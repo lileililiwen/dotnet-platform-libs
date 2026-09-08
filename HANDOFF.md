@@ -2,11 +2,11 @@
 
 ## Current state
 
-Foundation and core contracts are in place. `Platform.Core` exposes testable time access (`IClock` + `SystemClock` + `FixedClock`), a framework-neutral `Result`/`Result<T>` with stable error codes, a `CallerContext` for optional subject and tenant identifiers, and an `IAuditable` interface that product types can implement without platform inheritance. The package ships with zero third-party dependencies. Four active changes remain in `openspec/changes/`.
+Foundation, core contracts, and ASP.NET Core integration are in place. `Platform.AspNetCore` exposes opt-in `AddPlatformAspNetCore`, `UsePlatformAspNetCore`, and `MapPlatformEndpoints` helpers; maps known platform failures to sanitized `ProblemDetails`; provides correlation IDs and liveness health checks. The package depends on `Platform.Core` and `Microsoft.AspNetCore.App` only. Three active changes remain in `openspec/changes/`.
 
 ## Next change
 
-Run `openspec list`, select `platform-aspnetcore-foundation`, and implement only that change.
+Run `openspec list`, select `platform-entitlement-contracts`, and implement only that change.
 
 ## Required sequence
 
@@ -20,41 +20,56 @@ Run `openspec list`, select `platform-aspnetcore-foundation`, and implement only
 8. Commit 2: only the `HANDOFF.md` update.
 9. Stop; do not start another change or push.
 
-## Completed: platform-core-contracts
+## Completed: platform-aspnetcore-foundation
 
-- Added `Platform.Core.Time`: `IClock` with `SystemClock` (production) and
-  `FixedClock` (deterministic; constructor accepts a `DateTimeOffset` or
-  a `Func<DateTimeOffset>` delegate for advancing-time tests).
-- Added `Platform.Core.Results`: `Error` record (stable `Code`, safe
-  `Message`, optional `Metadata`, plus `Validation`/`NotFound`
-  factories), non-generic `Result`, and generic `Result<T>` with
-  `Success`/`Failure` factories and `ToResult()` conversion.
-- Added `Platform.Core.Context`: immutable `CallerContext` record with
-  optional `SubjectId` and `TenantId`, `IsAnonymous`/`HasTenant`
-  helpers, and a static `Anonymous` singleton.
-- Added `Platform.Core.Audit`: `IAuditable` exposing `CreatedAt`,
-  `CreatedBy`, `UpdatedAt`, `UpdatedBy`; product types implement it
-  without inheriting from a platform base class.
-- Documented every public type with XML doc comments; nullable
-  reference types enabled across the assembly.
-- Extended `Platform.Architecture.Tests` with two new cases that
-  assert `Platform.Core` and `Platform.Billing.Contracts` declare no
-  `<PackageReference>` entries.
+- Added `ServiceCollectionExtensions`: explicit `AddPlatformAspNetCore`
+  registers `IClock`, `IProblemDetailsMapper`, `IHttpContextAccessor`,
+  `ICorrelationAccessor`, and `PlatformAspNetCoreOptions`.
+  `UsePlatformAspNetCore` (and the split
+  `UsePlatformCorrelation` / `UsePlatformProblemDetails`) and
+  `MapPlatformEndpoints` are explicit pipeline helpers with no hidden
+  global registration.
+- Added `PlatformProblemDetailsMapper` mapping known codes
+  (`platform.validation` → 400, `platform.not_found` → 404, unknown →
+  500) to a sanitized `ProblemDetails` with a stable type URI and the
+  error code carried in `Extensions["code"]`.
+- Added `PlatformProblemException` so application code can surface a
+  known platform failure to the boundary.
+- Added `ProblemDetailsExceptionMiddleware`: maps
+  `PlatformProblemException` to `ProblemDetails`; logs and
+  sanitizes unknown exceptions to a generic 500 with no internal
+  details exposed to the client.
+- Added `CorrelationMiddleware` and `ICorrelationAccessor`
+  (`HttpCorrelationAccessor`): generates a correlation id (or accepts
+  the configured header only when the host opts in via
+  `AcceptIncomingCorrelationHeader`).
+- Added `HealthCheckEndpointExtensions`: `AddPlatformHealthChecks`
+  registers a `platform.liveness` check tagged `live`;
+  `MapPlatformHealthEndpoint` exposes a plain-text health endpoint
+  at `PlatformAspNetCoreOptions.HealthCheckPath` (default `/health`).
+- Added `Platform.AspNetCore` to the central package version catalog
+  via `Microsoft.AspNetCore.Mvc.Testing 8.0.10` for the integration
+  tests; production project has zero `<PackageReference>` entries
+  (only the `Microsoft.AspNetCore.App` `FrameworkReference`).
+- Extended `Platform.Architecture.Tests` with a `FrameworkReference`
+  rule: only `Platform.AspNetCore` may declare `FrameworkReference`,
+  and only `Microsoft.AspNetCore.App`.
 
 ## Verification evidence
 
 - `dotnet build Platform.sln -c Release` — 0 warnings, 0 errors.
-- `dotnet test Platform.sln -c Release --nologo` — 49 tests passed
-  (28 in `Platform.Core.Tests`, 18 in `Platform.Architecture.Tests`,
-  1 each in the remaining test projects), 0 failed, 0 skipped.
-- `dotnet pack src/Platform.Core/Platform.Core.csproj -c Release
-  --no-build --nologo` — produced `Platform.Core.0.1.0.nupkg`;
-  inspected `.nuspec` and confirmed `<dependencies>` is empty for
-  `net8.0` (zero third-party package dependencies).
+- `dotnet test Platform.sln -c Release --nologo` — 71 tests passed
+  (28 Core, 22 AspNetCore, 19 Architecture, 1 Billing.Contracts, 1
+  Testing), 0 failed, 0 skipped.
+- `dotnet pack src/Platform.AspNetCore/Platform.AspNetCore.csproj -c
+  Release --no-build --nologo` — produced
+  `Platform.AspNetCore.0.1.0.nupkg`; inspected `.nuspec` and confirmed
+  `<dependencies>` contains only `Platform.Core 0.1.0` and
+  `<frameworkReferences>` contains only `Microsoft.AspNetCore.App`.
 - `git diff --check` — clean.
-- `openspec validate --changes --strict --no-interactive` — 4 passed,
+- `openspec validate --changes --strict --no-interactive` — 3 passed,
   0 failed.
-- `openspec validate --specs   --strict --no-interactive` — 2 passed,
+- `openspec validate --specs   --strict --no-interactive` — 3 passed,
   0 failed.
-- `openspec list` — `platform-core-contracts` no longer present;
-  4 active changes remain.
+- `openspec list` — `platform-aspnetcore-foundation` no longer
+  present; 3 active changes remain.
