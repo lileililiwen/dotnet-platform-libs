@@ -12,6 +12,7 @@ public class DependencyDirectionTests
         "src/Platform.AspNetCore/Platform.AspNetCore.csproj",
         "src/Platform.Billing.Contracts/Platform.Billing.Contracts.csproj",
         "src/Platform.Jobs/Platform.Jobs.csproj",
+        "src/Platform.Mailing/Platform.Mailing.csproj",
         "src/Platform.Testing/Platform.Testing.csproj",
     };
 
@@ -47,6 +48,22 @@ public class DependencyDirectionTests
     };
 
     private static readonly string[] ForbiddenJobsProjectSegments =
+    {
+        "VisualFlow",
+    };
+
+    private static readonly string[] ForbiddenMailingPackagePrefixes =
+    {
+        "Microsoft.AspNetCore",
+        "Microsoft.EntityFrameworkCore",
+        "SendGrid",
+        "Mailgun",
+        "Smtp",
+        "Razor",
+        "Liquid",
+    };
+
+    private static readonly string[] ForbiddenMailingProjectSegments =
     {
         "VisualFlow",
     };
@@ -207,6 +224,53 @@ public class DependencyDirectionTests
         Assert.True(
             violations.Length == 0,
             "Platform.Jobs must not reference VisualFlow projects but references: " + string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void Platform_Mailing_does_not_reference_forbidden_packages()
+    {
+        var packages = ReadPackageReferences("src/Platform.Mailing/Platform.Mailing.csproj");
+        var violations = packages
+            .Where(p => ForbiddenMailingPackagePrefixes.Any(prefix =>
+                p.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
+            .ToArray();
+
+        Assert.True(
+            violations.Length == 0,
+            "Platform.Mailing must not reference forbidden packages but references: " + string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void Platform_Mailing_only_references_Platform_Core()
+    {
+        var references = ReadProjectReferences("src/Platform.Mailing/Platform.Mailing.csproj");
+
+        Assert.True(
+            references.Length == 1 && references[0].Equals("Platform.Core", StringComparison.OrdinalIgnoreCase),
+            "Platform.Mailing must reference only Platform.Core but references: " + string.Join(", ", references));
+    }
+
+    [Fact]
+    public void Platform_Mailing_does_not_reference_visual_flow_projects()
+    {
+        var fullPath = Path.Combine(RepositoryRoot, "src/Platform.Mailing/Platform.Mailing.csproj");
+        var document = XDocument.Load(fullPath);
+
+        var projectReferences = document
+            .Descendants()
+            .Where(e => string.Equals(e.Name.LocalName, "ProjectReference", StringComparison.OrdinalIgnoreCase))
+            .Select(e => e.Attribute("Include")?.Value ?? string.Empty)
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .ToArray();
+
+        var violations = projectReferences
+            .Where(reference => ForbiddenMailingProjectSegments.Any(segment =>
+                reference.Contains(segment, StringComparison.OrdinalIgnoreCase)))
+            .ToArray();
+
+        Assert.True(
+            violations.Length == 0,
+            "Platform.Mailing must not reference VisualFlow projects but references: " + string.Join(", ", violations));
     }
 
     private static string LocateRepositoryRoot()
