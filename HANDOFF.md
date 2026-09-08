@@ -2,7 +2,7 @@
 
 ## Current state
 
-All five OpenSpec changes are implemented and archived. The repository ships four production packages (`Platform.Core`, `Platform.AspNetCore`, `Platform.Billing.Contracts`) and one test-only package (`Platform.Testing`). The architecture guardrails ensure production projects do not reference the test package, and the test package does not embed xUnit, NUnit, or a mocking framework. The pilot adoption change (`pilot-adoption-singleatee`) was removed from the change folder before this handoff and remains in `git status` as a pre-existing deletion that is not part of this work.
+All five OpenSpec changes are implemented and archived. The repository ships four production packages (`Platform.Core`, `Platform.AspNetCore`, `Platform.Billing.Contracts`) and one test-only package (`Platform.Testing`). The architecture guardrails ensure production projects do not reference the test package, and the test package does not embed xUnit, NUnit, or a mocking framework.
 
 ## Next change
 
