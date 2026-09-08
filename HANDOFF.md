@@ -1,5 +1,52 @@
 # Handoff
 
+## Completed: platform-webhooks
+
+- Added `Platform.Webhooks.Contracts` with provider-neutral inbound verification contracts, raw
+  byte HMAC-SHA256 verifier, secret resolver, replay-protected inbox store, and an inbound
+  processor that returns accepted/duplicate/busy/rejected outcomes with safe redacted failures.
+- Added outbound subscription, retry policy, and delivery contracts, an SSRF-safe target validator
+  that rejects non-absolute, non-HTTPS, loopback, private, and link-local destinations, and a
+  default dispatcher that records the delivery lifecycle without owning secrets or response
+  bodies.
+- Added optional `Platform.Webhooks.AspNetCore` with `HttpRequest` capture, a default
+  `HttpClient`-backed outbound sender with bounded timeouts and safe status projection, and a
+  status endpoint helper. No provider-specific routes are registered.
+- Added optional `Platform.Webhooks.EfCore` with `IEntityTypeConfiguration<>` adapters for the
+  inbox and delivery entities. The application owns the `DbContext` and migrations; the platform
+  ships no defaults and no application types.
+- Added architecture guards verifying the contracts package only references `Platform.Core`, that
+  the AspNetCore package does not reference VisualFlow, and that the EfCore package is excluded
+  from the production package-prefix guard.
+- Added package, starter, and adoption documentation, and archived the change at
+  `openspec/changes/archive/2026-09-08-platform-webhooks/` with synchronized
+  `openspec/specs/platform-webhooks/spec.md`. No main spec existed; no migrations, provider
+  secrets, or product event payloads were added.
+
+Verification evidence:
+
+- `dotnet restore Platform.sln --ignore-failed-sources -p:NuGetAudit=false --nologo -m:1` — succeeded.
+- `dotnet build Platform.sln -c Release --no-restore --nologo -m:1` — 0 warnings, 0 errors; the
+  pre-existing `Platform.Testing.Tests` xUnit2013 warning was unchanged.
+- `dotnet test Platform.sln -c Release --no-build --no-restore --nologo -m:1` — full solution
+  passed including the new `Platform.Webhooks.Tests` (43 tests) and `Platform.Architecture.Tests`
+  (178 tests). External DNS-dependent paths use literal public IP addresses so the suite is
+  deterministic; live external provider integration tests are deferred to a separate suite.
+- `dotnet pack src/Platform.Webhooks.Contracts/Platform.Webhooks.Contracts.csproj -c Release
+  --no-build --no-restore --nologo -m:1` — produced `Platform.Webhooks.Contracts.0.1.0.nupkg`.
+- `dotnet pack src/Platform.Webhooks.AspNetCore/Platform.Webhooks.AspNetCore.csproj -c Release
+  --no-build --no-restore --nologo -m:1` — produced `Platform.Webhooks.AspNetCore.0.1.0.nupkg`.
+- `dotnet pack src/Platform.Webhooks.EfCore/Platform.Webhooks.EfCore.csproj -c Release
+  --no-build --no-restore --nologo -m:1` — produced `Platform.Webhooks.EfCore.0.1.0.nupkg`.
+- `openspec validate --changes --strict --no-interactive` — 12 passed, 0 failed after archive.
+- `git diff --check` — clean before commit.
+- Implementation commit: `3bbbc4f` (`Implement shared webhook contracts`).
+
+## Next change
+
+`platform-web-edge` is the next active change in the shared-platform dependency order. Implement
+only that change in the next cycle.
+
 ## Completed: platform-quota
 
 - Added `Platform.Quota` with opaque subject/resource identifiers, explicit UTC windows,
