@@ -2,11 +2,26 @@
 
 ## Current state
 
-Phase 4 change `platform-web-runtime-foundation` is implemented and archived. The repository now ships `Platform.Web` as an opt-in runtime layer over `Platform.AspNetCore`; it provides validated options, safe redaction/configuration/provider-status seams, correlation hardening, security headers, request limits, timeout cancellation, and independent `/live` and `/ready` endpoints. It does not register identity, persistence, or external providers.
+Phase 4 changes `platform-web-runtime-foundation` and `platform-persistence-efcore` are implemented and archived. The repository now ships `Platform.Web` as an opt-in runtime layer over `Platform.AspNetCore`, plus optional provider-neutral EF Core persistence conventions and a separate PostgreSQL adapter. Persistence provides explicit audit, soft-delete, tenant-filter, paging, specification, migration-status, and readiness seams; it does not own application entities, contexts, migrations, tenant types, or business filters.
 
 ## Next change
 
-`platform-persistence-efcore` is the next dependency-ordered active change. Nine Phase 4 changes remain active; implement only one change per cycle.
+`platform-identity-authorization` is the next dependency-ordered active change. Eight Phase 4 changes remain active; implement only one change per cycle.
+
+## Completed: platform-persistence-efcore
+
+- Added `Platform.Persistence.EfCore` with `IAuditableEntity`, `ISoftDeletable`, `ITenantScoped`, `ITenantScope`, bounded paging, specification composition, explicit model filters, configurable save interception, read-only migration status, readiness health checks, and DI registration.
+- Added `Platform.Persistence.Postgres` with only Npgsql options configuration; it does not create contexts or apply migrations.
+- Added in-memory and SQLite tests, concurrent independent-context coverage, PostgreSQL adapter coverage, architecture guards, and `docs/platform-persistence.md`.
+
+Verification evidence:
+
+- `dotnet build Platform.sln -c Release --nologo -m:1` — 26 projects, 0 warnings, 0 errors.
+- `dotnet test Platform.sln -c Release --nologo --no-build` — 385 tests passed, 0 failed, 0 skipped, 0 warnings.
+- `dotnet pack src/Platform.Persistence.EfCore/Platform.Persistence.EfCore.csproj -c Release --no-build --no-restore --nologo -m:1` — produced `Platform.Persistence.EfCore.0.1.0.nupkg`.
+- `dotnet pack src/Platform.Persistence.Postgres/Platform.Persistence.Postgres.csproj -c Release --no-build --no-restore --nologo -m:1` — produced `Platform.Persistence.Postgres.0.1.0.nupkg`.
+- `openspec validate --changes --strict --no-interactive` — 9 passed, 0 failed before archive.
+- `git diff --check` — clean before commit.
 
 ## Completed: platform-web-runtime-foundation
 
