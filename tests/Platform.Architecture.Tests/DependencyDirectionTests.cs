@@ -107,6 +107,26 @@ public class DependencyDirectionTests
         Assert.Contains("Platform.Core", references, StringComparer.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public void Platform_Core_has_no_package_references()
+    {
+        var packages = ReadPackageReferences("src/Platform.Core/Platform.Core.csproj");
+
+        Assert.True(
+            packages.Length == 0,
+            "Platform.Core must remain dependency-light but references: " + string.Join(", ", packages));
+    }
+
+    [Fact]
+    public void Platform_Billing_Contracts_has_no_package_references()
+    {
+        var packages = ReadPackageReferences("src/Platform.Billing.Contracts/Platform.Billing.Contracts.csproj");
+
+        Assert.True(
+            packages.Length == 0,
+            "Platform.Billing.Contracts must remain dependency-light but references: " + string.Join(", ", packages));
+    }
+
     private static string LocateRepositoryRoot()
     {
         var current = new DirectoryInfo(AppContext.BaseDirectory);
