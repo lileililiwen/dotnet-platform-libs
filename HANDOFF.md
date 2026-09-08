@@ -1,6 +1,78 @@
 # Handoff
 
-## Completed: platform-web-edge
+## Completed: platform-observability
+
+- Added `Platform.Observability` (`net8.0`, ASP.NET Core) with bounded
+  `PlatformObservabilityOptions` (service identity, correlation, label length
+  caps, request, provider, and host enrichment switches), stable
+  `PlatformObservabilityNames` activity source, meter, operation, and tag
+  names, a replaceable `IPlatformObservabilityRedactor` plus
+  `PlatformObservabilitySafeValuePolicy` (`BoundTag` for already-safe values,
+  `RedactTag`/`RedactOperation` for sensitive values, and `RequireOperation`
+  plus `RequireCorrelationId` validators), `PlatformDiagnostics` framework
+  sources and meters, `IPlatformActivityRecorder` with `DefaultPlatformActivityRecorder`
+  emitting bounded tags through the safe value policy,
+  `IPlatformObservabilityProviderStatusSource` plus the default safe reporter,
+  `PlatformObservabilityProviderCall` plus `IPlatformObservabilityProviderRecorder`
+  for provider call enrichment, `IPlatformCorrelationAccessor` plus the
+  `HttpPlatformCorrelationAccessor` bridge, `ICorrelationIdGenerator` plus the
+  default `Guid.NewGuid("N")` generator, the
+  `PlatformObservabilityCorrelationMiddleware` that echoes the bounded
+  correlation identifier on the response, the `PlatformObservabilityHostLifetime`
+  `IHostedLifecycleService` for host startup and shutdown activities, and the
+  `AddPlatformObservability(IServiceCollection)` plus `Action<...>` overload
+  with the `UsePlatformObservability(IApplicationBuilder)` middleware helper.
+  Every default registration uses `TryAdd` so consumers can replace the
+  redactor, accessor, recorder, status source, and host lifetime before
+  calling `AddPlatformObservability`. The platform owns no exporter, Serilog
+  sink, OpenTelemetry SDK reference, or product log schema.
+- Added `tests/Platform.Observability.Tests` (39 tests) covering option
+  validation, safe value policy (bound, redact, drop, correlation, operation
+  validation), activity recorder emit/disabled/redaction paths, the
+  provider recorder counter and duration, the default provider status
+  source safe name contract, registration including replaceable redactor and
+  host lifetime, host lifecycle activity emission and disabled lifecycle,
+  and the correlation middleware across `TestServer` (generated identifier,
+  rejected incoming identifier, accepted incoming identifier, disabled
+  enrichment, and enabled enrichment with bounded route and method tags).
+- Extended `Platform.Architecture.Tests` (203 tests, +2 new) with
+  `Platform_Observability_does_not_reference_forbidden_packages` (fails on
+  any EF Core, Npgsql, Redis, AWS SDK, OpenTelemetry, Serilog, or Stripe
+  reference) and `Platform_Observability_references_only_platform_core_and_web_telemetry`
+  (fails on any project reference other than `Platform.Core` and
+  `Platform.Web.Telemetry`). The `Only_Platform_AspNetCore_declares_a_FrameworkReference`
+  rule was extended to cover the new `Platform.Observability` package.
+- Added `docs/platform-observability.md` with adoption, exporter wiring, and
+  rollback guidance and updated `docs/packages.md` with the per-package
+  reference.
+- Archived the change at
+  `openspec/changes/archive/2026-09-08-platform-observability/` with
+  synchronized `openspec/specs/platform-observability/spec.md` covering
+  host observability registration, safe diagnostic enrichment, stable
+  platform telemetry, and replaceable exporter and redactor seams.
+
+Verification evidence:
+
+- `dotnet restore Platform.sln --ignore-failed-sources -p:NuGetAudit=false --nologo -m:1` — succeeded.
+- `dotnet build Platform.sln -c Release --no-restore --nologo -m:1` — 0 warnings, 0 errors; the
+  pre-existing `Platform.Testing.Tests` xUnit2013 warning was unchanged.
+- `dotnet test Platform.sln -c Release --no-build --no-restore --nologo -m:1` — full solution
+  passed including the new `Platform.Observability.Tests` (39 tests) and the extended
+  `Platform.Architecture.Tests` (203 tests, +2 new observability assertions).
+- `dotnet pack src/Platform.Observability/Platform.Observability.csproj -c Release
+  --no-build --no-restore --nologo -m:1` — produced `Platform.Observability.0.1.0.nupkg`
+  with `Platform.Core`, `Platform.Web.Telemetry`, four `Microsoft.Extensions.*`
+  abstractions, and the `Microsoft.AspNetCore.App` framework reference.
+- `openspec validate --changes --strict --no-interactive` — 10 passed, 0 failed after archive.
+- `openspec validate --specs --strict --no-interactive` — 22 passed, 0 failed after archive.
+- `git diff --check` — clean before commit.
+- Implementation commit: `ef91668` (`Implement platform observability`).
+
+## Next change
+
+`platform-persistence-multitenancy` is the next active change returned by
+`openspec list` and continues the shared-platform dependency order. Implement
+only that change in the next cycle.
 
 - Added `Platform.Web.Telemetry` (`net8.0`, framework-neutral) with stable
   request and provider instrumentation names, a redactor contract, a configurable
