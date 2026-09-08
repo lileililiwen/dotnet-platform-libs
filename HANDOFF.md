@@ -13,8 +13,10 @@ Verification evidence:
 
 - `dotnet build Platform.sln -c Release --nologo -m:1` — 0 warnings, 0 errors.
 - `dotnet test Platform.sln -c Release --nologo --no-build` — 411 tests passed, 0 failed, 0 skipped.
-- `dotnet pack src/Platform.Identity.AspNetCore/Platform.Identity.AspNetCore.csproj -c Release --no-restore --nologo -m:1` — produced `Platform.Identity.AspNetCore.0.1.0.nupkg`.
-- `dotnet pack ... --no-build --no-restore` also reproduced an SDK 10.0.400 failure inside `_GetFrameworkAssemblyReferences` with no diagnostic; the normal pack path rebuilt project references and completed successfully.
+- Added `global.json` pinning SDK `8.0.424` with latest-patch roll-forward. This matches the repository's `net8.0` target and prevents SDK 10.0.400's silent `--no-build` pack failure inside `_GetFrameworkAssemblyReferences`.
+- `dotnet pack src/Platform.Identity.AspNetCore/Platform.Identity.AspNetCore.csproj -c Release --no-build --no-restore --nologo -m:1` — produced `Platform.Identity.AspNetCore.0.1.0.nupkg` under SDK 8.0.424.
+- Removed an unrelated async-without-await warning in `Platform.Idempotency.Tests`; SDK 8 solution build is now warning-free.
+- A default SDK 8 restore attempted NuGet vulnerability metadata and hit unavailable `api.nuget.org` (`NU1900`); cached verification used `--ignore-failed-sources -p:NuGetAudit=false` and completed.
 - `openspec validate --changes --strict --no-interactive` — 8 passed, 0 failed before archive.
 - `git diff --check` and `git diff --cached --check` — clean.
 
