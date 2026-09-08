@@ -1,5 +1,39 @@
 # Handoff
 
+## Completed: platform-ai-provider-abstractions
+
+- Added `Platform.Ai.Contracts` with provider-neutral text generation, streaming,
+  structured-output, embeddings, usage, cost, capabilities, policy, telemetry, and safe
+  failure contracts.
+- Added `Platform.Ai` policy-gated generation with single/feature routing, cancellation and
+  timeout handling, usage sinks, safe logging, and explicit unsupported-capability results.
+- Added raw-HTTP `Platform.Ai.OpenAiCompatible`, `Platform.Ai.Anthropic`, and
+  `Platform.Ai.Ollama` adapters, including DeepSeek-compatible configuration, plus deterministic
+  `Platform.Ai.Testing` fakes and usage recorders.
+- Added adapter, policy, capability, redaction, usage, and architecture coverage and documented
+  application-owned prompts, schemas, model choices, data handling, and local mode.
+- Archived the change at
+  `openspec/changes/archive/2026-09-08-platform-ai-provider-abstractions/` and synchronized
+  `openspec/specs/platform-ai-provider-abstractions/spec.md`.
+
+Verification evidence:
+
+- `/home/paul/.dotnet/dotnet restore Platform.sln --ignore-failed-sources -p:NuGetAudit=false --nologo -m:1` — succeeded.
+- `/home/paul/.dotnet/dotnet build Platform.sln -c Release --no-restore --nologo -m:1` — 0 warnings, 0 errors.
+- `/home/paul/.dotnet/dotnet test Platform.sln -c Release --no-build --no-restore --nologo -m:1` — 484 tests passed, 0 failed, 0 skipped.
+- `/home/paul/.dotnet/dotnet pack Platform.sln -c Release --no-build --no-restore --nologo -m:1` — AI packages produced successfully; the existing non-packable sample warning remains.
+- Scoped AI `dotnet format --verify-no-changes --no-restore` checks — clean.
+- `openspec validate --changes --strict --no-interactive` — 1 passed, 0 failed before archive; `openspec validate --specs --strict --no-interactive` — 19 passed, 0 failed after archive.
+- `git diff --check` — clean for the completed change.
+- Repository-wide format still reports pre-existing findings in `Platform.AspNetCore/DependencyInjection/ServiceCollectionExtensions.cs`, `tests/Platform.Identity.Tests/IdentityAspNetCoreTests.cs`, and the known `Platform.Testing.Tests` xUnit2013 warning; none were changed.
+- Implementation commit: `ffb0232` (`Implement AI provider abstractions`).
+
+## Next change
+
+`openspec list` is empty. The next cycle starts with a fresh OpenSpec proposal; the earlier
+`platform-application-starter` handoff entry was stale because that change was not active in the
+repository at selection time.
+
 ## Completed: platform-billing-provider-adapters
 
 - Added optional `Platform.Billing.Stripe` and `Platform.Billing.LemonSqueezy` HTTP adapters
