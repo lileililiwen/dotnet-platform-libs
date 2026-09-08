@@ -31,6 +31,33 @@ The roadmap is organized into four phases. Items marked **Done** are implemented
 - automatic synchronization of every application to the newest package version;
 - application-specific backends for the new framework-neutral packages (Hangfire/Quartz, SendGrid/Mailgun/SMTP, RabbitMQ/Service Bus, Redis/Postgres idempotency, Redis rate-limit).
 
+## Phase 5: Web edge integrations — Done
+
+The next phase adds opt-in CORS, HTTP resilience, OpenAPI document mapping, and a shared
+redaction-safe telemetry layer as small independently adoptable packages. Each item is an
+OpenSpec change; implementation still proceeds one active change at a time.
+
+21. `platform-web-edge` — `Platform.Web.Telemetry` (framework-neutral redaction-safe
+    telemetry names and option-validation helpers), `Platform.Web.Cors` (named
+    CORS policies with production validation), `Platform.Web.Resilience`
+    (`HttpClient` retry/timeout/circuit-breaker with bounded defaults and
+    idempotent-method handling), and `Platform.Web.OpenApi` (named document
+    registry with explicit mapping; the platform owns no Swashbuckle/NSwag
+    dependency). **Done**
+
+### Phase 5 dependency order
+
+`Platform.Web.Telemetry` is the framework-neutral root. The three ASP.NET Core
+packages (`Cors`, `Resilience`, `OpenApi`) each depend on it; nothing in
+`Platform.Web` changes.
+
+### Phase 5 non-goals
+
+- no Swashbuckle, NSwag, Polly, OpenTelemetry exporter, or third-party CORS library;
+- no SignalR, SSE, or application module loader;
+- no mass filesystem move of existing packages;
+- no change to the existing `Platform.Web` runtime surface.
+
 ## Phase 4: Application platform roadmap — Done
 
 The next phase turns the current capability packages into a coherent, Spring-Boot-like

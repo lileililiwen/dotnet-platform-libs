@@ -27,6 +27,10 @@ public class DependencyDirectionTests
         "src/Platform.Mailing/Platform.Mailing.csproj",
         "src/Platform.RateLimiting/Platform.RateLimiting.csproj",
         "src/Platform.Web/Platform.Web.csproj",
+        "src/Platform.Web.Telemetry/Platform.Web.Telemetry.csproj",
+        "src/Platform.Web.Cors/Platform.Web.Cors.csproj",
+        "src/Platform.Web.Resilience/Platform.Web.Resilience.csproj",
+        "src/Platform.Web.OpenApi/Platform.Web.OpenApi.csproj",
         "src/Platform.Testing/Platform.Testing.csproj",
         "src/Platform.Persistence.EfCore/Platform.Persistence.EfCore.csproj",
         "src/Platform.Persistence.Postgres/Platform.Persistence.Postgres.csproj",
@@ -67,6 +71,7 @@ public class DependencyDirectionTests
         "Platform.Quota.Tests",
         "Platform.Testing.Tests",
         "Platform.Web.Tests",
+        "Platform.Web.Edge.Tests",
         "Platform.Persistence.EfCore.Tests",
         "Platform.Persistence.Postgres.Tests",
         "Platform.Identity.Tests",
@@ -393,7 +398,10 @@ public class DependencyDirectionTests
                 || project.EndsWith("Platform.Web.csproj", StringComparison.OrdinalIgnoreCase)
                 || project.EndsWith("Platform.Identity.AspNetCore.csproj", StringComparison.OrdinalIgnoreCase)
                 || project.EndsWith("Platform.Admin.AspNetCore.csproj", StringComparison.OrdinalIgnoreCase)
-                || project.EndsWith("Platform.Webhooks.AspNetCore.csproj", StringComparison.OrdinalIgnoreCase))
+                || project.EndsWith("Platform.Webhooks.AspNetCore.csproj", StringComparison.OrdinalIgnoreCase)
+                || project.EndsWith("Platform.Web.Cors.csproj", StringComparison.OrdinalIgnoreCase)
+                || project.EndsWith("Platform.Web.Resilience.csproj", StringComparison.OrdinalIgnoreCase)
+                || project.EndsWith("Platform.Web.OpenApi.csproj", StringComparison.OrdinalIgnoreCase))
             {
                 Assert.True(
                     references.Length == 1 && references[0].Equals("Microsoft.AspNetCore.App", StringComparison.OrdinalIgnoreCase),
@@ -780,6 +788,106 @@ public class DependencyDirectionTests
         Assert.True(
             violations.Length == 0,
             "Platform.Webhooks.AspNetCore must not reference VisualFlow projects but references: " + string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void Platform_Web_Telemetry_does_not_reference_forbidden_packages()
+    {
+        var path = "src/Platform.Web.Telemetry/Platform.Web.Telemetry.csproj";
+        var packages = ReadPackageReferences(path);
+        var violations = packages
+            .Where(p => p.StartsWith("Microsoft.AspNetCore", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("Microsoft.EntityFrameworkCore", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("Swashbuckle", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("NSwag", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("Polly", StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+
+        Assert.True(
+            violations.Length == 0,
+            "Platform.Web.Telemetry must not reference forbidden packages but references: " + string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void Platform_Web_Telemetry_only_references_Platform_Core()
+    {
+        var references = ReadProjectReferences("src/Platform.Web.Telemetry/Platform.Web.Telemetry.csproj");
+
+        Assert.True(
+            references.Length == 1 && references[0].Equals("Platform.Core", StringComparison.OrdinalIgnoreCase),
+            "Platform.Web.Telemetry must reference only Platform.Core but references: " + string.Join(", ", references));
+    }
+
+    [Fact]
+    public void Platform_Web_Cors_does_not_reference_forbidden_packages()
+    {
+        var path = "src/Platform.Web.Cors/Platform.Web.Cors.csproj";
+        var packages = ReadPackageReferences(path);
+        var violations = packages
+            .Where(p => p.StartsWith("Microsoft.EntityFrameworkCore", StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+
+        Assert.True(
+            violations.Length == 0,
+            "Platform.Web.Cors must not reference forbidden packages but references: " + string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void Platform_Web_Cors_references_only_platform_core_and_telemetry()
+    {
+        var references = ReadProjectReferences("src/Platform.Web.Cors/Platform.Web.Cors.csproj");
+        Assert.Equal(2, references.Length);
+        Assert.Contains("Platform.Core", references, StringComparer.OrdinalIgnoreCase);
+        Assert.Contains("Platform.Web.Telemetry", references, StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Platform_Web_Resilience_does_not_reference_forbidden_packages()
+    {
+        var path = "src/Platform.Web.Resilience/Platform.Web.Resilience.csproj";
+        var packages = ReadPackageReferences(path);
+        var violations = packages
+            .Where(p => p.StartsWith("Microsoft.EntityFrameworkCore", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("Polly", StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+
+        Assert.True(
+            violations.Length == 0,
+            "Platform.Web.Resilience must not reference forbidden packages but references: " + string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void Platform_Web_Resilience_references_only_platform_core_and_telemetry()
+    {
+        var references = ReadProjectReferences("src/Platform.Web.Resilience/Platform.Web.Resilience.csproj");
+        Assert.Equal(2, references.Length);
+        Assert.Contains("Platform.Core", references, StringComparer.OrdinalIgnoreCase);
+        Assert.Contains("Platform.Web.Telemetry", references, StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Platform_Web_OpenApi_does_not_reference_forbidden_packages()
+    {
+        var path = "src/Platform.Web.OpenApi/Platform.Web.OpenApi.csproj";
+        var packages = ReadPackageReferences(path);
+        var violations = packages
+            .Where(p => p.StartsWith("Swashbuckle", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("NSwag", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("Microsoft.EntityFrameworkCore", StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+
+        Assert.True(
+            violations.Length == 0,
+            "Platform.Web.OpenApi must not reference forbidden packages but references: " + string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void Platform_Web_OpenApi_references_only_platform_core_and_telemetry()
+    {
+        var references = ReadProjectReferences("src/Platform.Web.OpenApi/Platform.Web.OpenApi.csproj");
+        Assert.Equal(2, references.Length);
+        Assert.Contains("Platform.Core", references, StringComparer.OrdinalIgnoreCase);
+        Assert.Contains("Platform.Web.Telemetry", references, StringComparer.OrdinalIgnoreCase);
     }
 
     private static string LocateRepositoryRoot()

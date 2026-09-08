@@ -398,6 +398,8 @@ Test-only helpers. Depends on `Platform.Core`, `Platform.AspNetCore`, and `Platf
 | `tests/Platform.Persistence.EfCore.Tests` | In-memory and SQLite tests for explicit options, audit/soft-delete interception, tenant filters, paging/specification helpers, concurrent independent contexts, read-only migration status, and readiness behavior. |
 | `tests/Platform.Persistence.Postgres.Tests` | Provider-boundary test for PostgreSQL options configuration. |
 | `tests/Platform.Testing.Tests` | Unit tests for `ControllableClock`, `SubscriptionBuilder`, `EntitlementBuilder`, `FakeEntitlementStore`, and `RecordingUsageMeter`. |
+| `tests/Platform.Webhooks.Tests` | Synthetic signature, replay, normalization, and HTTP mapping coverage for the inbound and outbound flows. |
+| `tests/Platform.Web.Edge.Tests` | Telemetry contract, CORS option and TestServer coverage, HTTP resilience option/handler/circuit-breaker coverage, OpenAPI registry and TestServer coverage. |
 # Platform.Starter
 
 `Platform.Starter` composes the opt-in web, identity, administration, billing, and mailing
@@ -425,3 +427,126 @@ suppression, outbound subscriptions, delivery attempts, retry options, and safe 
 metadata. `Platform.Webhooks.AspNetCore` adds the `HttpRequest` reader and a default
 `HttpClient`-backed sender. `Platform.Webhooks.EfCore` exposes inbox and delivery entity
 configurations for the application's `DbContext`. See [`platform-webhooks.md`](platform-webhooks.md).
+
+# Platform.Web edge packages
+
+Four small, independently adoptable packages extend `Platform.Web` with adjacent web
+capabilities. Each is optional; consumers adopt one at a time and the core runtime
+behaviour is unchanged. See [`platform-web-edge.md`](platform-web-edge.md) for the
+adoption guide.
+
+## Platform.Web.Telemetry
+
+Framework-neutral redaction-safe web telemetry names, option-validation helpers, and a
+structured log sink. Depends only on `Platform.Core`, `Microsoft.Extensions.DependencyInjection.Abstractions`,
+`Microsoft.Extensions.Logging.Abstractions`, `Microsoft.Extensions.Options`, and
+`System.Diagnostics.DiagnosticSource`; targets `net8.0`. Does not reference ASP.NET Core,
+EF Core, Polly, Swashbuckle, or NSwag.
+
+- `PlatformWebTelemetryNames` — stable activity source, operation, and metric names
+  (`RequestActivitySource`, `ProviderActivitySource`, `RequestOperation`,
+  `ProviderOperation`, `RequestCountMetric`, `ProviderCountMetric`, plus stable
+  tag keys).
+- `PlatformWebTelemetryOptions` — `ApplicationName`, `MaxTagLength`,
+  `MaxOperationLength`, `TruncateOversizedValues`. Validated at registration time.
+- `PlatformWebRequestEvent` / `PlatformWebProviderEvent` — typed event records for
+  requests and provider calls. `Default` constructor enforces non-empty operation,
+  valid status code, and non-negative duration.
+- `IPlatformWebTelemetryRedactor` / `DefaultPlatformWebTelemetryRedactor` — redaction
+  contract and `[REDACTED]` placeholder.
+- `PlatformWebTelemetrySafeValuePolicy` — bounds and redacts tag and operation values.
+- `IPlatformWebTelemetry` / `DefaultPlatformWebTelemetry` — structured log sink.
+- `PlatformOptionsValidator` and `AddValidatedOptions<T>()` — shared option
+  validation helper for any platform options type.
+- `AddPlatformWebTelemetry(IServiceCollection)` and the `Action<...>` overload — register
+  the redactor, the default telemetry sink, and validated options.
+
+## Platform.Web.Cors
+
+Optional ASP.NET Core CORS configuration and production-time validation. Depends on
+`Platform.Core`, `Platform.Web.Telemetry`, `Microsoft.AspNetCore.App` (via
+`FrameworkReference`); targets `net8.0`. Does not reference EF Core, Stripe, or
+application projects.
+
+- `PlatformWebCorsPolicyOptions` — per-policy `Name`, `AllowedOrigins`,
+  `AllowedHeaders`, `ExposedHeaders`, `AllowedMethods`, `AllowCredentials`,
+  `PreflightMaxAge`. `Validate(environmentName)` rejects wildcard origins with
+  credentials, wildcard origins in production, missing origins in production, and
+  non-absolute or non-HTTPS origins outside development.
+- `PlatformWebCorsOptions` — `Environment`, `Policies` collection, `RoutePrefix`.
+  `Validate()` enforces non-empty policies, unique names, and per-policy validation.
+- `AddPlatformWebCors(IServiceCollection)`, the `Action<...>` overload, and the
+  `IHostEnvironment` overload — register validated options, telemetry, and named
+  CORS policies.
+- `UsePlatformWebCors()` and `UsePlatformWebCors(policyName)` — call the underlying
+  `UseCors` with the supplied policy.
+
+## Platform.Web.Resilience
+
+Optional `HttpClient` resilience conventions (retry, timeout, circuit breaker) with
+bounded defaults. Depends on `Platform.Core`, `Platform.Web.Telemetry`,
+`Microsoft.AspNetCore.App`, and `Microsoft.Extensions.Http`; targets `net8.0`. Does
+not reference EF Core, Polly, or application projects.
+
+- `PlatformHttpResilienceOptions` — `AttemptTimeout` (5s), `MaxRetryAttempts` (3),
+  `RetryBaseDelay` (200ms), `CircuitBreakerFailureRatio` (0.5),
+  `CircuitBreakerSamplingDuration` (30s), `CircuitBreakerMinimumThroughput` (10),
+  `CircuitBreakerBreakDuration` (30s), `IdempotentMethods`, `EmitRetryAttemptHeader`.
+  Validated at registration time.
+- `HttpResilienceDecision` — `None`, `Retried`, `TimedOut`, `CircuitBroken`.
+- `HttpResilienceEvent` — typed event with `Decision`, `Operation`, `Attempt`,
+  `StatusCode`.
+- `IHttpResilienceTelemetry` / `DefaultHttpResilienceTelemetry` — bridge to the
+  platform web telemetry sink.
+- `PlatformHttpResilienceHandler` — `DelegatingHandler` that retries only
+  idempotent methods (`GET`, `HEAD`, `OPTIONS`, `PUT`/`DELETE` with `If-Match`,
+  and any explicitly opted-in method), emits `X-Retry-Attempt` on each attempt,
+  applies a per-attempt timeout, and trips a circuit breaker after
+  `CircuitBreakerMinimumThroughput` failures at or above the failure ratio.
+- `PlatformHttpCircuitOpenException` — thrown while the breaker is open.
+- `AddPlatformHttpResilience(IServiceCollection)` and the `Action<...>` overload.
+- `AddPlatformHttpResilience(IHttpClientBuilder)` — adds the handler to a named
+  client.
+
+## Platform.Web.OpenApi
+
+Optional OpenAPI document registry and explicit mapping helper. Depends on
+`Platform.Core`, `Platform.Web.Telemetry`, and `Microsoft.AspNetCore.App` (via
+`FrameworkReference`); targets `net8.0`. Does not reference Swashbuckle, NSwag,
+EF Core, or application projects.
+
+- `PlatformWebOpenApiOptions` — `Documents`, `RoutePrefix` (`/openapi`).
+  `Validate()` enforces unique names, absolute paths, and bounded options.
+- `PlatformWebOpenApiDocumentOptions` — `Name`, `Path`, `ContentType`, `Title`,
+  `OpenApiVersion`.
+- `IPlatformOpenApiDocumentProvider` — `SupportedDocuments` plus
+  `GetDocument(name)`. The platform does not own a specific OpenAPI
+  implementation; applications supply the JSON.
+- `IPlatformOpenApiDocumentRegistry` / `PlatformOpenApiDocumentRegistry` — aggregate
+  providers and resolve by name. Returns `null` for unknown names.
+- `Providers.StaticPlatformOpenApiDocumentProvider` — emits a minimal placeholder
+  document for testing and bootstrapping.
+- `AddPlatformWebOpenApi(IServiceCollection)` and the `Action<...>` overload.
+- `AddPlatformOpenApiDocument(PlatformWebOpenApiDocumentOptions)` — convenience
+  registration of a static document provider.
+- `MapPlatformOpenApiDocument(name)` — maps `/openapi/{name}.json`. Authorization
+  metadata applied with `RequireAuthorization()` is preserved.
+- `MapPlatformOpenApiDocuments()` — maps every registered document.
+
+# Platform.Web.Edge.Tests
+
+`tests/Platform.Web.Edge.Tests` exercises all four edge packages:
+
+- Telemetry contract tests: stable names, default option validation, safe-value
+  policy, default telemetry registration, and validator helper.
+- CORS option tests: wildcard+credentials rejection, production origin
+  requirement, localhost exception, duplicate policy names, empty collection, and
+  runtime validation.
+- CORS integration tests: allowed origin receives the header, disallowed origin
+  does not, and wildcard origin is served without credentials.
+- Resilience option tests: defaults, bounded ranges, and runtime validation.
+- Resilience handler tests: transient GET retries, POST is not retried by
+  default, explicit idempotent override, successful response is not retried,
+  retry attempt header is emitted, and circuit breaker opens after the threshold.
+- OpenAPI integration tests: registered document is served, unregistered document
+  is 404, multiple documents resolve independently.
