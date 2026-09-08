@@ -36,7 +36,7 @@ public sealed class CorrelationMiddleware
 
         var header = options.Value.CorrelationHeader;
         var acceptIncoming = options.Value.AcceptIncomingCorrelationHeader;
-        var correlationId = ResolveCorrelationId(context, header, acceptIncoming);
+        var correlationId = ResolveCorrelationId(context, header, acceptIncoming, options.Value.MaxCorrelationIdLength);
 
         context.Items[HttpCorrelationAccessor.HttpContextItemsKey] = correlationId;
         context.Response.OnStarting(() =>
@@ -48,15 +48,26 @@ public sealed class CorrelationMiddleware
         await _next(context);
     }
 
-    private static string ResolveCorrelationId(HttpContext context, string header, bool acceptIncoming)
+    private static string ResolveCorrelationId(HttpContext context, string header, bool acceptIncoming, int maxLength)
     {
         if (acceptIncoming
             && context.Request.Headers.TryGetValue(header, out var values)
-            && !string.IsNullOrWhiteSpace(values))
+            && !string.IsNullOrWhiteSpace(values)
+            && IsSafeCorrelationId(values.ToString(), maxLength))
         {
             return values.ToString();
         }
 
         return Guid.NewGuid().ToString("D");
+    }
+
+    private static bool IsSafeCorrelationId(string value, int maxLength)
+    {
+        if (value.Length > maxLength)
+        {
+            return false;
+        }
+
+        return value.All(character => character is >= '!' and <= '~');
     }
 }

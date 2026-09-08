@@ -16,6 +16,7 @@ public class DependencyDirectionTests
         "src/Platform.Jobs/Platform.Jobs.csproj",
         "src/Platform.Mailing/Platform.Mailing.csproj",
         "src/Platform.RateLimiting/Platform.RateLimiting.csproj",
+        "src/Platform.Web/Platform.Web.csproj",
         "src/Platform.Testing/Platform.Testing.csproj",
     };
 
@@ -26,6 +27,7 @@ public class DependencyDirectionTests
         "Platform.AspNetCore.Tests",
         "Platform.Billing.Contracts.Tests",
         "Platform.Testing.Tests",
+        "Platform.Web.Tests",
     };
 
     private static readonly string[] FrameworkIndependentProjects =
@@ -203,7 +205,8 @@ public class DependencyDirectionTests
         foreach (var project in ProductionProjects)
         {
             var references = ReadFrameworkReferences(project);
-            if (project.EndsWith("Platform.AspNetCore.csproj", StringComparison.OrdinalIgnoreCase))
+            if (project.EndsWith("Platform.AspNetCore.csproj", StringComparison.OrdinalIgnoreCase)
+                || project.EndsWith("Platform.Web.csproj", StringComparison.OrdinalIgnoreCase))
             {
                 Assert.True(
                     references.Length == 1 && references[0].Equals("Microsoft.AspNetCore.App", StringComparison.OrdinalIgnoreCase),
@@ -216,6 +219,16 @@ public class DependencyDirectionTests
                     $"{project} must not declare FrameworkReferences but declares: {string.Join(", ", references)}");
             }
         }
+    }
+
+    [Fact]
+    public void Platform_Web_only_references_Platform_AspNetCore()
+    {
+        var references = ReadProjectReferences("src/Platform.Web/Platform.Web.csproj");
+
+        Assert.True(
+            references.Length == 1 && references[0].Equals("Platform.AspNetCore", StringComparison.OrdinalIgnoreCase),
+            "Platform.Web must reference only Platform.AspNetCore but references: " + string.Join(", ", references));
     }
 
     [Fact]

@@ -27,6 +27,12 @@ public sealed class PlatformAspNetCoreOptions
     public bool AcceptIncomingCorrelationHeader { get; set; }
 
     /// <summary>
+    /// Gets or sets the maximum length accepted for an incoming
+    /// correlation identifier. Defaults to 128 characters.
+    /// </summary>
+    public int MaxCorrelationIdLength { get; set; } = 128;
+
+    /// <summary>
     /// Gets or sets the endpoint path used for the platform health
     /// check. Defaults to <c>/health</c>.
     /// </summary>
