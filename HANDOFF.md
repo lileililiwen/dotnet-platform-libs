@@ -2,11 +2,11 @@
 
 ## Current state
 
-Foundation work is complete. The repository builds, tests, and packs under .NET 8; package versions and packaging metadata are centralized; the dependency-direction guardrail suite enforces the platform boundaries. Five active changes remain in `openspec/changes/`.
+Foundation and core contracts are in place. `Platform.Core` exposes testable time access (`IClock` + `SystemClock` + `FixedClock`), a framework-neutral `Result`/`Result<T>` with stable error codes, a `CallerContext` for optional subject and tenant identifiers, and an `IAuditable` interface that product types can implement without platform inheritance. The package ships with zero third-party dependencies. Four active changes remain in `openspec/changes/`.
 
 ## Next change
 
-Run `openspec list`, select `platform-core-contracts`, and implement only that change.
+Run `openspec list`, select `platform-aspnetcore-foundation`, and implement only that change.
 
 ## Required sequence
 
@@ -20,35 +20,41 @@ Run `openspec list`, select `platform-core-contracts`, and implement only that c
 8. Commit 2: only the `HANDOFF.md` update.
 9. Stop; do not start another change or push.
 
-## Completed: platform-repository-foundation
+## Completed: platform-core-contracts
 
-- Created `Platform.sln` plus four packable libraries under `src/`:
-  `Platform.Core`, `Platform.AspNetCore`, `Platform.Billing.Contracts`,
-  `Platform.Testing`. Each ships with a matching focused test project under
-  `tests/` plus a separate `Platform.Architecture.Tests` project for
-  dependency-direction rules.
-- Centralized MSBuild defaults and packaging metadata in
-  `Directory.Build.props`; centralized package versions in
-  `Directory.Packages.props`; added `tests/Directory.Build.props` to opt test
-  projects out of packaging and documentation generation.
-- Documented restore, build, test, pack, and strict OpenSpec validation
-  commands in `docs/build-test-pack.md` and refreshed `README.md` with the
-  new repository layout and conventions.
-- Archived the change as `2026-09-08-platform-repository-foundation` and
-  generated `openspec/specs/platform-repository-foundation/spec.md`.
+- Added `Platform.Core.Time`: `IClock` with `SystemClock` (production) and
+  `FixedClock` (deterministic; constructor accepts a `DateTimeOffset` or
+  a `Func<DateTimeOffset>` delegate for advancing-time tests).
+- Added `Platform.Core.Results`: `Error` record (stable `Code`, safe
+  `Message`, optional `Metadata`, plus `Validation`/`NotFound`
+  factories), non-generic `Result`, and generic `Result<T>` with
+  `Success`/`Failure` factories and `ToResult()` conversion.
+- Added `Platform.Core.Context`: immutable `CallerContext` record with
+  optional `SubjectId` and `TenantId`, `IsAnonymous`/`HasTenant`
+  helpers, and a static `Anonymous` singleton.
+- Added `Platform.Core.Audit`: `IAuditable` exposing `CreatedAt`,
+  `CreatedBy`, `UpdatedAt`, `UpdatedBy`; product types implement it
+  without inheriting from a platform base class.
+- Documented every public type with XML doc comments; nullable
+  reference types enabled across the assembly.
+- Extended `Platform.Architecture.Tests` with two new cases that
+  assert `Platform.Core` and `Platform.Billing.Contracts` declare no
+  `<PackageReference>` entries.
 
 ## Verification evidence
 
-- `dotnet restore Platform.sln` — restored all 9 projects.
 - `dotnet build Platform.sln -c Release` — 0 warnings, 0 errors.
-- `dotnet test Platform.sln -c Release --nologo` — 20 tests passed
-  (1 per library + 16 architecture-direction cases), 0 failed, 0 skipped.
-- `dotnet pack Platform.sln -c Release --no-build --nologo` — produced
-  `Platform.Core.0.1.0.nupkg`, `Platform.Billing.Contracts.0.1.0.nupkg`,
-  `Platform.AspNetCore.0.1.0.nupkg`, `Platform.Testing.0.1.0.nupkg`, each
-  embedding `README.md` and shared package metadata.
+- `dotnet test Platform.sln -c Release --nologo` — 49 tests passed
+  (28 in `Platform.Core.Tests`, 18 in `Platform.Architecture.Tests`,
+  1 each in the remaining test projects), 0 failed, 0 skipped.
+- `dotnet pack src/Platform.Core/Platform.Core.csproj -c Release
+  --no-build --nologo` — produced `Platform.Core.0.1.0.nupkg`;
+  inspected `.nuspec` and confirmed `<dependencies>` is empty for
+  `net8.0` (zero third-party package dependencies).
 - `git diff --check` — clean.
-- `openspec validate --changes --strict --no-interactive` — 5 passed, 0 failed.
-- `openspec validate --specs   --strict --no-interactive` — 1 passed, 0 failed.
-- `openspec list` — `platform-repository-foundation` no longer present;
-  5 active changes remain.
+- `openspec validate --changes --strict --no-interactive` — 4 passed,
+  0 failed.
+- `openspec validate --specs   --strict --no-interactive` — 2 passed,
+  0 failed.
+- `openspec list` — `platform-core-contracts` no longer present;
+  4 active changes remain.
