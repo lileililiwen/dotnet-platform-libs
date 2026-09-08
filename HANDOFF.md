@@ -1,6 +1,84 @@
 # Handoff
 
-## Completed: platform-webhooks
+## Completed: platform-web-edge
+
+- Added `Platform.Web.Telemetry` (`net8.0`, framework-neutral) with stable
+  request and provider instrumentation names, a redactor contract, a configurable
+  redaction-safe value policy, the `IPlatformWebTelemetry` log sink, and a
+  reusable `AddValidatedOptions<T>()` extension helper consumed by every other
+  edge package.
+- Added `Platform.Web.Cors` (`net8.0`, ASP.NET Core) with named policy options,
+  strict production-time validation (wildcard origins with credentials, wildcard
+  origins in production, missing origin in production, non-absolute origins),
+  `AddPlatformWebCors(IServiceCollection)` plus the `IHostEnvironment` overload,
+  and `UsePlatformWebCors(policyName)`.
+- Added `Platform.Web.Resilience` (`net8.0`, ASP.NET Core) with
+  `PlatformHttpResilienceOptions` (bounded defaults: 3 attempts, 5s per-attempt
+  timeout, 0.5 failure ratio, 30s circuit-breaker sampling window) and
+  `PlatformHttpResilienceHandler` that retries only idempotent methods
+  (`GET`/`HEAD`/`OPTIONS` plus `PUT`/`DELETE` with `If-Match`), emits
+  `X-Retry-Attempt`, and trips a circuit breaker. The default telemetry bridge
+  forwards decisions to the platform web telemetry sink.
+- Added `Platform.Web.OpenApi` (`net8.0`, ASP.NET Core) with
+  `IPlatformOpenApiDocumentProvider`, an aggregating registry, and
+  `MapPlatformOpenApiDocument(name)` plus `MapPlatformOpenApiDocuments()` helpers.
+  The platform owns no Swashbuckle or NSwag dependency; applications supply the
+  document JSON through a provider. Authorization metadata applied with
+  `RequireAuthorization()` is preserved. Unknown document names resolve to `404`.
+- Added `tests/Platform.Web.Edge.Tests` (44 tests) covering telemetry contract,
+  CORS option and TestServer coverage, HTTP resilience option, handler, and
+  circuit-breaker coverage, and OpenAPI registry plus TestServer coverage.
+- Added architecture guardrails verifying that `Platform.Web.Telemetry` only
+  references `Platform.Core`, that the three ASP.NET Core edge packages only
+  reference `Platform.Core` and `Platform.Web.Telemetry`, and that none of them
+  reference EF Core, Polly, Swashbuckle, or NSwag. The
+  `Only_Platform_AspNetCore_declares_a_FrameworkReference` rule was extended
+  to cover the new ASP.NET Core edge packages.
+- Updated `docs/packages.md` with per-package reference and added
+  `docs/platform-web-edge.md` with adoption examples and rollback guidance.
+- Archived the change at
+  `openspec/changes/archive/2026-09-08-platform-web-edge/` with synchronized
+  `openspec/specs/platform-web-edge/spec.md`. The platform owns no
+  Swashbuckle, NSwag, Polly, OpenTelemetry exporter, or third-party CORS
+  library; the OpenAPI implementation responsibility stays with the
+  application. SignalR/SSE work is deferred to a future change.
+
+Verification evidence:
+
+- `dotnet restore Platform.sln --ignore-failed-sources -p:NuGetAudit=false --nologo -m:1` — succeeded.
+- `dotnet build Platform.sln -c Release --no-restore --nologo -m:1` — 0 warnings, 0 errors; the
+  pre-existing `Platform.Testing.Tests` xUnit2013 warning was unchanged.
+- `dotnet test Platform.sln -c Release --no-build --no-restore --nologo -m:1` — full solution
+  passed including the new `Platform.Web.Edge.Tests` (44 tests) and the extended
+  `Platform.Architecture.Tests` (198 tests, +12 new web-edge assertions).
+- `dotnet pack src/Platform.Web.Telemetry/Platform.Web.Telemetry.csproj -c Release
+  --no-build --no-restore --nologo -m:1` — produced `Platform.Web.Telemetry.0.1.0.nupkg`
+  with only `Platform.Core` and three `Microsoft.Extensions.*` abstractions.
+- `dotnet pack src/Platform.Web.Cors/Platform.Web.Cors.csproj -c Release
+  --no-build --no-restore --nologo -m:1` — produced `Platform.Web.Cors.0.1.0.nupkg`
+  with the `Microsoft.AspNetCore.App` framework reference and the
+  `Platform.Web.Telemetry` + `Platform.Core` project references.
+- `dotnet pack src/Platform.Web.Resilience/Platform.Web.Resilience.csproj -c Release
+  --no-build --no-restore --nologo -m:1` — produced `Platform.Web.Resilience.0.1.0.nupkg`
+  with `Microsoft.Extensions.Http`, the `Microsoft.AspNetCore.App` framework
+  reference, and the `Platform.Web.Telemetry` + `Platform.Core` project references.
+- `dotnet pack src/Platform.Web.OpenApi/Platform.Web.OpenApi.csproj -c Release
+  --no-build --no-restore --nologo -m:1` — produced `Platform.Web.OpenApi.0.1.0.nupkg`
+  with the `Microsoft.AspNetCore.App` framework reference and the
+  `Platform.Web.Telemetry` + `Platform.Core` project references.
+- `dotnet pack Platform.sln -c Release --no-build --no-restore --nologo -m:1` — produced
+  the four new packages alongside the existing platform packages; the existing
+  non-packable sample warning remains.
+- `openspec validate --changes --strict --no-interactive` — 11 passed, 0 failed after archive.
+- `openspec validate --specs --strict --no-interactive` — 21 passed, 0 failed after archive.
+- `git diff --check` — clean before commit.
+- Implementation commit: `f4007d1` (`Implement shared web edge integrations`).
+
+## Next change
+
+`platform-observability` is the next active change in the shared-platform
+dependency order; it pairs naturally with the new `Platform.Web.Telemetry`
+sink. Implement only that change in the next cycle.
 
 - Added `Platform.Webhooks.Contracts` with provider-neutral inbound verification contracts, raw
   byte HMAC-SHA256 verifier, secret resolver, replay-protected inbox store, and an inbound
