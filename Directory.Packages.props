@@ -26,6 +26,10 @@
     <PackageVersion Include="AWSSDK.S3" Version="4.0.102.2" />
     <PackageVersion Include="StackExchange.Redis" Version="2.8.16" />
 
+    <!-- Optional feature management + HTTP resilience adapters -->
+    <PackageVersion Include="Microsoft.FeatureManagement" Version="4.5.0" />
+    <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="8.10.0" />
+
     <!-- Optional persistence adapters -->
     <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="8.0.10" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.10" />

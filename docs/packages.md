@@ -607,6 +607,98 @@ EF Core, or application projects.
   metadata applied with `RequireAuthorization()` is preserved.
 - `MapPlatformOpenApiDocuments()` — maps every registered document.
 
+## Platform.FeatureManagement
+
+Optional ASP.NET Core feature-flag integration. Depends on `Platform.Core`,
+`Platform.Web.Telemetry`, the `Microsoft.AspNetCore.App` framework reference, and
+`Microsoft.FeatureManagement`; targets `net8.0`. Does not own feature names,
+rollout state, billing plans, tenant records, EF Core, or Polly. The host owns the
+`FeatureManagement` configuration section and the rollout rules.
+
+### Context
+
+- `FeatureContext` — record carrying optional `TenantId`, `Subject`, and bounded
+  `Properties` (no secrets or rollout state).
+- `IFeatureContextResolver` — `ResolveAsync(cancellationToken)` returns the
+  application-provided `FeatureContext`. `DefaultFeatureContextResolver` returns an
+  empty context; consumers replace it before registration to supply tenant/subject
+  state.
+
+### Filters and gating
+
+- `PlatformTenantFeatureFilter` — `[FilterAlias("PlatformTenant")]` filter that
+  reads `TenantId` from the resolver and compares it against the per-feature
+  `AllowedTenants` parameter; returns `false` when the tenant is empty. Registered
+  automatically when the integration is enabled.
+- `FeatureGateEndpointFilter` and
+  `RequireFeature(this RouteHandlerBuilder, string featureName)` — gate an endpoint
+  behind a flag. On a disabled feature the filter returns a safe `ProblemDetails`
+  built from `FeatureManagementOptions`; no flag or rollout state leaks.
+
+### Options
+
+- `FeatureManagementOptions` — `Enabled` (default `true`), `SectionName` (default
+  `"FeatureManagement"`), `DisabledStatusCode` (default `404`), `DisabledTitle`
+  (default `"Feature disabled"`). `Validate()` bounds the status code to 100–599 and
+  rejects empty section or title.
+
+### Registration
+
+- `AddPlatformFeatureManagement(IServiceCollection, IConfiguration)` and the
+  `Action<FeatureManagementOptions>` overload — register validated options and the
+  platform web telemetry sink, register the tenant filter when `Enabled`, and
+  register `IFeatureContextResolver` (default empty). The host owns the feature
+  definition section.
+
+## Platform.Http.Resilience
+
+Optional outbound HTTP resilience integration. Framework-neutral; targets `net8.0`.
+Depends on `Platform.Core`, `Platform.Web.Telemetry`, `Microsoft.Extensions.Http`,
+and `Microsoft.Extensions.Http.Resilience`. Does not reference ASP.NET Core, EF
+Core, `Microsoft.FeatureManagement`, or Polly directly, and adds no provider SDKs.
+Each named `HttpClient` receives its own bounded pipeline; applications own provider
+selection and per-service overrides.
+
+### Options
+
+- `PlatformHttpResilienceOptions` — `Enabled` (default `true`), `MaxRetryAttempts`
+  (default `3`, bounded 1–10), `RetryBaseDelay` (default `500ms`), `AttemptTimeout`
+  (default `5s`), `TotalTimeout` (default `30s`), `CircuitBreakerFailureRatio`
+  (default `0.5`), `CircuitBreakerSamplingDuration` (default `30s`),
+  `CircuitBreakerMinimumThroughput` (default `10`), `CircuitBreakerBreakDuration`
+  (default `30s`), `MaxConcurrentCalls` (default `100`), `MaxQueueLength` (default
+  `1000`), `IdempotentMethods` (default empty; the safe set `GET`/`HEAD`/`OPTIONS`/
+  `TRACE` is always included). `Validate()` enforces every bound and rejects empty
+  idempotent entries.
+
+### Telemetry
+
+- `PlatformHttpResilienceDecision` — `None`, `Retried`, `CircuitOpen`,
+  `ConcurrencyRejected`, `Cancelled`.
+- `PlatformHttpResilienceEvent` — bounded record (`Decision`, `Operation`, `Attempt`,
+  `StatusCode`); `Operation` never includes URLs, secrets, or headers.
+- `IPlatformHttpResilienceTelemetry` / `DefaultPlatformHttpResilienceTelemetry` —
+  record sink; the default is a no-op that consumers replace with an
+  application-owned sink.
+
+### Registration
+
+- `AddPlatformHttpResilience(this IHttpClientBuilder)` and the
+  `Action<PlatformHttpResilienceOptions>` overload — bind validated options,
+  register the telemetry sink (default no-op) and `PlatformHttpResilienceHandler`,
+  and add the handler as an HTTP message handler. When `Enabled` is `false` the
+  handler is a pass-through.
+
+### Behavior
+
+- The pipeline applies, in order: a total timeout, retry (exponential back-off with
+  jitter, idempotent methods only by default), a per-attempt timeout, a circuit
+  breaker (trips after the configured failure ratio and minimum throughput), and a
+  concurrency limiter (bounded queue). The HTTP method is carried through a
+  resilience context property so idempotency classification is reliable. Caller
+  cancellation is preserved and recorded without being retried. Non-idempotent
+  methods are never replayed unless explicitly added to `IdempotentMethods`.
+
 # Platform.Web.Edge.Tests
 
 `tests/Platform.Web.Edge.Tests` exercises all four edge packages:

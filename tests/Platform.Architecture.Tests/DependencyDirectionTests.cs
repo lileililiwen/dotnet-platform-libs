@@ -30,6 +30,8 @@ public class DependencyDirectionTests
         "src/Platform.Web.Telemetry/Platform.Web.Telemetry.csproj",
         "src/Platform.Web.Cors/Platform.Web.Cors.csproj",
         "src/Platform.Web.Resilience/Platform.Web.Resilience.csproj",
+        "src/Platform.FeatureManagement/Platform.FeatureManagement.csproj",
+        "src/Platform.Http.Resilience/Platform.Http.Resilience.csproj",
         "src/Platform.Web.OpenApi/Platform.Web.OpenApi.csproj",
         "src/Platform.Testing/Platform.Testing.csproj",
         "src/Platform.Persistence.EfCore/Platform.Persistence.EfCore.csproj",
@@ -85,6 +87,8 @@ public class DependencyDirectionTests
         "Platform.Webhooks.Tests",
         "Platform.Observability.Tests",
         "Platform.Persistence.Multitenancy.Tests",
+        "Platform.FeatureManagement.Tests",
+        "Platform.Http.Resilience.Tests",
     };
 
     private static readonly string[] FrameworkIndependentProjects =
@@ -406,6 +410,7 @@ public class DependencyDirectionTests
                 || project.EndsWith("Platform.Webhooks.AspNetCore.csproj", StringComparison.OrdinalIgnoreCase)
                 || project.EndsWith("Platform.Web.Cors.csproj", StringComparison.OrdinalIgnoreCase)
                 || project.EndsWith("Platform.Web.Resilience.csproj", StringComparison.OrdinalIgnoreCase)
+                || project.EndsWith("Platform.FeatureManagement.csproj", StringComparison.OrdinalIgnoreCase)
                 || project.EndsWith("Platform.Web.OpenApi.csproj", StringComparison.OrdinalIgnoreCase)
                 || project.EndsWith("Platform.Observability.csproj", StringComparison.OrdinalIgnoreCase)
                 || project.EndsWith("Platform.Persistence.Multitenancy.csproj", StringComparison.OrdinalIgnoreCase))
@@ -924,6 +929,81 @@ public class DependencyDirectionTests
         Assert.Equal(2, references.Length);
         Assert.Contains("Platform.Core", references, StringComparer.OrdinalIgnoreCase);
         Assert.Contains("Platform.Web.Telemetry", references, StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Platform_FeatureManagement_references_only_platform_core_and_web_telemetry()
+    {
+        var references = ReadProjectReferences("src/Platform.FeatureManagement/Platform.FeatureManagement.csproj");
+        Assert.Equal(2, references.Length);
+        Assert.Contains("Platform.Core", references, StringComparer.OrdinalIgnoreCase);
+        Assert.Contains("Platform.Web.Telemetry", references, StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Platform_FeatureManagement_declares_only_the_aspnetcore_framework_reference()
+    {
+        var references = ReadFrameworkReferences("src/Platform.FeatureManagement/Platform.FeatureManagement.csproj");
+        Assert.True(
+            references.Length == 1 && references[0].Equals("Microsoft.AspNetCore.App", StringComparison.OrdinalIgnoreCase),
+            "Platform.FeatureManagement must declare only Microsoft.AspNetCore.App but declares: " + string.Join(", ", references));
+    }
+
+    [Fact]
+    public void Platform_FeatureManagement_does_not_reference_forbidden_packages()
+    {
+        var path = "src/Platform.FeatureManagement/Platform.FeatureManagement.csproj";
+        var packages = ReadPackageReferences(path);
+        var violations = packages
+            .Where(p => p.StartsWith("Microsoft.EntityFrameworkCore", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("Polly", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("Stripe", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("Hangfire", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("Quartz", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("RabbitMQ", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("StackExchange.Redis", StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+
+        Assert.True(
+            violations.Length == 0,
+            "Platform.FeatureManagement must not reference forbidden packages but references: " + string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void Platform_Http_Resilience_references_only_platform_core_and_web_telemetry()
+    {
+        var references = ReadProjectReferences("src/Platform.Http.Resilience/Platform.Http.Resilience.csproj");
+        Assert.Equal(2, references.Length);
+        Assert.Contains("Platform.Core", references, StringComparer.OrdinalIgnoreCase);
+        Assert.Contains("Platform.Web.Telemetry", references, StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Platform_Http_Resilience_does_not_declare_a_framework_reference()
+    {
+        var references = ReadFrameworkReferences("src/Platform.Http.Resilience/Platform.Http.Resilience.csproj");
+        Assert.True(
+            references.Length == 0,
+            "Platform.Http.Resilience must not declare FrameworkReferences but declares: " + string.Join(", ", references));
+    }
+
+    [Fact]
+    public void Platform_Http_Resilience_does_not_reference_forbidden_packages()
+    {
+        var path = "src/Platform.Http.Resilience/Platform.Http.Resilience.csproj";
+        var packages = ReadPackageReferences(path);
+        var violations = packages
+            .Where(p => p.StartsWith("Microsoft.AspNetCore", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("Microsoft.EntityFrameworkCore", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("Microsoft.FeatureManagement", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("Polly", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("Stripe", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("StackExchange.Redis", StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+
+        Assert.True(
+            violations.Length == 0,
+            "Platform.Http.Resilience must not reference forbidden packages but references: " + string.Join(", ", violations));
     }
 
     [Fact]
