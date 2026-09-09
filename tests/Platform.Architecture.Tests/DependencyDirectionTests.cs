@@ -347,6 +347,38 @@ public class DependencyDirectionTests
     }
 
     [Fact]
+    public void Platform_Identity_AspNetCore_references_only_identity_contracts_and_authorization()
+    {
+        var references = ReadProjectReferences("src/Platform.Identity.AspNetCore/Platform.Identity.AspNetCore.csproj");
+        Assert.Equal(2, references.Length);
+        Assert.Contains("Platform.Identity.Contracts", references, StringComparer.OrdinalIgnoreCase);
+        Assert.Contains("Platform.Authorization", references, StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Platform_Identity_AspNetCore_does_not_reference_forbidden_packages()
+    {
+        var packages = ReadPackageReferences("src/Platform.Identity.AspNetCore/Platform.Identity.AspNetCore.csproj");
+        var violations = packages.Where(package => new[]
+        {
+            "Microsoft.EntityFrameworkCore",
+            "Stripe",
+            "OpenIddict",
+            "Twilio",
+        }.Any(prefix => package.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))).ToArray();
+        Assert.Empty(violations);
+    }
+
+    [Fact]
+    public void Platform_Identity_Testing_references_only_identity_contracts_and_authorization()
+    {
+        var references = ReadProjectReferences("src/Platform.Identity.Testing/Platform.Identity.Testing.csproj");
+        Assert.Equal(2, references.Length);
+        Assert.Contains("Platform.Identity.Contracts", references, StringComparer.OrdinalIgnoreCase);
+        Assert.Contains("Platform.Authorization", references, StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void Platform_Admin_Contracts_has_no_package_or_project_references()
     {
         Assert.Empty(ReadPackageReferences("src/Platform.Admin.Contracts/Platform.Admin.Contracts.csproj"));

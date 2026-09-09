@@ -431,6 +431,69 @@ Test-only helpers. Depends on `Platform.Core`, `Platform.AspNetCore`, and `Platf
 | `tests/Platform.Webhooks.Tests` | Synthetic signature, replay, normalization, and HTTP mapping coverage for the inbound and outbound flows. |
 | `tests/Platform.Web.Edge.Tests` | Telemetry contract, CORS option and TestServer coverage, HTTP resilience option/handler/circuit-breaker coverage, OpenAPI registry and TestServer coverage. |
 | `tests/Platform.ConsumerConformance` | Test-only consumer fixture that restores platform packages from a local NuGet feed and verifies registration, replacement, health, failure classification, opt-in boundaries, and end-to-end host behavior. Driven by `scripts/conformance.sh`; intentionally not part of `Platform.sln`. |
+## Platform.Identity (contracts)
+
+Provider-neutral identity and authentication contracts. Framework-neutral; targets `net8.0`. Zero third-party dependencies.
+
+### Current user
+
+- `CurrentUser` — immutable subject/email/tenant/roles/permissions projection. `IsAuthenticated`, `RoleSet`, `PermissionSet`, and `Anonymous`.
+- `ICurrentUserAccessor` — resolves the current user without prescribing a token or user entity.
+
+### Providers
+
+- `ICredentialVerifier`, `IExternalIdentityProvider`, `IVerificationProvider`, `ISessionStore` — replaceable contracts returning `IdentityProviderResult<T>` with a normalized `IdentityFailureReason`. Secrets, provider response bodies, and vendor exceptions are never placed in the result.
+- `IIdentityAuditHook` — receives `IdentityAuditEvent` for security-sensitive mutations without prescribing a store.
+
+## Platform.Authorization
+
+Module-owned permission definitions and authorization decision contracts. Framework-neutral; targets `net8.0`.
+
+- `PermissionDefinition` / `PermissionCatalog` — resource/action permission keyed by `resource.action`; the catalog is module-owned and rejects duplicate keys.
+- `PlatformPolicyNames` — stable `ForPermission` / `ForRole` policy names.
+- `AuthorizationDecision` / `IAuthorizationDecisionAuditor` — normalized decision and recording sink.
+
+## Platform.Identity.AspNetCore
+
+Optional ASP.NET Core host adapter. Depends on `Platform.Identity.Contracts` and `Platform.Authorization` and the `Microsoft.AspNetCore.App` framework reference; no third-party packages.
+
+### Registration
+
+- `AddPlatformIdentity()` / `AddPlatformIdentity(Action<PlatformIdentityOptions>)` — register `HttpCurrentUserAccessor`, `IIdentitySessionService`, the permission handler, and authorization.
+- `AddPlatformIdentityAuthentication()` — registers the platform authentication scheme without replacing consumer schemes.
+- `AddPlatformIdentityCredentialVerifier<T>` / `AddPlatformIdentityExternalProvider<T>` / `AddPlatformIdentityVerificationProvider<T>` / `AddPlatformIdentitySessionStore<T>` / `AddPlatformIdentityAuditHook<T>` — `TryAdd` seams for application-owned providers and stores.
+- `RequirePlatformPermission("resource.action")` / `RequirePlatformRole("role")` — named policies; `PlatformPermissionPolicy` / `PlatformRolePolicy` return the policy names.
+- `AddPlatformIdentityJwt(Action<PlatformIdentityJwtOptions>)` — registers JWT options validated on startup; disabled until `Enabled` is set.
+
+### Claim projection
+
+- `HttpCurrentUserAccessor` — projects configured subject (default `ClaimTypes.NameIdentifier`, falls back to `sub`), email (default `ClaimTypes.Email`, falls back to `email`), tenant, role, and permission claims into `CurrentUser`; returns `CurrentUser.Anonymous` for unauthenticated requests; roles and permissions are deduplicated case-insensitively.
+- `PlatformIdentityOptions` — configurable `SubjectClaimType`, `EmailClaimType`, `TenantClaimType`, `PermissionClaimType`, and `AuthenticationScheme`.
+
+### Session service
+
+- `IIdentitySessionService` / `IdentitySessionService` — host-level session operations over the registered `ISessionStore`, preserving `IdentityProviderResult<T>` outcomes and reporting `ProviderUnavailable` when no store is registered.
+
+### Audit and validation
+
+- `PlatformPermissionHandler` — succeeds for authenticated subjects carrying the permission and records a denied `IdentityAuditEvent` (`authorization.denied`) to a registered `IIdentityAuditHook` without token contents; `IAuthorizationDecisionAuditor` continues to receive the normalized decision.
+- `PlatformIdentityJwtOptions` — `Enabled`, `Issuer`, `Audience`, `SigningKey`. `GetDiagnosticName()` returns a redacted view that never includes the signing key. Startup validation fails fast with a secret-free message when `Enabled` and any of `SigningKey`/`Issuer`/`Audience` is missing.
+
+## Platform.Identity.EntityFrameworkCore
+
+Optional schema-independent EF Core identity store contracts. Depends on `Platform.Identity.Contracts` and `Platform.Persistence.EfCore`; references `Microsoft.EntityFrameworkCore`. No platform user entity, schema, migration, or business relationship is supplied.
+
+- `IIdentityStore` — application-owned lookup/link operations returning normalized outcomes.
+- `IdentityDbContextAdapter` — abstract `DbContext` base the application derives to configure its own identity entities.
+- `AddPlatformIdentityStore<T>()` — `TryAdd` seam for the application-owned `IIdentityStore`.
+
+## Platform.Identity.Testing
+
+Deterministic identity and authorization test providers. Depends on `Platform.Identity.Contracts` and `Platform.Authorization`.
+
+- `FakeCurrentUserAccessor`, `FakeCredentialVerifier`, `FakeExternalIdentityProvider`, `FakeVerificationProvider` — deterministic in-memory providers keyed by fixture input.
+- `RecordingAuthorizationDecisionAuditor` — collects `AuthorizationDecision` records for assertions.
+
 # Platform.Realtime
 
 Opt-in, application-owned realtime transports over provider-neutral contracts.

@@ -13,7 +13,10 @@ internal sealed class PlatformPermissionRequirement(string permission) : IAuthor
     public string Permission { get; } = permission;
 }
 
-internal sealed class PlatformPermissionHandler(ICurrentUserAccessor currentUser, IAuthorizationDecisionAuditor? auditor = null)
+internal sealed class PlatformPermissionHandler(
+    ICurrentUserAccessor currentUser,
+    IAuthorizationDecisionAuditor? auditor = null,
+    IIdentityAuditHook? auditHook = null)
     : AuthorizationHandler<PlatformPermissionRequirement>
 {
     protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, PlatformPermissionRequirement requirement)
@@ -27,6 +30,13 @@ internal sealed class PlatformPermissionHandler(ICurrentUserAccessor currentUser
             await auditor.RecordAsync(granted
                 ? AuthorizationDecision.Granted(requirement.Permission)
                 : AuthorizationDecision.Denied(requirement.Permission), user.SubjectId).ConfigureAwait(false);
+
+        if (!granted && auditHook is not null)
+        {
+            // Identity audit records a denied decision without any token contents.
+            await auditHook.RecordAsync(
+                new IdentityAuditEvent("authorization.denied", user.SubjectId, false, DateTimeOffset.UtcNow)).ConfigureAwait(false);
+        }
     }
 }
 
@@ -44,6 +54,7 @@ public static class IdentityServiceCollectionExtensions
         services.AddOptions<PlatformIdentityOptions>().Configure(configure).Validate(o => o.IsValid(), "Platform identity options are invalid.");
         services.AddHttpContextAccessor();
         services.TryAddScoped<ICurrentUserAccessor, HttpCurrentUserAccessor>();
+        services.TryAddScoped<IIdentitySessionService, IdentitySessionService>();
         services.AddAuthorization();
         services.TryAddEnumerable(ServiceDescriptor.Transient<IAuthorizationHandler, PlatformPermissionHandler>());
         return services;
@@ -59,6 +70,51 @@ public static class IdentityServiceCollectionExtensions
             authentication.DefaultAuthenticateScheme = options.AuthenticationScheme;
             authentication.DefaultChallengeScheme = options.AuthenticationScheme;
         });
+    }
+
+    /// <summary>Registers an application-owned credential verifier without a platform user entity.</summary>
+    public static IServiceCollection AddPlatformIdentityCredentialVerifier<TVerifier>(this IServiceCollection services)
+        where TVerifier : class, ICredentialVerifier
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        services.TryAddScoped<ICredentialVerifier, TVerifier>();
+        return services;
+    }
+
+    /// <summary>Registers an application-owned external identity provider without a platform user entity.</summary>
+    public static IServiceCollection AddPlatformIdentityExternalProvider<TProvider>(this IServiceCollection services)
+        where TProvider : class, IExternalIdentityProvider
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        services.TryAddScoped<IExternalIdentityProvider, TProvider>();
+        return services;
+    }
+
+    /// <summary>Registers an application-owned verification provider without a platform channel.</summary>
+    public static IServiceCollection AddPlatformIdentityVerificationProvider<TProvider>(this IServiceCollection services)
+        where TProvider : class, IVerificationProvider
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        services.TryAddScoped<IVerificationProvider, TProvider>();
+        return services;
+    }
+
+    /// <summary>Registers an application-owned session store used by the identity session service.</summary>
+    public static IServiceCollection AddPlatformIdentitySessionStore<TStore>(this IServiceCollection services)
+        where TStore : class, ISessionStore
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        services.TryAddScoped<ISessionStore, TStore>();
+        return services;
+    }
+
+    /// <summary>Registers an application-owned identity audit hook.</summary>
+    public static IServiceCollection AddPlatformIdentityAuditHook<THook>(this IServiceCollection services)
+        where THook : class, IIdentityAuditHook
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        services.TryAddScoped<IIdentityAuditHook, THook>();
+        return services;
     }
 
     /// <summary>Adds a named policy requiring the given module-owned permission.</summary>
