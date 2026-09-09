@@ -22,6 +22,7 @@ public class DependencyDirectionTests
         "src/Platform.Storage.S3/Platform.Storage.S3.csproj",
         "src/Platform.Quota/Platform.Quota.csproj",
         "src/Platform.Quota.Testing/Platform.Quota.Testing.csproj",
+        "src/Platform.Quota.AspNetCore/Platform.Quota.AspNetCore.csproj",
         "src/Platform.Idempotency/Platform.Idempotency.csproj",
         "src/Platform.Jobs/Platform.Jobs.csproj",
         "src/Platform.Mailing/Platform.Mailing.csproj",
@@ -75,6 +76,7 @@ public class DependencyDirectionTests
         "Platform.Caching.Adapter.Tests",
         "Platform.Storage.Tests",
         "Platform.Quota.Tests",
+        "Platform.Quota.AspNetCore.Tests",
         "Platform.Testing.Tests",
         "Platform.Web.Tests",
         "Platform.Web.Edge.Tests",
@@ -449,7 +451,8 @@ public class DependencyDirectionTests
                 || project.EndsWith("Platform.Web.OpenApi.csproj", StringComparison.OrdinalIgnoreCase)
                 || project.EndsWith("Platform.Observability.csproj", StringComparison.OrdinalIgnoreCase)
                 || project.EndsWith("Platform.Persistence.Multitenancy.csproj", StringComparison.OrdinalIgnoreCase)
-                || project.EndsWith("Platform.Realtime.AspNetCore.csproj", StringComparison.OrdinalIgnoreCase))
+                || project.EndsWith("Platform.Realtime.AspNetCore.csproj", StringComparison.OrdinalIgnoreCase)
+                || project.EndsWith("Platform.Quota.AspNetCore.csproj", StringComparison.OrdinalIgnoreCase))
             {
                 Assert.True(
                     references.Length == 1 && references[0].Equals("Microsoft.AspNetCore.App", StringComparison.OrdinalIgnoreCase),
@@ -646,6 +649,35 @@ public class DependencyDirectionTests
     {
         Assert.Equal(["Platform.Quota"], ReadProjectReferences("src/Platform.Quota.Testing/Platform.Quota.Testing.csproj"));
         Assert.Empty(ReadPackageReferences("src/Platform.Quota.Testing/Platform.Quota.Testing.csproj"));
+    }
+
+    [Fact]
+    public void Platform_Quota_AspNetCore_references_only_platform_core_and_quota()
+    {
+        var references = ReadProjectReferences("src/Platform.Quota.AspNetCore/Platform.Quota.AspNetCore.csproj");
+        Assert.Equal(2, references.Length);
+        Assert.Contains("Platform.Core", references, StringComparer.OrdinalIgnoreCase);
+        Assert.Contains("Platform.Quota", references, StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Platform_Quota_AspNetCore_does_not_reference_forbidden_packages()
+    {
+        var path = "src/Platform.Quota.AspNetCore/Platform.Quota.AspNetCore.csproj";
+        var packages = ReadPackageReferences(path);
+        var violations = packages
+            .Where(p => p.StartsWith("Microsoft.EntityFrameworkCore", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("StackExchange.Redis", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("Stripe", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("Hangfire", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("Quartz", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("RabbitMQ", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("Polly", StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+
+        Assert.True(
+            violations.Length == 0,
+            "Platform.Quota.AspNetCore must not reference forbidden packages but references: " + string.Join(", ", violations));
     }
 
     [Theory]

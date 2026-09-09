@@ -271,6 +271,10 @@ prices, invoices, wallets, ledgers, or persistence models.
   `GetReservation` inspection.
 - `IQuotaLimitResolver` — optional seam for application-owned entitlement-to-limit resolution.
 - `Platform.Quota.Testing` — `QuotaScenarioBuilder` for deterministic test setup.
+- `Platform.Quota.AspNetCore` — optional ASP.NET Core enforcement middleware, subject/resource
+  resolvers, exemptions, and RFC 9457 429 responses. References `Platform.Core` and `Platform.Quota`
+  and the `Microsoft.AspNetCore.App` framework reference only; it does not define plans, prices,
+  entitlements, units, or persistence.
 
 See [`platform-quota.md`](platform-quota.md) for unit conversion, reconciliation, migration, and
 ownership boundaries.
