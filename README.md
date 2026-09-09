@@ -18,6 +18,7 @@ This repository is a platform library, not a replacement for every application's
 | `Platform.Eventing` | Production | `Platform.Core` | Transport-agnostic event-bus contract: `IIntegrationEvent`, `IntegrationEvent`, `IntegrationEventEnvelope`, default `System.Text.Json` serializer/deserializer, `IIntegrationEventHandler<TEvent>`, `IEventBus`, `InProcessEventBus` (bounded `Channel<T>`), `EventingOptions`, and `AddPlatformEventing` / `AddPlatformEventingInProcess` opt-in registration. |
 | `Platform.Eventing.Contracts` | Production | `Platform.Core` | Framework-neutral durable eventing contracts and in-memory outbox/inbox stores. |
 | `Platform.Eventing.EfCore` | Optional production adapter | `Platform.Eventing.Contracts`, `Platform.Core` | Application-owned EF Core outbox/inbox mappings, stores, and hosted outbox dispatcher. |
+| `Platform.Eventing.RabbitMq` | Optional production adapter | `Platform.Eventing.Contracts` | RabbitMQ publisher for the durable event boundary: confirmed publishing, application-owned topology registration, bounded connect/confirm waits, safe transient/permanent failure classification, and `AddPlatformRabbitMqEventing` opt-in registration. |
 | `Platform.Caching` | Production | `Platform.Core` | Provider-neutral async cache contracts, validated tenant/application keys, redaction-safe telemetry, and thread-safe in-memory store. |
 | `Platform.Caching.Hybrid` | Optional production adapter | `Platform.Caching` | Microsoft HybridCache adapter for local or single-host deployments. |
 | `Platform.Caching.Redis` | Optional production adapter | `Platform.Caching` | StackExchange.Redis adapter with application-owned serialization, bounded operations, tags, and provider health. |
@@ -51,7 +52,8 @@ tests/
   docs/
   build-test-pack.md            Restore, build, test, pack, and validate commands
   packages.md                   Per-package contract reference
-  platform-eventing-durable.md  Durable eventing adoption and ownership guidance
+   platform-eventing-durable.md  Durable eventing adoption and ownership guidance
+   platform-eventing-rabbitmq.md RabbitMQ durable publisher adoption and failure classification
   platform-caching.md           Cache authority, key/version, failure, and adoption guidance
   platform-storage.md           Object storage ownership, safety, limits, and migration guidance
   platform-quota.md             Quota lifecycle, concurrency, and application ownership guidance
@@ -100,4 +102,4 @@ Incomplete or blocked work must not be reported as complete. The handoff must re
 
 ## Current status
 
-All 20 OpenSpec changes in `ROADMAP.md` are implemented and archived. The repository contains 30 production/adaptor projects and six testing-support projects, including provider-neutral AI contracts and optional raw-HTTP adapters for OpenAI-compatible/DeepSeek, Anthropic, and Ollama providers. `Platform.Testing` and the other testing-support packages are not referenced by production projects; `Platform.Architecture.Tests` enforces the dependency direction. The repository has 484 passing tests across 22 test projects, 36 source projects, and 19 generated capability specs. `openspec list` is empty; the next work starts with a fresh OpenSpec proposal. See [`docs/platform-ai.md`](docs/platform-ai.md), `HANDOFF.md`, and `ROADMAP.md` for package, completion, and planning details.
+All 37 OpenSpec changes are implemented and archived. The repository contains 65 source projects and 41 test projects (including the solution-excluded consumer-conformance fixture), with 1105 passing tests and 32 generated capability specs. `Platform.Testing` and the other testing-support packages are not referenced by production projects; `Platform.Architecture.Tests` enforces the dependency direction. `openspec list` is empty; the next work starts with a fresh OpenSpec proposal. See [`docs/packages.md`](docs/packages.md), `HANDOFF.md`, and `ROADMAP.md` for package, completion, and planning details.
