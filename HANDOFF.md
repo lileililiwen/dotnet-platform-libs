@@ -1,5 +1,31 @@
 # Handoff
 
+## Completed: platform-quota-aspnetcore
+
+- Added `Platform.Quota.AspNetCore` (`net8.0`, ASP.NET Core `FrameworkReference` only) with an optional HTTP quota-enforcement adapter over the framework-neutral `Platform.Quota` contracts. The package references `Platform.Core`, `Platform.Quota`, and the `Microsoft.AspNetCore.App` framework reference only; it owns no plan/Finbuckle types, tenant records, billing plans, or provider entities.
+- Added `QuotaEnforcementOptions` with the fail-closed `MissingContextPolicy { FailClosed, Allow }` and `QuotaUnavailablePolicy { FailClosed, Allow }` enums, an `Enabled` switch, a safe `AnonymousSubject` default, default exempt path prefixes (`/health`, `/healthz`, `/ready`, `/live`, `/alive`, `/metrics`), `ExemptMethods`, configurable `QuotaExceededStatusCode` (429), `MissingContextStatusCode` (403), `ProviderUnavailableStatusCode` (503), RFC 9457 `QuotaExceededType`/`QuotaExceededTitle`, `SubjectHeaderName` (`X-Quota-Subject`), and `Validate()` (valid status codes and non-empty subject header) invoked at registration.
+- Added the application-owned seams `IQuotaSubjectResolver` (returns a `QuotaSubjectResolution` record, with a static `Missing` so the policy decides), `IQuotaResourceResolver` (returns `IReadOnlyList<QuotaRequest>` of `Resource`/`Limit`/`Amount`/`Window`/`Reserve`), and a `[QuotaExempt]` attribute for endpoint- and class-level exemptions. `HeaderQuotaSubjectResolver` reads the configured header and returns `Missing` on absent/blank value; `UnconfiguredQuotaResourceResolver` throws `InvalidOperationException` so the host fails closed until the application registers a resolver.
+- Added `QuotaProblemDetailsWriter` (`IClock`-driven) that emits RFC 9457 `application/problem+json` bodies (via `JsonSerializer` with `JsonSerializerDefaults.Web`) for quota-exceeded and policy responses, surfacing safe diagnostic extensions (resource/limit/usage = consumed + reserved/requested/`retryAfterSeconds`/`resetAtUtc`/`traceId`/`correlationId`) without leaking store internals, and sets `Retry-After` from the decision window.
+- Added `PlatformQuotaMiddleware` (`IMiddleware`) that short-circuits when disabled or exempt, resolves the subject (applying `MissingContextPolicy`), resolves resources (capturing a thrown `InvalidOperationException` from the unconfigured resolver into a 503 quota-unavailable policy response), then checks or reserves-and-settles each request via `IQuotaStore` using an idempotent operation key per trace+resource, releasing any reserved amount on downstream failure before rethrowing. Logging uses analyzer-clean `LoggerMessage.Define` (`QuotaLogMessages`) for subject-resolution, store-unavailable, settle, and release events.
+- Added `ServiceCollectionExtensions.AddPlatformQuotaAspNetCore(Action<QuotaEnforcementOptions>?)` that registers validated options via `AddOptions<QuotaEnforcementOptions>().Configure(...)`, `TryAdd`s `IClock`→`SystemClock`, `IQuotaSubjectResolver`→`HeaderQuotaSubjectResolver`, `IQuotaResourceResolver`→`UnconfiguredQuotaResourceResolver`, `QuotaProblemDetailsWriter`, and `PlatformQuotaMiddleware`; plus `UsePlatformQuota(IApplicationBuilder)` wrapping `UseMiddleware<PlatformQuotaMiddleware>()`.
+- Added `tests/Platform.Quota.AspNetCore.Tests` (13 xunit tests over `TestServer`) covering allowed requests, denied 429 with `Retry-After` and safe metadata, missing-subject fail-closed and allow, health/method/endpoint exemptions, provider-unavailable fail-closed and allow, the unconfigured-resolver 503 path, reserve-and-settle, reserve-and-release-on-downstream-failure, and cancellation-token threading through the store.
+- Extended `Platform.Architecture.Tests` (236 → 244 tests, +8): added the new production and test projects to the production-project list and the AspNetCore-projection allowance, and added `Platform_Quota_AspNetCore_references_only_platform_core_and_quota` and `Platform_Quota_AspNetCore_does_not_reference_forbidden_packages`.
+- Updated `docs/platform-quota.md` with the ASP.NET Core enforcement section (packages, seams, options, RFC 9457 contract, migration from the starter middleware) and `docs/packages.md` with the `Platform.Quota.AspNetCore` bullet, and added both projects to `Platform.sln`.
+- Archived the change at `openspec/changes/archive/2026-09-09-platform-quota-aspnetcore/` with synchronized `openspec/specs/platform-quota-aspnetcore/spec.md` covering HTTP quota enforcement, standard quota rejection, missing-context policy, and configurable exemptions. No plan names, provider IDs, invoice rules, tenant records, migrations, or product resource quotas were added.
+
+## Verification evidence
+
+- `dotnet build Platform.sln -c Release --no-restore --nologo -m:1` — succeeded; 1 pre-existing unrelated warning (xUnit2013 in `Platform.Testing.Tests`) remains outside this change.
+- `dotnet test Platform.sln -c Release --no-build --no-restore --nologo -m:1` — 862 tests passed, 0 failed, 0 skipped, including the new `Platform.Quota.AspNetCore.Tests` (13) and the extended `Platform.Architecture.Tests` (244, +8 new assertions).
+- `openspec validate --changes --strict --no-interactive` — 4 passed, 0 failed (4 active changes remain after archive).
+- `openspec validate --specs --strict --no-interactive` — 28 passed, 0 failed after archive.
+- `git diff --check` — clean for the staged change.
+- Implementation commit completed for `platform-quota-aspnetcore` (source, tests, architecture guards, docs, archive, and generated spec).
+
+## Next change
+
+`platform-auditing` is the next active change returned by `openspec list` (4 active changes remain in the repository). Implement only that change in the next cycle.
+
 ## Completed: platform-identity-host-integration
 
 - Extended `Platform.Identity.AspNetCore` (`net8.0`, ASP.NET Core `FrameworkReference` only) so the host adapter projects configured subject, email, tenant, role, and permission claims into `CurrentUser` and returns `CurrentUser.Anonymous` for unauthenticated requests (`HttpCurrentUserAccessor` with configurable `SubjectClaimType`/`EmailClaimType` falling back to `sub`/`email` and case-insensitive duplicate deduplication). `PlatformIdentityOptions` gained `SubjectClaimType` and `EmailClaimType` while keeping `AuthenticationScheme`, `PermissionClaimType`, and `TenantClaimType`.
