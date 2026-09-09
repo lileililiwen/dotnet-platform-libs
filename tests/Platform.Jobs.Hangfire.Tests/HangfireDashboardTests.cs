@@ -8,7 +8,7 @@ using Platform.Jobs.Hangfire.DependencyInjection;
 
 namespace Platform.Jobs.Hangfire.Tests;
 
-public class HangfireDashboardTests
+public class HangfireDashboardTests : HangfireTest
 {
     [Fact]
     public void Factory_hides_the_storage_connection_string_and_installs_the_callback_filter()

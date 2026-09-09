@@ -10,7 +10,7 @@ using Platform.Jobs.Hangfire;
 using Platform.Jobs.Hangfire.DependencyInjection;
 
 namespace Platform.Jobs.Hangfire.Tests;
-public class DependencyInjectionTests
+public class DependencyInjectionTests : HangfireTest
 {
     [Fact]
     public void Registration_wires_the_platform_seams_and_the_storage()

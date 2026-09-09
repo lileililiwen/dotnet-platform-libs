@@ -217,6 +217,33 @@ public class DependencyDirectionTests
         Assert.True(File.Exists(fullPath), $"Project file not found: {relativePath}");
     }
 
+    [Fact]
+    public void Production_projects_are_packable_and_the_sample_is_excluded()
+    {
+        foreach (var relativePath in ProductionProjects)
+        {
+            var document = XDocument.Load(Path.Combine(RepositoryRoot, relativePath));
+            var explicitValue = document.Descendants("IsPackable").SingleOrDefault()?.Value;
+            Assert.NotEqual("false", explicitValue, StringComparer.OrdinalIgnoreCase);
+        }
+
+        var sample = XDocument.Load(Path.Combine(RepositoryRoot, "samples/Platform.Starter.Sample/Platform.Starter.Sample.csproj"));
+        Assert.Equal("false", sample.Descendants("IsPackable").Single().Value, ignoreCase: true);
+    }
+
+    [Fact]
+    public void Repository_packaging_metadata_points_to_the_public_repository()
+    {
+        var props = XDocument.Load(Path.Combine(RepositoryRoot, "Directory.Build.props"));
+
+        Assert.Equal("https://github.com/lileililiwen/dotnet-platform-libs", props.Descendants("RepositoryUrl").Single().Value);
+        Assert.Equal("git", props.Descendants("RepositoryType").Single().Value);
+        Assert.Equal("MIT", props.Descendants("PackageLicenseExpression").Single().Value);
+        Assert.Equal("README.md", props.Descendants("PackageReadmeFile").Single().Value);
+        Assert.Equal("snupkg", props.Descendants("SymbolPackageFormat").Single().Value);
+        Assert.Equal("true", props.Descendants("EmbedUntrackedSources").Single().Value, ignoreCase: true);
+    }
+
     [Theory]
     [MemberData(nameof(ProductionProjectsData))]
     public void Production_project_does_not_reference_test_projects(string relativePath)

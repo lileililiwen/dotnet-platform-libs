@@ -9,7 +9,7 @@ using Platform.Jobs.Hangfire.DependencyInjection;
 
 namespace Platform.Jobs.Hangfire.Tests;
 
-public class EndToEndTests
+public class EndToEndTests : HangfireTest
 {
     private static readonly TimeSpan PollTimeout = TimeSpan.FromSeconds(30);
 

@@ -10,6 +10,8 @@ using Platform.Core.Time;
 using Platform.Jobs.Hangfire;
 using Platform.Jobs.Hangfire.DependencyInjection;
 
+[assembly: CollectionBehavior(DisableTestParallelization = true)]
+
 namespace Platform.Jobs.Hangfire.Tests;
 
 public sealed class FixedClock(DateTimeOffset now) : IClock
@@ -17,6 +19,11 @@ public sealed class FixedClock(DateTimeOffset now) : IClock
     public DateTimeOffset Now { get; set; } = now;
 
     public DateTimeOffset UtcNow => Now;
+}
+
+public abstract class HangfireTest
+{
+    protected HangfireTest() => GlobalConfiguration.Configuration.UseNoOpLogProvider();
 }
 
 public sealed class RecordingJobTelemetry : IJobTelemetry

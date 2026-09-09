@@ -7,7 +7,7 @@ using Platform.Jobs.Hangfire;
 
 namespace Platform.Jobs.Hangfire.Tests;
 
-public class HangfireJobDispatcherTests
+public class HangfireJobDispatcherTests : HangfireTest
 {
     private static readonly DateTimeOffset Now = new(2026, 9, 9, 12, 0, 0, TimeSpan.Zero);
 

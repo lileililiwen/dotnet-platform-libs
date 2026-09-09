@@ -2,7 +2,7 @@ using Platform.Jobs.Hangfire;
 
 namespace Platform.Jobs.Hangfire.Tests;
 
-public class HangfireJobsOptionsTests
+public class HangfireJobsOptionsTests : HangfireTest
 {
     [Fact]
     public void Defaults_are_safe_and_bounded()

@@ -4,7 +4,7 @@ using Platform.Jobs.Hangfire;
 
 namespace Platform.Jobs.Hangfire.Tests;
 
-public class HangfireStorageHealthCheckTests
+public class HangfireStorageHealthCheckTests : HangfireTest
 {
     [Fact]
     public async Task Reachable_storage_reports_healthy()

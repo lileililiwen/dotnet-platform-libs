@@ -11,7 +11,7 @@ using Platform.Jobs.Hangfire;
 
 namespace Platform.Jobs.Hangfire.Tests;
 
-public class JobContextTests
+public class JobContextTests : HangfireTest
 {
     private static readonly Job SimpleJob =
         new(typeof(object), typeof(object).GetMethod("ToString")!, Array.Empty<object>());

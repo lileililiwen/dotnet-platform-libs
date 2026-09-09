@@ -13,6 +13,7 @@ SOLUTION="$ROOT_DIR/Platform.sln"
 CONFORMANCE_PROJECT="$ROOT_DIR/tests/Platform.ConsumerConformance/Platform.ConsumerConformance.csproj"
 LOCAL_FEED_DIR="$ROOT_DIR/tests/Platform.ConsumerConformance/.local-feed"
 LOG_DIR="$ROOT_DIR/tests/Platform.ConsumerConformance/.logs"
+NUGET_SOURCE="${NUGET_SOURCE:-https://repo.huaweicloud.com/repository/nuget/v3/index.json}"
 
 if [ ! -f "$SOLUTION" ]; then
   echo "ERROR: cannot find solution at $SOLUTION" >&2
@@ -60,7 +61,7 @@ cleanup_local_feed
 run_step "pack" dotnet pack "$SOLUTION" -c Release --no-restore -o "$LOCAL_FEED_DIR" --nologo -m:1
 
 step "Restoring conformance project from local feed"
-run_step "restore" dotnet restore "$CONFORMANCE_PROJECT" --source "$LOCAL_FEED_DIR" --source "https://api.nuget.org/v3/index.json" --nologo -m:1
+run_step "restore" dotnet restore "$CONFORMANCE_PROJECT" --source "$LOCAL_FEED_DIR" --source "$NUGET_SOURCE" --nologo -m:1
 
 step "Building conformance project"
 run_step "build" dotnet build "$CONFORMANCE_PROJECT" -c Release --no-restore --nologo -m:1

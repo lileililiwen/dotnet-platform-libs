@@ -8,6 +8,14 @@ The repository uses standard .NET CLI commands. All commands run from the reposi
 dotnet restore Platform.sln
 ```
 
+The repository defaults to the Huawei Cloud NuGet mirror through
+`NuGet.config`. Set `NUGET_SOURCE` when using an approved internal feed or the
+official NuGet source:
+
+```bash
+NUGET_SOURCE=https://api.nuget.org/v3/index.json dotnet restore Platform.sln
+```
+
 Package versions are defined centrally in `Directory.Packages.props`; project files declare `<PackageReference Include="..." />` without `Version` attributes.
 
 ## Build
@@ -69,6 +77,23 @@ The script records the exact failed command and the next action in
 source regression from an environment blocker (missing Docker, no local feed, no
 network access). See [`docs/platform-consumer-conformance.md`](platform-consumer-conformance.md)
 for the full layout and what the suite covers.
+
+## Upgrade and rollback smoke test
+
+When a previous package feed and a candidate package feed are available, verify
+both adoption and rollback with:
+
+```bash
+./scripts/consumer-upgrade-rollback.sh \
+  /absolute/path/to/previous-feed \
+  /absolute/path/to/candidate-feed \
+  0.2.0
+```
+
+The fixture is copied to a temporary directory, restored from the candidate
+feed at `0.2.0`, tested, then restored from the previous feed at `0.1.0` and
+tested again. The script exits non-zero on either failure and never modifies
+the checked-in fixture.
 
 ## Lint working tree
 

@@ -1,0 +1,42 @@
+name: platform-quality
+
+on:
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'Directory.*'
+      - 'global.json'
+      - 'openspec/**'
+      - 'scripts/**'
+      - 'docs/**'
+      - '.github/workflows/**'
+      - 'README.md'
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  NUGET_SOURCE: https://repo.huaweicloud.com/repository/nuget/v3/index.json
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.424
+      - name: Run quality gate
+        env:
+          CI: true
+        run: ./scripts/quality-gate.sh
+      - name: Check public API baseline
+        run: ./scripts/check-public-api.sh
+      - name: Pack and consume artifacts
+        run: ./scripts/conformance.sh
+      - name: Audit dependencies
+        run: ./scripts/audit-packages.sh

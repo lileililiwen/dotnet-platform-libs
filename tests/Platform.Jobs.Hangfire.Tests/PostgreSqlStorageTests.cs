@@ -15,7 +15,7 @@ namespace Platform.Jobs.Hangfire.Tests;
 /// pulled), the test returns without asserting so the suite stays
 /// deterministic on machines without Docker.
 /// </summary>
-public class PostgreSqlStorageTests
+public class PostgreSqlStorageTests : HangfireTest
 {
     private const string Image = "postgres:16-alpine";
 

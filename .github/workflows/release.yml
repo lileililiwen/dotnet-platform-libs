@@ -1,0 +1,40 @@
+name: platform-release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'SemVer package version'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  NUGET_SOURCE: https://repo.huaweicloud.com/repository/nuget/v3/index.json
+
+jobs:
+  release-verification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.424
+      - name: Verify quality and API compatibility
+        run: |
+          ./scripts/quality-gate.sh
+          ./scripts/check-public-api.sh
+          ./scripts/audit-packages.sh
+      - name: Pack release artifacts
+        run: dotnet pack Platform.sln -c Release --no-build -p:Version="$VERSION" -o artifacts/packages --nologo -m:1
+      - name: Upload packages and audit evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: platform-packages-${{ inputs.version }}
+          path: artifacts/packages/
+          if-no-files-found: error
