@@ -431,6 +431,59 @@ Test-only helpers. Depends on `Platform.Core`, `Platform.AspNetCore`, and `Platf
 | `tests/Platform.Webhooks.Tests` | Synthetic signature, replay, normalization, and HTTP mapping coverage for the inbound and outbound flows. |
 | `tests/Platform.Web.Edge.Tests` | Telemetry contract, CORS option and TestServer coverage, HTTP resilience option/handler/circuit-breaker coverage, OpenAPI registry and TestServer coverage. |
 | `tests/Platform.ConsumerConformance` | Test-only consumer fixture that restores platform packages from a local NuGet feed and verifies registration, replacement, health, failure classification, opt-in boundaries, and end-to-end host behavior. Driven by `scripts/conformance.sh`; intentionally not part of `Platform.sln`. |
+# Platform.Realtime
+
+Opt-in, application-owned realtime transports over provider-neutral contracts.
+`Platform.Realtime` is framework-neutral (no ASP.NET Core / SignalR / Redis
+dependency) and defines connection lifecycle, authorization, tenant routing,
+bounded payloads, provider status, and delivery-disclosure contracts.
+`Platform.Realtime.AspNetCore` adds the SSE and SignalR adapters and depends only
+on the `Microsoft.AspNetCore.App` framework reference; the backplane is
+application-owned and optional.
+
+## Platform.Realtime (contracts)
+
+### Connection options
+
+- `RealtimeConnectionOptions` — `MaxConcurrentConnections` (default `1000`), `MaxPayloadBytes` (default `65536`), `ConnectionIdleTimeout` (default 5 min), `HeartbeatInterval` (default 30 s), `AllowCrossTenantBroadcast` (default `false`), `SectionName` constant `"Realtime"`. `Validate()` returns human-readable failures.
+
+### Authorization and tenant routing
+
+- `IRealtimeConnectionAuthorizer` — `AuthorizeAsync(request, ct)`; the platform never connects a client without a positive `RealtimeAuthorizationResult`. `DenyAllRealtimeAuthorizer` is the fail-closed default.
+- `RealtimeConnectionRequest` — inbound connection description (connection id, `CallerContext`, optional metadata).
+- `IRealtimeTenantRouter` — `IsRouteAllowedAsync(route, ct)`; `DenyCrossTenantRouter` (allow only when target tenant equals caller tenant, or both unset) is the fail-closed default.
+- `RealtimeTenantRoute` — candidate delivery route (target tenant, caller).
+
+### Messages and status
+
+- `RealtimeMessage.Create(maxPayloadBytes, channel?, targetTenantId?, targetSubjectId?, payloadText?, payload?)` — bounded, validated message. `GetPayloadByteCount()`.
+- `IRealtimeProviderStatus` / `RealtimeProviderStatus` — safe, topology-free transport health (transport name, availability, backplane flag). Never exposes connection strings or credentials.
+- `RealtimeResyncRequest` and `RealtimeDelivery.IsDurable` (`false`) — the non-durable delivery disclosure. Replay/resync is application-owned.
+
+### Registration
+
+- `AddPlatformRealtime(IServiceCollection)` and the `Action<RealtimeConnectionOptions>` overload — bind options and register `IClock` when no implementation is present. The application supplies `IRealtimeConnectionAuthorizer` and `IRealtimeTenantRouter`.
+
+## Platform.Realtime.AspNetCore (adapters)
+
+### SSE
+
+- `AddPlatformRealtimeAspNetCore(...)` — registers the shared contracts, fail-closed defaults, the connection limiter, and the provider status. Also registers `IRealtimeSseSource` resolution expectation; applications supply the source, caller resolver, authorizer, and router.
+- `MapPlatformRealtimeSse(pattern)` — maps a Server-Sent Events stream that authorizes (reject `401` when denied), enforces the connection limit (reject `503` when full), sets safe `text/event-stream` headers, streams the application `IRealtimeSseSource`, emits heartbeats, and releases the connection slot on disconnect/cancellation. Each written message is tenant-routed and payload-bounded by the platform `SseMessageSink`.
+
+### SignalR
+
+- `AddPlatformRealtimeSignalR(...)` — registers SignalR with a connection-authorization `IHubFilter` and a tenant-routing-aware `RealtimeHubBase`. The backplane is an application-owned seam (`RealtimeSignalROptions.ConfigureBackplane`); without it the host runs in-process (no-backplane mode).
+- `RealtimeHubBase` — optional base hub that authorizes on connect (fail-closed) and exposes a tenant-routing-aware `SendToTenantAsync`.
+
+### Status and resync
+
+- `MapPlatformRealtimeStatus(pattern = "/realtime/status")` — exposes safe transport health.
+- `MapPlatformRealtimeResync(pattern = "/realtime/resync")` — forwards a client `RealtimeResyncRequest` to the application `IRealtimeResyncHandler`; `404` when no handler is registered.
+
+See [`platform-realtime.md`](platform-realtime.md) for the migration guide and the
+non-durable delivery contract.
+
 # Platform.Starter
 
 `Platform.Starter` composes the opt-in web, identity, administration, billing, and mailing

@@ -26,6 +26,8 @@ public class DependencyDirectionTests
         "src/Platform.Jobs/Platform.Jobs.csproj",
         "src/Platform.Mailing/Platform.Mailing.csproj",
         "src/Platform.RateLimiting/Platform.RateLimiting.csproj",
+        "src/Platform.Realtime/Platform.Realtime.csproj",
+        "src/Platform.Realtime.AspNetCore/Platform.Realtime.AspNetCore.csproj",
         "src/Platform.Web/Platform.Web.csproj",
         "src/Platform.Web.Telemetry/Platform.Web.Telemetry.csproj",
         "src/Platform.Web.Cors/Platform.Web.Cors.csproj",
@@ -89,6 +91,7 @@ public class DependencyDirectionTests
         "Platform.Persistence.Multitenancy.Tests",
         "Platform.FeatureManagement.Tests",
         "Platform.Http.Resilience.Tests",
+        "Platform.Realtime.Tests",
     };
 
     private static readonly string[] FrameworkIndependentProjects =
@@ -413,7 +416,8 @@ public class DependencyDirectionTests
                 || project.EndsWith("Platform.FeatureManagement.csproj", StringComparison.OrdinalIgnoreCase)
                 || project.EndsWith("Platform.Web.OpenApi.csproj", StringComparison.OrdinalIgnoreCase)
                 || project.EndsWith("Platform.Observability.csproj", StringComparison.OrdinalIgnoreCase)
-                || project.EndsWith("Platform.Persistence.Multitenancy.csproj", StringComparison.OrdinalIgnoreCase))
+                || project.EndsWith("Platform.Persistence.Multitenancy.csproj", StringComparison.OrdinalIgnoreCase)
+                || project.EndsWith("Platform.Realtime.AspNetCore.csproj", StringComparison.OrdinalIgnoreCase))
             {
                 Assert.True(
                     references.Length == 1 && references[0].Equals("Microsoft.AspNetCore.App", StringComparison.OrdinalIgnoreCase),
@@ -756,6 +760,67 @@ public class DependencyDirectionTests
         Assert.True(
             violations.Length == 0,
             "Platform.RateLimiting must not reference VisualFlow projects but references: " + string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void Platform_Realtime_does_not_reference_forbidden_packages()
+    {
+        var packages = ReadPackageReferences("src/Platform.Realtime/Platform.Realtime.csproj");
+        var violations = packages
+            .Where(p => ForbiddenProductionPackagePrefixes.Any(prefix =>
+                p.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
+            .ToArray();
+
+        Assert.True(
+            violations.Length == 0,
+            "Platform.Realtime must not reference forbidden packages but references: " + string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void Platform_Realtime_only_references_Platform_Core()
+    {
+        var references = ReadProjectReferences("src/Platform.Realtime/Platform.Realtime.csproj");
+
+        Assert.True(
+            references.Length == 1 && references[0].Equals("Platform.Core", StringComparison.OrdinalIgnoreCase),
+            "Platform.Realtime must reference only Platform.Core but references: " + string.Join(", ", references));
+    }
+
+    [Fact]
+    public void Platform_Realtime_AspNetCore_does_not_reference_forbidden_packages()
+    {
+        var path = "src/Platform.Realtime.AspNetCore/Platform.Realtime.AspNetCore.csproj";
+        var packages = ReadPackageReferences(path);
+        var violations = packages
+            .Where(p => p.StartsWith("Microsoft.EntityFrameworkCore", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("StackExchange.Redis", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("Stripe", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("Hangfire", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("Quartz", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("RabbitMQ", StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+
+        Assert.True(
+            violations.Length == 0,
+            "Platform.Realtime.AspNetCore must not reference forbidden packages but references: " + string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void Platform_Realtime_AspNetCore_references_only_platform_core_and_realtime()
+    {
+        var references = ReadProjectReferences("src/Platform.Realtime.AspNetCore/Platform.Realtime.AspNetCore.csproj");
+        Assert.Equal(2, references.Length);
+        Assert.Contains("Platform.Core", references, StringComparer.OrdinalIgnoreCase);
+        Assert.Contains("Platform.Realtime", references, StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Platform_Realtime_AspNetCore_declares_only_the_aspnetcore_framework_reference()
+    {
+        var references = ReadFrameworkReferences("src/Platform.Realtime.AspNetCore/Platform.Realtime.AspNetCore.csproj");
+        Assert.True(
+            references.Length == 1 && references[0].Equals("Microsoft.AspNetCore.App", StringComparison.OrdinalIgnoreCase),
+            "Platform.Realtime.AspNetCore must declare only Microsoft.AspNetCore.App but declares: " + string.Join(", ", references));
     }
 
     [Fact]
