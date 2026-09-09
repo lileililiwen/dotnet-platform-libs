@@ -1,5 +1,82 @@
 # Handoff
 
+## Completed: platform-consumer-conformance
+
+- Added `scripts/conformance.sh` that packs every platform project to a local
+  feed at `tests/Platform.ConsumerConformance/.local-feed/`, restores the
+  fixture against that feed plus `nuget.org`, and runs the conformance
+  tests. Per-step logs land in `tests/Platform.ConsumerConformance/.logs/`
+  and any failure is reported as `ENV BLOCKER` with the exact command and
+  next action so CI can distinguish a source regression from a missing
+  Docker image, database, credential, external provider, or local feed.
+- Added `tests/Platform.ConsumerConformance/` (intentionally **not** part
+  of `Platform.sln`) as the test-only consumer fixture. The project
+  references every adopted platform package via `<PackageReference>`
+  against the local feed, disables central package version management, and
+  ships its own `nuget.config` plus `.gitignore` so the generated feed,
+  package cache, and logs stay out of source control.
+- Added 75 conformance tests across 19 classes covering package-feed
+  verification (no `<ProjectReference>` to platform projects, loaded
+  assembly references only platform assemblies, `nuget.config` declares
+  the local feed, `.gitignore` excludes `.local-feed/`), registration
+  (Platform.AspNetCore, RateLimiting, Idempotency, Jobs, Mailing,
+  Eventing, Caching, Quota, Storage, Persistence, Webhooks, durable
+  eventing, billing orchestration), replacement
+  (`IRateLimiter`/`IMailService`/`IJobDispatcher`/`IIdempotencyStore`/
+  `IObjectStorage` overrides win, consumer clock is preserved, options
+  overrides take precedence), opt-in boundaries (each `AddPlatformXxx`
+  registers only its own services, optional packages combine cleanly),
+  health/readiness (liveness tag, `TestServer` `Healthy`, unhealthy
+  aggregation, rate-limit backend status), failure classification
+  (`ProviderFailureClassifier` returns the documented kind for every
+  exception type and the safe message never carries the original text),
+  cancellation (rate limiter and a consumer-registered idempotency
+  store observe the token), redaction (HMAC verifier rejects mismatches,
+  SSRF validator rejects loopback and insecure schemes), tenant
+  isolation, in-process event bus, and an end-to-end host built entirely
+  from packages that returns sanitized `ProblemDetails` and echoes the
+  correlation identifier.
+- Extended `Platform.Architecture.Tests` (213 tests, +4 new):
+  `Consumer_conformance_project_does_not_reference_platform_projects`,
+  `Consumer_conformance_project_declares_a_local_nuget_feed`,
+  `Consumer_conformance_build_script_records_environment_blockers`, and
+  `Production_project_does_not_reference_consumer_conformance_project`.
+- Added `docs/platform-consumer-conformance.md` with the fixture layout,
+  the run loop, the per-conformance-assertion summary, opt-in Docker /
+  provider extension guidance, and the rollback path. Updated
+  `docs/packages.md` and `docs/build-test-pack.md` to point at the new
+  fixture and the `scripts/conformance.sh` entry point.
+- Archived the change at
+  `openspec/changes/archive/2026-09-09-platform-consumer-conformance/`
+  with synchronized `openspec/specs/platform-consumer-conformance/spec.md`
+  covering package-feed consumer fixture, registration and replacement
+  verification, runtime safety verification, and environment blocker
+  reporting. No platform package, application code, or production
+  project was modified.
+
+## Verification evidence
+
+- `dotnet build Platform.sln -c Release --nologo -m:1` — 0 warnings, 0
+  errors; the pre-existing `Platform.Testing.Tests` xUnit2013 warning was
+  unchanged.
+- `dotnet test Platform.sln -c Release --no-build --nologo -m:1` —
+  763 tests passed, 0 failed, 0 skipped, including the extended
+  `Platform.Architecture.Tests` (213 tests, +4 new consumer-conformance
+  assertions).
+- `./scripts/conformance.sh` — packed every platform project into
+  `tests/Platform.ConsumerConformance/.local-feed/`, restored, built, and
+  ran the 75 conformance tests against the published artifacts (0 failed).
+- `openspec validate --changes --strict --no-interactive` — 8 passed,
+  0 failed after archive.
+- `openspec validate --specs --strict --no-interactive` — 24 passed,
+  0 failed after archive.
+- `git diff --check` — clean for the staged change.
+
+## Next change
+
+`platform-featureflags-resilience` is the next active change returned by
+`openspec list`. Implement only that change in the next cycle.
+
 ## Completed: platform-persistence-multitenancy
 
 - Added framework-neutral tenant contracts in `Platform.Core/Tenancy`:
