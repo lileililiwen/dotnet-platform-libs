@@ -13,3 +13,4 @@ packages/
 coverage/
 *.DotSettings.user
 .codegraph/
+.zvec-grep/
