@@ -1,5 +1,28 @@
 # Handoff
 
+## Completed: platform-featureflags-resilience
+
+- Added `Platform.FeatureManagement` (`net8.0`, ASP.NET Core) with an application-owned `IFeatureContextResolver` + `FeatureContext`, the `PlatformTenantFeatureFilter` (`[FilterAlias("PlatformTenant")]`) that gates a feature by tenant via the resolver, and `RequireFeature` endpoint gating that returns a safe `ProblemDetails` when disabled. `FeatureManagementOptions` is validated at registration (`Enabled`, `SectionName`, bounded `DisabledStatusCode`, `DisabledTitle`). The package references `Platform.Core`, `Platform.Web.Telemetry`, the `Microsoft.AspNetCore.App` framework reference, and `Microsoft.FeatureManagement` only; it owns no feature names, rollout state, billing plans, tenant records, EF Core, or Polly.
+- Added `Platform.Http.Resilience` (`net8.0`, framework-neutral) with bounded `PlatformHttpResilienceOptions` (attempt/total timeouts, retry attempts/back-off, circuit-breaker ratio/throughput/break, concurrency limit/queue, idempotent-method set) validated at registration. The pipeline is built from the `Microsoft.Extensions.Http.Resilience` primitives (`ResiliencePipelineBuilder<HttpResponseMessage>` with base retry, timeout, circuit-breaker, and rate-limiter strategy options); the HTTP method is carried through a `ResilienceContext` property so idempotency classification is reliable. `PlatformHttpResilienceHandler` retries only idempotent methods by default, preserves caller cancellation (recorded, never retried), and short-circuits on an open circuit or a full concurrency queue with bounded `PlatformHttpResilienceEvent` telemetry (`IPlatformHttpResilienceTelemetry`, default no-op). The package references `Platform.Core`, `Platform.Web.Telemetry`, `Microsoft.Extensions.Http`, and `Microsoft.Extensions.Http.Resilience`; it declares no framework reference and no feature-management/Polly/provider dependency.
+- Added `tests/Platform.FeatureManagement.Tests` (7 tests) covering disabled-feature status/title, enabled-feature execution for an allowed tenant, resolver invocation, application-supplied mutable context, and options validation.
+- Added `tests/Platform.Http.Resilience.Tests` (9 tests) covering POST-not-retried, GET-retried-to-limit, successful GET not retried, opt-in idempotent override, circuit-breaker open + telemetry, cancellation preserved and recorded, per-attempt timeout short-circuit, and options validation (retry count, circuit ratio).
+- Extended `Platform.Architecture.Tests` (213 → 225 tests, +12): added the two new packages to the production-project list and the `FrameworkReference` allow list; added `Platform_FeatureManagement_references_only_platform_core_and_web_telemetry`, `Platform_FeatureManagement_declares_only_the_aspnetcore_framework_reference`, `Platform_FeatureManagement_does_not_reference_forbidden_packages`, `Platform_Http_Resilience_references_only_platform_core_and_web_telemetry`, `Platform_Http_Resilience_does_not_declare_a_framework_reference`, and `Platform_Http_Resilience_does_not_reference_forbidden_packages`.
+- Added `docs/platform-feature-flags-resilience.md` with adoption, retry-ownership, and rollback guidance; updated `docs/packages.md` with the per-package reference for both new packages.
+- Archived the change at `openspec/changes/archive/2026-09-09-platform-featureflags-resilience/` with synchronized `openspec/specs/platform-featureflags-resilience/spec.md` covering application-owned feature evaluation, explicit endpoint gating, safe HTTP resilience defaults, and resilience observability. No feature names, rollout persistence, billing plans, tenant records, or product flags were added.
+
+## Verification evidence
+
+- `dotnet build Platform.sln -c Release --no-restore --nologo -m:1` — 0 errors; the pre-existing `Platform.Testing.Tests` xUnit2013 warning is unchanged and outside this change.
+- `dotnet test Platform.sln -c Release --no-build --no-restore --nologo -m:1` — 791 tests passed, 0 failed, 0 skipped, including the new `Platform.FeatureManagement.Tests` (7) and `Platform.Http.Resilience.Tests` (9) and the extended `Platform.Architecture.Tests` (225, +12 new assertions).
+- `openspec validate --changes --strict --no-interactive` — 8 passed, 0 failed before archive (the 7 other active changes in the repository are included).
+- `openspec validate --specs --strict --no-interactive` — 25 passed, 0 failed after archive (the new spec is included).
+- `git diff --check` — clean for the staged change.
+- Implementation commit: `fe430fa` (`Implement feature flags and HTTP resilience adapters`).
+
+## Next change
+
+`platform-realtime` is the next active change returned by `openspec list` (7 active changes remain in the repository). Implement only that change in the next cycle.
+
 ## Completed: platform-consumer-conformance
 
 - Added `scripts/conformance.sh` that packs every platform project to a local
