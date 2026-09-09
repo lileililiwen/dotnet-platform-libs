@@ -1,5 +1,52 @@
 # Handoff
 
+## Completed: platform-release-governance
+
+Implemented and verified the package governance foundation: explicit `src/`
+package inventory with sample exclusion, GitHub repository metadata, portable
+symbols and embedded sources, changelog/release policy, serial quality and
+audit scripts, path-scoped PR and manual release workflows, selected public API
+baseline, architecture metadata tests, and packed local-feed conformance.
+
+Verified evidence:
+
+- `Platform.Architecture.Tests`: 280 passed.
+- `dotnet pack Platform.sln -c Release --no-restore --nologo -m:1`: all
+  solution package and symbol artifacts produced successfully.
+- `./scripts/conformance.sh`: pack, restore, build, and consumer tests passed.
+- `openspec validate --changes --strict --no-interactive`: 7 passed.
+- `openspec validate --specs --strict --no-interactive`: 32 passed.
+- `./scripts/check-public-api.sh`: passed against
+  `eng/public-api-baseline.txt`.
+- `git diff --check`: passed.
+
+Completion evidence:
+
+- `./scripts/quality-gate.sh`: Release restore/build/test, strict OpenSpec
+  validation, and `git diff --check` passed. Hangfire passed 61 tests after
+  test-host global-state isolation was added; RabbitMQ passed 37 tests.
+- `./scripts/audit-packages.sh`: `AUDIT_STATUS=VERIFIED` through the Huawei
+  Cloud NuGet mirror.
+
+The change was archived at
+`openspec/changes/archive/2026-09-09-platform-release-governance/`. The next
+change is `platform-hangfire-reliability`; its independent runtime reliability
+work remains queued. The test-host isolation fix above is included in this
+governance verification because it was required for the full gate.
+
+## Planned queue from starter-kit gap audit
+
+The active planning queue is intentionally dependency-ordered. Implement one change at a time, archive it, update this handoff with evidence, and stop before selecting the next change.
+
+1. `platform-hangfire-reliability` — resolve the disposed Hangfire in-memory dispatcher failure and harden lifecycle synchronization.
+2. `platform-web-api-versioning` — add an opt-in Asp.Versioning adapter with API Explorer/OpenAPI integration.
+3. `platform-identity-lifecycle-contracts` — add provider-neutral refresh/session/password/2FA/impersonation seams; keep Identity entities and policy in consumers.
+4. `platform-tenant-lifecycle-contracts` — add resumable provisioning/migration/seed orchestration seams; keep tenant catalog, migrations, and connection policy in consumers.
+5. `platform-consumer-adoption-conformance` — verify pinned packed-package adoption, upgrade, rollback, and dependency boundaries.
+6. `platform-testing-toolkit` — expand deterministic test-only fixtures after the public contracts and adoption path stabilize.
+
+The queue was derived from the comparison with `/home/paul/code/dotnet-starter-kit`. Starter application modules, invoices/wallets/plans, React shells, Aspire, Docker/Terraform, and CLI/template ownership remain explicitly outside these platform changes.
+
 ## Completed: platform-eventing-rabbitmq
 
 - Added `Platform.Eventing.RabbitMq` (`net8.0`) — an opt-in RabbitMQ adapter over the durable eventing contracts. `RabbitMqDurableEventPublisher` implements `IDurableEventPublisher`: it resolves the envelope's `PayloadType` through an application-owned `IRabbitMqEventTopology` (deterministic routing keys from registered `RabbitMqEventBinding`s, optional exchange override; unregistered types and unconfigured/invalid topology fail with a permanent configuration error before any message is sent), publishes persistent `application/json` messages carrying `MessageId`, correlation id, occurrence timestamp, and `payload-type`/`tenant-id` headers, and completes only after a broker confirmation (channels are created in publisher-confirm mode with confirmation tracking). Connection/channel lifecycle is adapter-owned: open channels are reused, closed or failed channels are disposed and re-created on the next publish, and every connect and confirmation wait is bounded. Connection, confirmation, and broker failures surface as safe transient `RabbitMqPublishException`s (stable `eventing.rabbitmq.*` codes, fixed safe messages, no broker response text, credentials, or inner exceptions; the original exception type name is logged before rethrowing) so the durable outbox stays the retry owner; caller cancellation is rethrown, never converted into a provider failure. Exposes `RabbitMqEventingProviderStatus`.
