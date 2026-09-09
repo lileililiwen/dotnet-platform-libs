@@ -1,5 +1,44 @@
 # Handoff
 
+## Completed: platform-mailing-providers
+
+- Added `Platform.Mailing.Smtp` (`net8.0`) — an opt-in MailKit-based `IMailService` adapter with explicit `SmtpSecureMode { StartTls, SslOnConnect, None }` (no auto-negotiation), MIME construction from the immutable `MailMessage` (sender/recipients with display names, subject, text/HTML parts, attachments with parsed content types, `X-Correlation-Id` header), optional SMTP authentication, a `Func<SmtpClient>` client-factory seam, and a bounded `OperationTimeout` (default 30s, 1s–5min). Outcomes are normalized: accepted → `Sent`; SMTP 4xx/connection/TLS/timeout → `TransientFailure`; SMTP 5xx and authentication failures → `PermanentFailure`. Invalid sender/recipient/attachment input returns a `mail.configuration.*` failure before the server is contacted; caller cancellation is rethrown, never converted into a provider failure; provider responses are never surfaced (stable error codes and fixed safe messages only). `SmtpMailOptions.Validate()` is invoked at registration and construction with secret-free messages; `AddPlatformSmtpMail` `TryAdd`s `IMailService` so application-owned registrations win. Exposes `SmtpMailProviderStatus`.
+- Added `Platform.Mailing.SendGrid` (`net8.0`) — an opt-in SendGrid adapter over an application-owned `ISendGridClient` with safe response classification: 2xx → `Sent` (with `X-Message-Id` as `ProviderMessageId`), 429 → `TransientFailure` (`mail.sendgrid.rate_limited`), 5xx → `TransientFailure` (`mail.sendgrid.server_error`), other 4xx → `PermanentFailure` (`mail.sendgrid.rejected`), transport/timeout → `TransientFailure`. Response bodies are never surfaced. Mapping covers sender, recipients, subject, plain-text/HTML bodies, base64 attachments, and the `X-Correlation-Id` global header. `SendGridMailOptions` (`ApiKey` required, secret-free validation; bounded `OperationTimeout`) is validated at registration and construction; `AddPlatformSendGridMail` `TryAdd`s both `ISendGridClient` (default `SendGridClient` with `HttpErrorAsException = false`) and `IMailService`. Exposes `SendGridMailProviderStatus`.
+- Neither adapter owns templates, retry policies, delivery records, or provider credentials beyond its options; `TransientFailure` is the documented retry signal and retry ownership stays with the application. `Platform.Mailing` itself is unchanged and still references no provider SDK.
+- Added `tests/Platform.Mailing.ProviderAdapters.Tests` (44 tests) with a deterministic in-process fake SMTP server (real loopback socket: MIME payload assertions, attachments, AUTH PLAIN capture, RCPT 550 → permanent, MAIL 451 → transient, connection refusal, operation timeout, cancellation preservation, configuration failures without server contact) and a fake `ISendGridClient` (classification, mapping, transport failure, cancellation, configuration failures), plus options-validation and opt-in DI/consumer-override tests for both adapters.
+- Extended `Platform.Architecture.Tests` (258 → 268 tests, +10): added both packages to the production-project list, `Platform.Mailing.ProviderAdapters.Tests` to the test-only assembly set, and added `Platform_Mailing_Smtp_references_only_platform_mailing`, `Platform_Mailing_Smtp_does_not_reference_forbidden_packages`, `Platform_Mailing_SendGrid_references_only_platform_mailing`, and `Platform_Mailing_SendGrid_does_not_reference_forbidden_packages`.
+- Added `docs/platform-mailing-providers.md` (adoption, normalized-outcome table, safety contract, delivery semantics, starter `MailRequest` migration, rollback) and updated `docs/packages.md` with both package sections and the new test-project row; added both packages and the test project to `Platform.sln`; centrally versioned MailKit `4.17.0` and SendGrid `9.29.3`.
+- Archived the change at `openspec/changes/archive/2026-09-09-platform-mailing-providers/` with synchronized `openspec/specs/platform-mailing-providers/spec.md` covering the SMTP adapter, the SendGrid adapter, input/configuration validation, and cancellation preservation. No templates, retry scheduling, delivery databases, provider credentials, or product notifications were added.
+
+## Verification evidence
+
+- `dotnet build Platform.sln -c Release --no-restore --nologo -m:1` — 0 errors; the pre-existing `Platform.Testing.Tests` xUnit2013 warning is unchanged and outside this change.
+- `dotnet test Platform.sln -c Release --no-build --nologo -m:1` — 997 tests passed, 0 failed, 0 skipped, including the new `Platform.Mailing.ProviderAdapters.Tests` (44) and the extended `Platform.Architecture.Tests` (268, +10 new assertions).
+- `dotnet pack src/Platform.Mailing.Smtp/Platform.Mailing.Smtp.csproj -c Release --no-build --no-restore --nologo -m:1` — produced `Platform.Mailing.Smtp.0.1.0.nupkg`.
+- `dotnet pack src/Platform.Mailing.SendGrid/Platform.Mailing.SendGrid.csproj -c Release --no-build --no-restore --nologo -m:1` — produced `Platform.Mailing.SendGrid.0.1.0.nupkg`.
+- `openspec validate --changes --strict --no-interactive` — 2 passed, 0 failed after archive (`platform-jobs-hangfire`, `platform-eventing-rabbitmq` remain).
+- `openspec validate --specs --strict --no-interactive` — 30 passed, 0 failed after archive.
+- `git diff --check` — clean for the staged change.
+- Implementation commit: `4326267` (`Implement SMTP and SendGrid mailing provider adapters`).
+
+## Next change
+
+`platform-jobs-hangfire` is the next active change returned by `openspec list` (2 active changes remain in the repository). Implement only that change in the next cycle.
+
+## Completed: platform-auditing (handoff record repair)
+
+- This cycle was implemented, tested, and archived in commit `13deb2b` (`Implement platform auditing contracts and capture adapters`) but its completion was never recorded here; this section restores the record. No code changes were made for it in this cycle.
+- Added `Platform.Auditing.Contracts` with normalized audit events, sink, masking, enrichment, retention, dead-letter, and failure-policy contracts; `Platform.Auditing.AspNetCore` with opt-in request, exception, and security capture middleware (fail-open, sensitive values masked before dispatch); and `Platform.Auditing.EfCore` with an `IAuditedEntity` save-changes interceptor. No durable audit store, schema, or retention schedule is prescribed.
+- Added `tests/Platform.Auditing.Tests` (67 tests) covering event validation, default masking rules, enricher/recorder semantics, the in-memory sink and options, HTTP middleware capture, exception classification, and EF Core change capture with masking and diffs.
+- Extended `Platform.Architecture.Tests` (244 → 258 tests, +14): added the three auditing packages to the production-project list, `Platform.Auditing.Tests` to the test-only assembly set, the AspNetCore/EfCore framework allowances, and five new auditing dependency-direction facts.
+- Archived the change at `openspec/changes/archive/2026-09-09-platform-auditing/` with synchronized `openspec/specs/platform-auditing/spec.md`.
+
+## Verification evidence (recorded retroactively for commit `13deb2b`)
+
+- `dotnet test Platform.sln -c Release --no-build --nologo -m:1` at this cycle's completion — 997 tests passed, 0 failed, including `Platform.Auditing.Tests` (67) and `Platform.Architecture.Tests` (268 total; 258 after `platform-auditing`, +10 from `platform-mailing-providers`).
+- `openspec validate --specs --strict --no-interactive` — 30 passed, 0 failed (the `platform-auditing` spec is included).
+- Implementation commit: `13deb2b`.
+
 ## Completed: platform-quota-aspnetcore
 
 - Added `Platform.Quota.AspNetCore` (`net8.0`, ASP.NET Core `FrameworkReference` only) with an optional HTTP quota-enforcement adapter over the framework-neutral `Platform.Quota` contracts. The package references `Platform.Core`, `Platform.Quota`, and the `Microsoft.AspNetCore.App` framework reference only; it owns no plan/Finbuckle types, tenant records, billing plans, or provider entities.
