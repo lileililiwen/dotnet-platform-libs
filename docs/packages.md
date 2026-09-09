@@ -433,6 +433,7 @@ Test-only helpers. Depends on `Platform.Core`, `Platform.AspNetCore`, and `Platf
 | `tests/Platform.Persistence.Postgres.Tests` | Provider-boundary test for PostgreSQL options configuration. |
 | `tests/Platform.Testing.Tests` | Unit tests for `ControllableClock`, `SubscriptionBuilder`, `EntitlementBuilder`, `FakeEntitlementStore`, and `RecordingUsageMeter`. |
 | `tests/Platform.Webhooks.Tests` | Synthetic signature, replay, normalization, and HTTP mapping coverage for the inbound and outbound flows. |
+| `tests/Platform.Auditing.Tests` | Event validation, default masking rules, enricher/recorder semantics, `InMemoryAuditSink` and options, HTTP middleware capture (request, exception, security status, fail-open), exception classification, and EF Core `IAuditedEntity` change capture with masking and diffs. |
 | `tests/Platform.Web.Edge.Tests` | Telemetry contract, CORS option and TestServer coverage, HTTP resilience option/handler/circuit-breaker coverage, OpenAPI registry and TestServer coverage. |
 | `tests/Platform.ConsumerConformance` | Test-only consumer fixture that restores platform packages from a local NuGet feed and verifies registration, replacement, health, failure classification, opt-in boundaries, and end-to-end host behavior. Driven by `scripts/conformance.sh`; intentionally not part of `Platform.sln`. |
 ## Platform.Identity (contracts)
@@ -570,6 +571,125 @@ retaining independent implementations.
 bounded retries, idempotency integration, and job scheduling helpers. `Platform.Notifications.Testing`
 contains the deterministic in-memory provider. Providers and templates remain application-owned;
 see [`platform-notifications.md`](platform-notifications.md).
+
+# Platform.Auditing
+
+`Platform.Auditing.Contracts` provides provider-neutral audit event, scope, enrichment,
+masking, sink, retention, dead-letter, and failure-policy contracts. `Platform.Auditing.AspNetCore`
+adds opt-in request, exception, and security capture through a `FrameworkReference`-only
+middleware. `Platform.Auditing.EfCore` exposes an opt-in `SaveChangesInterceptor` that captures
+changes for application entities implementing `IAuditedEntity`. The platform ships no durable
+audit store, schema, retention schedule, or migration. See
+[`platform-auditing.md`](platform-auditing.md).
+
+## Platform.Auditing.Contracts
+
+Framework-neutral; targets `net8.0`. Depends on `Platform.Core` and the four
+`Microsoft.Extensions.*` abstractions only. Does not reference ASP.NET Core, EF Core, Stripe,
+or application projects.
+
+### Events
+
+- `AuditEvent` — immutable, normalized record with `Action`, `Category`, `Outcome`,
+  `Severity`, `OccurredAt` (UTC `DateTimeOffset`), optional `CorrelationId`/`TenantId`/
+  `SubjectId`/`Source`, and bounded `Metadata` (`IReadOnlyDictionary<string, string>` already
+  masked before assignment). `Create(action, category, outcome, occurredAt, severity)` factory
+  and `With*` copy helpers; `Validate()` returns human-readable errors.
+- `AuditOutcome` enum — `Unknown`, `Success`, `Failure`, `Error`, `Denied`.
+- `AuditSeverity` enum — `Information`, `Warning`, `Error`.
+
+### Pipeline contracts
+
+- `IAuditRecorder` — `RecordAsync(event, ct)`; enriches, masks, and dispatches to the sink under
+  the configured failure policy. The single entry point used by the HTTP and EF adapters.
+- `IAuditSink` — `RecordAsync(event, ct)`; the final destination. Applications own the durable
+  implementation; the platform ships `InMemoryAuditSink` (bounded, capacity 1024) as the default.
+- `IAuditMasker` — `Mask(key, value)` returns the stored value; `DefaultAuditMasker` redacts
+  values whose key name matches a sensitive pattern (password, token, secret, ssn, cvv, card,
+  privatekey, clientsecret, authorization, otp, …; case-insensitive, separators ignored) and
+  returns `[REDACTED]`. `DefaultAuditMasker.ToStringValue(value)` converts non-strings
+  invariant-culturally for masking.
+- `IAuditEnricher` — `Enrich(event)` returns an enriched copy; applied in registration order and
+  must not throw. `NoOpAuditEnricher` is the default.
+- `IAuditRetentionPolicy` — `ShouldRetain(event)`; `RetainAllAuditRetentionPolicy` is the default.
+- `IAuditDeadLetterSink` — `RecordAsync(event, reason, ct)` for failed publishes;
+  `InMemoryAuditDeadLetterSink` and `NoOpAuditDeadLetterSink` are provided.
+- `IAuditProviderStatusSource` — `GetStatus()` reporting safe availability;
+  `DefaultAuditProviderStatusSource` returns `memory`/`available`.
+- `IAuditedEntity` — marker interface; only entities implementing it are inspected by the EF
+  interceptor.
+
+### Options
+
+- `AuditOptions` — `SectionName = "Auditing"`; `FailurePolicy` (`FailOpen` default),
+  `PublishMode` (`Synchronous` default; `BoundedAsync` uses a bounded channel of `BoundedCapacity`
+  = 1024, drop-on-full), `MaxMetadataEntries` (64), `MaxMetadataValueLength` (4096),
+  `EnableEntityCapture` (true), `CaptureRequestBodyPreview` (false), `ExcludedCategories` /
+  `EnabledCategories` (mutually exclusive). `IsCategoryEnabled(category)` and `Validate()`.
+
+### Registration
+
+- `AddPlatformAuditing(IServiceCollection)` and the `Action<AuditOptions>` overload — bind and
+  validate options, register `IClock` (`SystemClock`) when no clock is present, and `TryAdd` the
+  default masker, enricher, sink, dead-letter sink, retention policy, provider status source, and
+  recorder. Applications replace any of these before or after the call.
+
+## Platform.Auditing.AspNetCore
+
+Optional ASP.NET Core capture adapter. Depends on `Platform.Core`, `Platform.Auditing.Contracts`,
+and the `Microsoft.AspNetCore.App` framework reference; no third-party packages. Does not reference
+EF Core, Stripe, or application projects.
+
+### Options
+
+- `AuditAspNetCoreOptions` — `SectionName = "Auditing:AspNetCore"`; `Enabled` (true),
+  `ExemptPathPrefixes` (default `/health`, `/healthz`, `/ready`, `/live`, `/alive`, `/metrics`),
+  `SubjectHeaderName` (`X-Audit-Subject`), `TenantHeaderName` (`X-Audit-Tenant`),
+  `CorrelationHeaderName` (`X-Correlation-Id`), `CaptureRequestBodyPreview` (false),
+  `MaxBodyPreviewBytes` (65536), `BodyPreviewLimit` (1024), `SecurityStatusCodes` (401, 403).
+  `IsExempt(path)` and `IsSecurityStatus(statusCode)`.
+
+### Capture
+
+- `IAuditSubjectResolver` / `AuditSubjectResolution` — resolves subject and tenant;
+  `HeaderAuditSubjectResolver` reads the configured headers and is the default.
+- `AuditExceptionClassifier.Classify(Exception)` — maps to a safe `AuditExceptionClassification`
+  (`validation`, `not_found`, `conflict`, `dependency`, `timeout`, `server_error`, `unknown`)
+  without exposing the message, stack, or inner details. `SocketException`/`HttpRequestException`/
+  `DbException` → dependency; `TimeoutException`/`TaskCanceledException`/`OperationCanceledException`
+  → timeout.
+- `AuditMiddleware` — records an `http.request` event (`AuditOutcome.Error` + `AuditSeverity.Error`
+  on exceptions), derives `security`/denied severity for configured status codes, and is fail-open:
+  a throwing sink never fails the request. Registered via `UsePlatformAuditing(IApplicationBuilder)`.
+
+### Registration
+
+- `AddPlatformAuditingAspNetCore(IServiceCollection)` and the `Action<AuditAspNetCoreOptions>`
+  overload — register the contracts pipeline, validate options, and `TryAdd` the subject resolver
+  and middleware.
+- `UsePlatformAuditing(IApplicationBuilder)` — adds the capture middleware to the request pipeline.
+
+## Platform.Auditing.EfCore
+
+Optional EF Core change-capture adapter. Depends on `Platform.Core`, `Platform.Auditing.Contracts`,
+and `Microsoft.EntityFrameworkCore` (+ `Microsoft.EntityFrameworkCore.Relational`) and the four
+`Microsoft.Extensions.*` abstractions; targets `net8.0`. Does not reference ASP.NET Core, Stripe,
+or application projects. It does not own migrations or select a transport.
+
+### Interceptor
+
+- `AuditingSaveChangesInterceptor` — `SaveChangesInterceptor` capturing `Added`/`Modified`/`Deleted`
+  entries for `IAuditedEntity` entities. Scalar property changes (strings and value types, not
+  navigation references) are masked by key name via `IAuditMasker` and published as
+  `entity.created` / `entity.updated` / `entity.deleted` events (`entity.change.{Property}` =
+  `set:`, `removed:`, or `old->new`). It is fail-open: disabled capture or a publishing failure is
+  logged and skipped, never blocking the save. Registered through `AddPlatformAuditingEfCore`.
+
+### Registration
+
+- `AddPlatformAuditingEfCore(IServiceCollection)` — register the contracts pipeline and
+  `TryAddSingleton<ISaveChangesInterceptor, AuditingSaveChangesInterceptor>()`. The application
+  wires the interceptor into its `DbContext` through `options.AddInterceptors(sp.GetRequiredService<ISaveChangesInterceptor>())`.
 
 # Platform.Webhooks
 

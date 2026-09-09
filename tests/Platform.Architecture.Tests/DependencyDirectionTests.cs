@@ -60,6 +60,9 @@ public class DependencyDirectionTests
         "src/Platform.Webhooks.Contracts/Platform.Webhooks.Contracts.csproj",
         "src/Platform.Webhooks.AspNetCore/Platform.Webhooks.AspNetCore.csproj",
         "src/Platform.Webhooks.EfCore/Platform.Webhooks.EfCore.csproj",
+        "src/Platform.Auditing.Contracts/Platform.Auditing.Contracts.csproj",
+        "src/Platform.Auditing.AspNetCore/Platform.Auditing.AspNetCore.csproj",
+        "src/Platform.Auditing.EfCore/Platform.Auditing.EfCore.csproj",
         "src/Platform.Observability/Platform.Observability.csproj",
         "src/Platform.Persistence.Multitenancy/Platform.Persistence.Multitenancy.csproj",
     };
@@ -89,6 +92,7 @@ public class DependencyDirectionTests
         "Platform.Ai.Tests",
         "Platform.Ai.Adapter.Tests",
         "Platform.Webhooks.Tests",
+        "Platform.Auditing.Tests",
         "Platform.Observability.Tests",
         "Platform.Persistence.Multitenancy.Tests",
         "Platform.FeatureManagement.Tests",
@@ -230,6 +234,8 @@ public class DependencyDirectionTests
             || relativePath.Contains("Identity.EntityFrameworkCore", StringComparison.OrdinalIgnoreCase)
             || relativePath.Contains("Eventing.EfCore", StringComparison.OrdinalIgnoreCase)
             || relativePath.Contains("Webhooks.EfCore", StringComparison.OrdinalIgnoreCase)
+            || relativePath.Contains("Auditing.EfCore", StringComparison.OrdinalIgnoreCase)
+            || relativePath.Contains("Auditing.AspNetCore", StringComparison.OrdinalIgnoreCase)
             || relativePath.Contains("Caching.Hybrid", StringComparison.OrdinalIgnoreCase)
             || relativePath.Contains("Caching.Redis", StringComparison.OrdinalIgnoreCase))
             return;
@@ -452,7 +458,8 @@ public class DependencyDirectionTests
                 || project.EndsWith("Platform.Observability.csproj", StringComparison.OrdinalIgnoreCase)
                 || project.EndsWith("Platform.Persistence.Multitenancy.csproj", StringComparison.OrdinalIgnoreCase)
                 || project.EndsWith("Platform.Realtime.AspNetCore.csproj", StringComparison.OrdinalIgnoreCase)
-                || project.EndsWith("Platform.Quota.AspNetCore.csproj", StringComparison.OrdinalIgnoreCase))
+                || project.EndsWith("Platform.Quota.AspNetCore.csproj", StringComparison.OrdinalIgnoreCase)
+                || project.EndsWith("Platform.Auditing.AspNetCore.csproj", StringComparison.OrdinalIgnoreCase))
             {
                 Assert.True(
                     references.Length == 1 && references[0].Equals("Microsoft.AspNetCore.App", StringComparison.OrdinalIgnoreCase),
@@ -929,6 +936,80 @@ public class DependencyDirectionTests
         Assert.True(
             violations.Length == 0,
             "Platform.Webhooks.AspNetCore must not reference VisualFlow projects but references: " + string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void Platform_Auditing_Contracts_only_references_Platform_Core()
+    {
+        var path = "src/Platform.Auditing.Contracts/Platform.Auditing.Contracts.csproj";
+        Assert.Equal(["Platform.Core"], ReadProjectReferences(path));
+        Assert.DoesNotContain(ReadPackageReferences(path), package =>
+            package.StartsWith("Microsoft.AspNetCore", StringComparison.OrdinalIgnoreCase)
+                || package.StartsWith("Microsoft.EntityFrameworkCore", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void Platform_Auditing_Contracts_has_no_package_references_other_than_extensions_abstractions()
+    {
+        var path = "src/Platform.Auditing.Contracts/Platform.Auditing.Contracts.csproj";
+        var packages = ReadPackageReferences(path);
+        var violations = packages
+            .Where(p => !p.StartsWith("Microsoft.Extensions.", StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+        Assert.True(
+            violations.Length == 0,
+            "Platform.Auditing.Contracts must only reference Microsoft.Extensions.* but references: " + string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void Platform_Auditing_AspNetCore_references_only_core_and_contracts()
+    {
+        var references = ReadProjectReferences("src/Platform.Auditing.AspNetCore/Platform.Auditing.AspNetCore.csproj");
+        Assert.Equal(2, references.Length);
+        Assert.Contains("Platform.Core", references, StringComparer.OrdinalIgnoreCase);
+        Assert.Contains("Platform.Auditing.Contracts", references, StringComparer.OrdinalIgnoreCase);
+
+        var packages = ReadPackageReferences("src/Platform.Auditing.AspNetCore/Platform.Auditing.AspNetCore.csproj");
+        var violations = packages
+            .Where(p => p.StartsWith("Microsoft.EntityFrameworkCore", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("Stripe", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("Hangfire", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("Quartz", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("RabbitMQ", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("Polly", StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+        Assert.True(
+            violations.Length == 0,
+            "Platform.Auditing.AspNetCore must not reference forbidden packages but references: " + string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void Platform_Auditing_AspNetCore_declares_only_the_aspnetcore_framework_reference()
+    {
+        var references = ReadFrameworkReferences("src/Platform.Auditing.AspNetCore/Platform.Auditing.AspNetCore.csproj");
+        Assert.True(
+            references.Length == 1 && references[0].Equals("Microsoft.AspNetCore.App", StringComparison.OrdinalIgnoreCase),
+            "Platform.Auditing.AspNetCore must declare only Microsoft.AspNetCore.App but declares: " + string.Join(", ", references));
+    }
+
+    [Fact]
+    public void Platform_Auditing_EfCore_references_only_core_and_contracts()
+    {
+        var references = ReadProjectReferences("src/Platform.Auditing.EfCore/Platform.Auditing.EfCore.csproj");
+        Assert.Equal(2, references.Length);
+        Assert.Contains("Platform.Core", references, StringComparer.OrdinalIgnoreCase);
+        Assert.Contains("Platform.Auditing.Contracts", references, StringComparer.OrdinalIgnoreCase);
+
+        var packages = ReadPackageReferences("src/Platform.Auditing.EfCore/Platform.Auditing.EfCore.csproj");
+        var violations = packages
+            .Where(p => p.StartsWith("Microsoft.AspNetCore", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("Stripe", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("StackExchange.Redis", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("RabbitMQ", StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+        Assert.True(
+            violations.Length == 0,
+            "Platform.Auditing.EfCore must not reference forbidden packages but references: " + string.Join(", ", violations));
     }
 
     [Fact]
