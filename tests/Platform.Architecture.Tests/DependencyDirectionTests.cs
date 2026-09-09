@@ -25,6 +25,7 @@ public class DependencyDirectionTests
         "src/Platform.Quota.AspNetCore/Platform.Quota.AspNetCore.csproj",
         "src/Platform.Idempotency/Platform.Idempotency.csproj",
         "src/Platform.Jobs/Platform.Jobs.csproj",
+        "src/Platform.Jobs.Hangfire/Platform.Jobs.Hangfire.csproj",
         "src/Platform.Mailing/Platform.Mailing.csproj",
         "src/Platform.Mailing.Smtp/Platform.Mailing.Smtp.csproj",
         "src/Platform.Mailing.SendGrid/Platform.Mailing.SendGrid.csproj",
@@ -101,6 +102,7 @@ public class DependencyDirectionTests
         "Platform.Http.Resilience.Tests",
         "Platform.Realtime.Tests",
         "Platform.Mailing.ProviderAdapters.Tests",
+        "Platform.Jobs.Hangfire.Tests",
     };
 
     private static readonly string[] FrameworkIndependentProjects =
@@ -462,7 +464,8 @@ public class DependencyDirectionTests
                 || project.EndsWith("Platform.Persistence.Multitenancy.csproj", StringComparison.OrdinalIgnoreCase)
                 || project.EndsWith("Platform.Realtime.AspNetCore.csproj", StringComparison.OrdinalIgnoreCase)
                 || project.EndsWith("Platform.Quota.AspNetCore.csproj", StringComparison.OrdinalIgnoreCase)
-                || project.EndsWith("Platform.Auditing.AspNetCore.csproj", StringComparison.OrdinalIgnoreCase))
+                || project.EndsWith("Platform.Auditing.AspNetCore.csproj", StringComparison.OrdinalIgnoreCase)
+                || project.EndsWith("Platform.Jobs.Hangfire.csproj", StringComparison.OrdinalIgnoreCase))
             {
                 Assert.True(
                     references.Length == 1 && references[0].Equals("Microsoft.AspNetCore.App", StringComparison.OrdinalIgnoreCase),
@@ -532,6 +535,38 @@ public class DependencyDirectionTests
         Assert.True(
             violations.Length == 0,
             "Platform.Jobs must not reference VisualFlow projects but references: " + string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void Platform_Jobs_Hangfire_references_only_platform_jobs()
+    {
+        var references = ReadProjectReferences("src/Platform.Jobs.Hangfire/Platform.Jobs.Hangfire.csproj");
+
+        Assert.True(
+            references.Length == 1 && references[0].Equals("Platform.Jobs", StringComparison.OrdinalIgnoreCase),
+            "Platform.Jobs.Hangfire must reference only Platform.Jobs but references: " + string.Join(", ", references));
+    }
+
+    [Fact]
+    public void Platform_Jobs_Hangfire_does_not_reference_forbidden_packages()
+    {
+        var packages = ReadPackageReferences("src/Platform.Jobs.Hangfire/Platform.Jobs.Hangfire.csproj");
+        var forbidden = new[]
+        {
+            "Microsoft.AspNetCore",
+            "Microsoft.EntityFrameworkCore",
+            "Quartz",
+            "StackExchange.Redis",
+            "Stripe",
+            "Npgsql",
+        };
+        var violations = packages
+            .Where(p => forbidden.Any(prefix => p.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
+            .ToArray();
+
+        Assert.True(
+            violations.Length == 0,
+            "Platform.Jobs.Hangfire must not reference forbidden packages but references: " + string.Join(", ", violations));
     }
 
     [Fact]

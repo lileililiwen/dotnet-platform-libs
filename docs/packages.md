@@ -144,6 +144,35 @@ Engine-neutral scheduling contract. Depends on `Platform.Core`, `Microsoft.Exten
 
 - `AddPlatformJobs(IServiceCollection)` and `AddPlatformJobs(IServiceCollection, Action<BackgroundJobsOptions>)` — bind `BackgroundJobsOptions` and register `IClock` only when no implementation is already present. The package does not register default `IJobDispatcher`, `IRecurringJobRegistry`, or `IJobTelemetry`; consumers provide their own.
 
+## Platform.Jobs.Hangfire
+
+Optional Hangfire adapter for the platform scheduling contracts. Depends on `Platform.Jobs`, Hangfire (`Hangfire.Core`, `Hangfire.AspNetCore`, `Hangfire.InMemory`, `Hangfire.PostgreSql`), `Microsoft.Extensions.Options`, `Microsoft.Extensions.DependencyInjection.Abstractions`, and `Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions`; targets `net8.0` and declares the `Microsoft.AspNetCore.App` framework reference for the opt-in dashboard. Does not reference EF Core, Quartz, Redis, Stripe, Npgsql directly, or application projects.
+
+### Seams
+
+- `IJobExecutionContext` — application-owned bridge: `Capture()` returns a `JobContextSnapshot` (opaque `TenantId`/`SubjectId` only) when a context is active, `Restore(snapshot)` returns a disposable that undoes the restoration. No default is registered; a job that carries a captured context without a registered bridge fails closed.
+- `IJobPayloadHandler` — application-owned handler invoked for every dispatched payload inside the restored context.
+- `HangfireJobsOptions.DashboardAuthorization` — application-provided `Func<DashboardContext, bool>`; required when the dashboard is enabled. The platform ships no credentials or default policy.
+
+### Adapter
+
+- `HangfireJobDispatcher` (`IJobDispatcher`) — serializes the payload (System.Text.Json, web defaults) and enqueues it through the Hangfire client into the configured queue; records `IJobTelemetry.JobEnqueued` and honours caller cancellation.
+- `HangfireRecurringJobRegistry` (`IRecurringJobRegistry`) — attaches the platform recurring executor to the descriptor's cron expression and time zone through `IRecurringJobManager`; first registration wins, later registrations with the same name are no-ops; records `IJobTelemetry.JobRegistered`.
+- `HangfireJobExecutor` — the Hangfire-invoked entry point. Dispatched payloads are deserialized (argument values round-trip as JSON values; complex values arrive as `JsonElement`) and routed to `IJobPayloadHandler`; recurring executions resolve the descriptor from the registry and invoke the registered `IRecurringJobHandler`. Successes record `JobExecuted`; failures record `JobFailed` with the stable `jobs.execution_failed` code, a fixed safe message, and only the exception type name, then rethrow so Hangfire's automatic retry model stays the retry owner. Cancellation is rethrown and never recorded as a failure.
+- `JobContextCaptureFilter` (client filter) — captures the ambient context through `IJobExecutionContext` at job creation and stores it as a Hangfire job parameter.
+- `ScopedJobActivator` — creates a DI scope per job execution, restores the captured context before any handler is resolved, and disposes the restoration and scope when the job ends.
+- `HangfireStorageHealthCheck` (`IHealthCheck`) — probes storage reachability; reports healthy/unavailable with a redacted diagnostic (exception type only — never messages, connection strings, or storage responses) and exposes `HangfireJobsProviderStatus`.
+- `HangfireDashboardOptionsFactory` — builds dashboard options that never display the storage connection string and gate every request through the application callback.
+
+### Options
+
+- `HangfireJobsOptions` (`SectionName` `"BackgroundJobs:Hangfire"`) — `Storage` (`InMemory` default, `PostgreSql`), `PostgreSqlConnectionString` (application-supplied, required for PostgreSql, never echoed), `Queue` (`"default"`), `Queues` (1–20 names), `WorkerCount` (1–100, default 5), `SchedulePollingInterval`/`HeartbeatInterval` (1s–10min, default 30s), `DashboardEnabled` (default `false`), `DashboardRoute` (`"/jobs"`), `DashboardAuthorization`. `Validate()` is invoked at registration with secret-free messages.
+
+### Registration
+
+- `AddPlatformHangfireJobs(IServiceCollection, Action<HangfireJobsOptions>?)` — validates the options, wires the application-selected storage, the scoped activator, the capture filter, and the Hangfire server, then `TryAdd`s `HangfireJobExecutor`, `IJobDispatcher`, `IRecurringJobRegistry`, `IHealthCheck`, and `IClock`. Registration is idempotent; application-owned dispatcher/registry registrations win.
+- `UsePlatformHangfireDashboard(IApplicationBuilder)` — maps the dashboard only when `DashboardEnabled` is `true` and fails fast with `InvalidOperationException` when the authorization callback is missing.
+
 ## Platform.Mailing
 
 Provider-neutral mailing contract. Depends on `Platform.Core`, `Microsoft.Extensions.Options`, and `Microsoft.Extensions.DependencyInjection.Abstractions`; targets `net8.0`. Does not reference ASP.NET Core, EF Core, SendGrid, Mailgun, SMTP, Razor, Liquid, or application projects.
@@ -467,6 +496,7 @@ Test-only helpers. Depends on `Platform.Core`, `Platform.AspNetCore`, and `Platf
 | `tests/Platform.AspNetCore.Tests` | Unit tests for the ProblemDetails mapper, exception middleware, and correlation middleware, plus a `TestServer` integration test for the minimal host (known failure → ProblemDetails, unknown failure → sanitized 500, correlation generation, health endpoint). |
 | `tests/Platform.Billing.Contracts.Tests` | Unit tests for identifiers, subscription status and period boundaries, entitlement defaults, feature check decisions, usage-meter contract (in-memory implementation), and processed-event idempotency. |
 | `tests/Platform.Jobs.Tests` | Unit tests for the `RecurringJobAttribute` reflection, the `RecurringJobDescriptor` value type, the `IJobTelemetry` surface, and `BackgroundJobsOptions` defaults, plus a `TestServer` integration test for `AddPlatformJobs` defaults and configuration overrides. |
+| `tests/Platform.Jobs.Hangfire.Tests` | Options defaults and validation, dispatcher payload serialization and telemetry, recurring registration (first-wins, time zone, failure rollback), executor payload normalization and redacted failure telemetry, context capture/restoration filters and activator (including fail-closed without a bridge), dashboard factory and TestServer authorization coverage, storage health with redacted diagnostics, idempotent/consumer-override DI registration, end-to-end host execution (dispatched and recurring jobs with context restoration), and a Docker-gated PostgreSQL storage integration test. |
 | `tests/Platform.Mailing.Tests` | Unit tests for `MailAddress`, `MailAttachment`, `MailMessage` validation (text-only / html-only / both / neither / empty recipients / null sender / empty subject), `MailSendResult` semantics, `MailTemplateId` implicit conversions, `RenderedMailTemplate.Create` validation, and `MailingOptions` defaults, plus a `TestServer` integration test for `AddPlatformMailing` defaults, configuration overrides, and a consumer-registered `IMailService`. |
 | `tests/Platform.Mailing.ProviderAdapters.Tests` | Deterministic adapter coverage for `Platform.Mailing.Smtp` (in-process fake SMTP server: MIME payload, attachments, authentication, recipient/mail rejection classification, connection refusal, operation timeout, cancellation preservation, configuration failures without server contact, options validation) and `Platform.Mailing.SendGrid` (fake `ISendGridClient`: response classification, message mapping, transport failure, cancellation, configuration failures, options validation), plus opt-in DI registration and consumer-override semantics for both adapters. |
 | `tests/Platform.Eventing.Tests` | Unit tests for the envelope shape, the default `IntegrationEventEnvelopeSerializer` and `IntegrationEventEnvelopeDeserializer`, the `InProcessEventBus` (typed dispatch, consumer-failure isolation, idempotent disposal, bounded-capacity null guard), and `EventingOptions` defaults, plus a `TestServer` integration test for `AddPlatformEventing` and `AddPlatformEventingInProcess` defaults, configuration overrides, and a consumer-published envelope flowing to a typed `IIntegrationEventHandler<>`. |
