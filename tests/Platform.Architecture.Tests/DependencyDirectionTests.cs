@@ -961,6 +961,69 @@ public class DependencyDirectionTests
         Assert.Empty(packages);
     }
 
+    [Fact]
+    public void Consumer_conformance_project_does_not_reference_platform_projects()
+    {
+        var path = "tests/Platform.ConsumerConformance/Platform.ConsumerConformance.csproj";
+        var fullPath = Path.Combine(RepositoryRoot, path);
+        Assert.True(File.Exists(fullPath), "Consumer conformance project must exist at " + path);
+
+        var document = XDocument.Load(fullPath);
+        var projectReferences = document
+            .Descendants()
+            .Where(e => string.Equals(e.Name.LocalName, "ProjectReference", StringComparison.OrdinalIgnoreCase))
+            .Select(e => e.Attribute("Include")?.Value ?? string.Empty)
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .ToArray();
+
+        Assert.True(
+            projectReferences.Length == 0,
+            "Consumer conformance project must only consume platform packages via <PackageReference>; found: " + string.Join(", ", projectReferences));
+    }
+
+    [Fact]
+    public void Consumer_conformance_project_declares_a_local_nuget_feed()
+    {
+        var configPath = Path.Combine(RepositoryRoot, "tests/Platform.ConsumerConformance/nuget.config");
+        Assert.True(File.Exists(configPath), "Consumer conformance project must ship a nuget.config");
+
+        var document = XDocument.Load(configPath);
+        var sources = document
+            .Descendants()
+            .Where(e => string.Equals(e.Name.LocalName, "add", StringComparison.OrdinalIgnoreCase))
+            .Select(e => new { Key = e.Attribute("key")?.Value, Value = e.Attribute("value")?.Value })
+            .Where(e => !string.IsNullOrWhiteSpace(e.Key))
+            .ToArray();
+
+        var localFeed = Assert.Single(sources, s => string.Equals(s.Key, "local-platform-feed", StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(".local-feed", localFeed.Value);
+    }
+
+    [Fact]
+    public void Consumer_conformance_build_script_records_environment_blockers()
+    {
+        var scriptPath = Path.Combine(RepositoryRoot, "scripts/conformance.sh");
+        Assert.True(File.Exists(scriptPath), "Conformance build script must exist at scripts/conformance.sh");
+        var contents = File.ReadAllText(scriptPath);
+        Assert.Contains("ENV BLOCKER", contents, StringComparison.Ordinal);
+        Assert.Contains("logs", contents, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Production_project_does_not_reference_consumer_conformance_project()
+    {
+        foreach (var project in ProductionProjects)
+        {
+            var references = ReadProjectReferences(project);
+            var leaks = references
+                .Where(r => r.Contains("ConsumerConformance", StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+            Assert.True(
+                leaks.Length == 0,
+                $"{project} must not reference the consumer conformance project but references: {string.Join(", ", leaks)}");
+        }
+    }
+
     private static string LocateRepositoryRoot()
     {
         var current = new DirectoryInfo(AppContext.BaseDirectory);

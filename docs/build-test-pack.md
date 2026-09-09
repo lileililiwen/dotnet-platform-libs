@@ -53,6 +53,23 @@ openspec validate --specs   --strict --no-interactive
 
 Strict validation must pass before archiving a change. With no active changes, `openspec validate --specs --strict --no-interactive` validates the 19 synchronized generated specs.
 
+## Consumer conformance
+
+The repository ships a separate consumer-conformance fixture that consumes platform
+packages from a local feed and is intentionally **not** part of `Platform.sln`. Run
+`scripts/conformance.sh` to pack every platform project to a local feed, restore the
+fixture, build it, and run the tests against the published artifacts:
+
+```bash
+./scripts/conformance.sh
+```
+
+The script records the exact failed command and the next action in
+`tests/Platform.ConsumerConformance/.logs/` when a step fails so CI can distinguish a
+source regression from an environment blocker (missing Docker, no local feed, no
+network access). See [`docs/platform-consumer-conformance.md`](platform-consumer-conformance.md)
+for the full layout and what the suite covers.
+
 ## Lint working tree
 
 ```bash

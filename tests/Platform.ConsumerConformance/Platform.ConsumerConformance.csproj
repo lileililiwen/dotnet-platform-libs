@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Platform.ConsumerConformance</RootNamespace>
+    <AssemblyName>Platform.ConsumerConformance</AssemblyName>
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>false</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Platform.AspNetCore" Version="0.1.0" />
+    <PackageReference Include="Platform.Core" Version="0.1.0" />
+    <PackageReference Include="Platform.Billing.Contracts" Version="0.1.0" />
+    <PackageReference Include="Platform.Identity.Contracts" Version="0.1.0" />
+    <PackageReference Include="Platform.Authorization" Version="0.1.0" />
+    <PackageReference Include="Platform.Identity.Testing" Version="0.1.0" />
+    <PackageReference Include="Platform.Admin.Contracts" Version="0.1.0" />
+    <PackageReference Include="Platform.Admin.Testing" Version="0.1.0" />
+    <PackageReference Include="Platform.Billing" Version="0.1.0" />
+    <PackageReference Include="Platform.Billing.Testing" Version="0.1.0" />
+    <PackageReference Include="Platform.Quota" Version="0.1.0" />
+    <PackageReference Include="Platform.Quota.Testing" Version="0.1.0" />
+    <PackageReference Include="Platform.Mailing" Version="0.1.0" />
+    <PackageReference Include="Platform.Jobs" Version="0.1.0" />
+    <PackageReference Include="Platform.Eventing" Version="0.1.0" />
+    <PackageReference Include="Platform.Eventing.Contracts" Version="0.1.0" />
+    <PackageReference Include="Platform.Caching" Version="0.1.0" />
+    <PackageReference Include="Platform.Storage" Version="0.1.0" />
+    <PackageReference Include="Platform.Idempotency" Version="0.1.0" />
+    <PackageReference Include="Platform.RateLimiting" Version="0.1.0" />
+    <PackageReference Include="Platform.Webhooks.Contracts" Version="0.1.0" />
+    <PackageReference Include="Platform.Persistence.EfCore" Version="0.1.0" />
+    <PackageReference Include="Platform.Testing" Version="0.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.2" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="8.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.1" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>
