@@ -34,6 +34,9 @@
     <PackageVersion Include="MailKit" Version="4.17.0" />
     <PackageVersion Include="SendGrid" Version="9.29.3" />
 
+    <!-- Optional RabbitMQ eventing adapter -->
+    <PackageVersion Include="RabbitMQ.Client" Version="7.2.2" />
+
     <!-- Optional Hangfire jobs adapter -->
     <PackageVersion Include="Hangfire.Core" Version="1.8.23" />
     <PackageVersion Include="Hangfire.AspNetCore" Version="1.8.23" />

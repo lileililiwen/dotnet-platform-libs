@@ -14,6 +14,7 @@ public class DependencyDirectionTests
         "src/Platform.Eventing/Platform.Eventing.csproj",
         "src/Platform.Eventing.Contracts/Platform.Eventing.Contracts.csproj",
         "src/Platform.Eventing.EfCore/Platform.Eventing.EfCore.csproj",
+        "src/Platform.Eventing.RabbitMq/Platform.Eventing.RabbitMq.csproj",
         "src/Platform.Caching/Platform.Caching.csproj",
         "src/Platform.Caching.Hybrid/Platform.Caching.Hybrid.csproj",
         "src/Platform.Caching.Redis/Platform.Caching.Redis.csproj",
@@ -78,6 +79,7 @@ public class DependencyDirectionTests
         "Platform.Billing.Contracts.Tests",
         "Platform.Eventing.Contracts.Tests",
         "Platform.Eventing.EfCore.Tests",
+        "Platform.Eventing.RabbitMq.Tests",
         "Platform.Caching.Tests",
         "Platform.Caching.Adapter.Tests",
         "Platform.Storage.Tests",
@@ -717,6 +719,42 @@ public class DependencyDirectionTests
             package.StartsWith("Microsoft.AspNetCore", StringComparison.OrdinalIgnoreCase)
                 || package.StartsWith("Microsoft.EntityFrameworkCore", StringComparison.OrdinalIgnoreCase)
                 || package.StartsWith("RabbitMQ", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void Platform_Eventing_RabbitMq_references_only_platform_eventing_contracts()
+    {
+        var references = ReadProjectReferences("src/Platform.Eventing.RabbitMq/Platform.Eventing.RabbitMq.csproj");
+
+        Assert.True(
+            references.Length == 1 && references[0].Equals("Platform.Eventing.Contracts", StringComparison.OrdinalIgnoreCase),
+            "Platform.Eventing.RabbitMq must reference only Platform.Eventing.Contracts but references: " + string.Join(", ", references));
+    }
+
+    [Fact]
+    public void Platform_Eventing_RabbitMq_does_not_reference_forbidden_packages()
+    {
+        var packages = ReadPackageReferences("src/Platform.Eventing.RabbitMq/Platform.Eventing.RabbitMq.csproj");
+        var forbidden = new[]
+        {
+            "Microsoft.AspNetCore",
+            "Microsoft.EntityFrameworkCore",
+            "StackExchange.Redis",
+            "Stripe",
+            "Npgsql",
+            "MailKit",
+            "SendGrid",
+            "Hangfire",
+            "Quartz",
+            "MassTransit",
+        };
+        var violations = packages
+            .Where(p => forbidden.Any(prefix => p.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
+            .ToArray();
+
+        Assert.True(
+            violations.Length == 0,
+            "Platform.Eventing.RabbitMq must not reference forbidden packages but references: " + string.Join(", ", violations));
     }
 
     [Fact]
