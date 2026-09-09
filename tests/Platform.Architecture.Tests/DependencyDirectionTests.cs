@@ -26,6 +26,8 @@ public class DependencyDirectionTests
         "src/Platform.Idempotency/Platform.Idempotency.csproj",
         "src/Platform.Jobs/Platform.Jobs.csproj",
         "src/Platform.Mailing/Platform.Mailing.csproj",
+        "src/Platform.Mailing.Smtp/Platform.Mailing.Smtp.csproj",
+        "src/Platform.Mailing.SendGrid/Platform.Mailing.SendGrid.csproj",
         "src/Platform.RateLimiting/Platform.RateLimiting.csproj",
         "src/Platform.Realtime/Platform.Realtime.csproj",
         "src/Platform.Realtime.AspNetCore/Platform.Realtime.AspNetCore.csproj",
@@ -98,6 +100,7 @@ public class DependencyDirectionTests
         "Platform.FeatureManagement.Tests",
         "Platform.Http.Resilience.Tests",
         "Platform.Realtime.Tests",
+        "Platform.Mailing.ProviderAdapters.Tests",
     };
 
     private static readonly string[] FrameworkIndependentProjects =
@@ -576,6 +579,70 @@ public class DependencyDirectionTests
         Assert.True(
             violations.Length == 0,
             "Platform.Mailing must not reference VisualFlow projects but references: " + string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void Platform_Mailing_Smtp_references_only_platform_mailing()
+    {
+        var references = ReadProjectReferences("src/Platform.Mailing.Smtp/Platform.Mailing.Smtp.csproj");
+
+        Assert.True(
+            references.Length == 1 && references[0].Equals("Platform.Mailing", StringComparison.OrdinalIgnoreCase),
+            "Platform.Mailing.Smtp must reference only Platform.Mailing but references: " + string.Join(", ", references));
+    }
+
+    [Fact]
+    public void Platform_Mailing_Smtp_does_not_reference_forbidden_packages()
+    {
+        var packages = ReadPackageReferences("src/Platform.Mailing.Smtp/Platform.Mailing.Smtp.csproj");
+        var forbidden = new[]
+        {
+            "Microsoft.AspNetCore",
+            "Microsoft.EntityFrameworkCore",
+            "SendGrid",
+            "Mailgun",
+            "Razor",
+            "Liquid",
+        };
+        var violations = packages
+            .Where(p => forbidden.Any(prefix => p.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
+            .ToArray();
+
+        Assert.True(
+            violations.Length == 0,
+            "Platform.Mailing.Smtp must not reference forbidden packages but references: " + string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void Platform_Mailing_SendGrid_references_only_platform_mailing()
+    {
+        var references = ReadProjectReferences("src/Platform.Mailing.SendGrid/Platform.Mailing.SendGrid.csproj");
+
+        Assert.True(
+            references.Length == 1 && references[0].Equals("Platform.Mailing", StringComparison.OrdinalIgnoreCase),
+            "Platform.Mailing.SendGrid must reference only Platform.Mailing but references: " + string.Join(", ", references));
+    }
+
+    [Fact]
+    public void Platform_Mailing_SendGrid_does_not_reference_forbidden_packages()
+    {
+        var packages = ReadPackageReferences("src/Platform.Mailing.SendGrid/Platform.Mailing.SendGrid.csproj");
+        var forbidden = new[]
+        {
+            "Microsoft.AspNetCore",
+            "Microsoft.EntityFrameworkCore",
+            "MailKit",
+            "Mailgun",
+            "Razor",
+            "Liquid",
+        };
+        var violations = packages
+            .Where(p => forbidden.Any(prefix => p.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
+            .ToArray();
+
+        Assert.True(
+            violations.Length == 0,
+            "Platform.Mailing.SendGrid must not reference forbidden packages but references: " + string.Join(", ", violations));
     }
 
     [Fact]

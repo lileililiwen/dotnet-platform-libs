@@ -171,6 +171,49 @@ Provider-neutral mailing contract. Depends on `Platform.Core`, `Microsoft.Extens
 
 - `AddPlatformMailing(IServiceCollection)` and `AddPlatformMailing(IServiceCollection, Action<MailingOptions>)` — bind `MailingOptions` and register `IClock` only when no implementation is already present. The package does not register default `IMailService` or `IMailTemplateRenderer<TModel>`; consumers provide their own.
 
+## Platform.Mailing.Smtp
+
+Optional SMTP adapter over `IMailService` built on MailKit. Depends on `Platform.Mailing`, MailKit, `Microsoft.Extensions.Options`, and `Microsoft.Extensions.DependencyInjection.Abstractions`; targets `net8.0`. Does not reference ASP.NET Core, EF Core, SendGrid, or application projects.
+
+### Value types
+
+- `SmtpSecureMode` — enum: `StartTls` (default), `SslOnConnect`, `None`. No auto-negotiation; ambiguous configurations are rejected by making the mode explicit.
+- `SmtpMailProviderState` — enum: `Healthy`, `Unavailable`.
+- `SmtpMailProviderStatus` — record with `Provider` (constant `"smtp"`), `State`, and optional `LastErrorCode`. Never carries server responses or credentials.
+
+### Options
+
+- `SmtpMailOptions` — `Host` (required), `Port` (default `587`, 1–65535), `SecureMode`, `UserName`/`Password` (configured together or not at all; never written to diagnostics), `OperationTimeout` (default 30s, bounded 1s–5min), `ClientFactory` (optional `Func<SmtpClient>` seam), `SectionName` constant `"Mailing:Smtp"`. `Validate()` is invoked at registration and construction.
+
+### Adapter
+
+- `SmtpMailService` — implements `IMailService`. Builds the MIME message from `MailMessage` (sender, recipients, subject, text/HTML parts, attachments with parsed content types, `X-Correlation-Id` header), connects with the configured secure mode, authenticates when credentials are configured, and sends within the bounded operation timeout. Outcomes are normalized: accepted → `Sent`; SMTP 4xx, connection, TLS, and timeout failures → `TransientFailure`; SMTP 5xx and authentication failures → `PermanentFailure`. Caller cancellation is rethrown, never converted into a provider failure. Invalid sender/recipient/attachment input returns a configuration failure (`mail.configuration.*`) without contacting the server. Diagnostics carry stable error codes and fixed safe messages only; provider responses are never surfaced. Exposes `Status` (`SmtpMailProviderStatus`).
+
+### Registration
+
+- `AddPlatformSmtpMail(IServiceCollection, Action<SmtpMailOptions>?)` — validates the configuration at registration and `TryAdd`s `IMailService` → `SmtpMailService`, so an application-owned `IMailService` registration always wins.
+
+## Platform.Mailing.SendGrid
+
+Optional SendGrid adapter over `IMailService` built on the SendGrid client. Depends on `Platform.Mailing`, the SendGrid client, `Microsoft.Extensions.Options`, and `Microsoft.Extensions.DependencyInjection.Abstractions`; targets `net8.0`. Does not reference ASP.NET Core, EF Core, MailKit, or application projects.
+
+### Value types
+
+- `SendGridMailProviderState` — enum: `Healthy`, `Unavailable`.
+- `SendGridMailProviderStatus` — record with `Provider` (constant `"sendgrid"`), `State`, and optional `LastErrorCode`. Never carries response bodies or the API key.
+
+### Options
+
+- `SendGridMailOptions` — `ApiKey` (required; never written to diagnostics), `OperationTimeout` (default 30s, bounded 1s–5min), `SectionName` constant `"Mailing:SendGrid"`. `Validate()` is invoked at registration and construction.
+
+### Adapter
+
+- `SendGridMailService` — implements `IMailService` over an application-owned `ISendGridClient`. Maps sender, recipients, subject, plain-text/HTML bodies, base64 attachments, and the `X-Correlation-Id` global header; sends within the bounded operation timeout. Response classification: 2xx → `Sent` (with `X-Message-Id` as `ProviderMessageId` when present); 429 → `TransientFailure` (`mail.sendgrid.rate_limited`); 5xx → `TransientFailure` (`mail.sendgrid.server_error`); other 4xx → `PermanentFailure` (`mail.sendgrid.rejected`); transport and timeout failures → `TransientFailure`. Response bodies are never surfaced. Invalid sender/recipient/attachment input returns a configuration failure (`mail.configuration.*`) without calling the provider. Exposes `Status` (`SendGridMailProviderStatus`).
+
+### Registration
+
+- `AddPlatformSendGridMail(IServiceCollection, Action<SendGridMailOptions>?)` — validates the configuration at registration and `TryAdd`s both `ISendGridClient` (default `SendGridClient` with `HttpErrorAsException = false`) and `IMailService` → `SendGridMailService`, so application-owned registrations always win.
+
 ## Platform.Eventing
 
 Transport-agnostic event-bus contract. Depends on `Platform.Core`, `Microsoft.Extensions.Options`, `Microsoft.Extensions.DependencyInjection.Abstractions`, and `Microsoft.Extensions.Logging.Abstractions`; targets `net8.0`. `System.Threading.Channels` ships in-box with `net8.0`. Does not reference ASP.NET Core, EF Core, RabbitMQ, or application projects.
@@ -425,6 +468,7 @@ Test-only helpers. Depends on `Platform.Core`, `Platform.AspNetCore`, and `Platf
 | `tests/Platform.Billing.Contracts.Tests` | Unit tests for identifiers, subscription status and period boundaries, entitlement defaults, feature check decisions, usage-meter contract (in-memory implementation), and processed-event idempotency. |
 | `tests/Platform.Jobs.Tests` | Unit tests for the `RecurringJobAttribute` reflection, the `RecurringJobDescriptor` value type, the `IJobTelemetry` surface, and `BackgroundJobsOptions` defaults, plus a `TestServer` integration test for `AddPlatformJobs` defaults and configuration overrides. |
 | `tests/Platform.Mailing.Tests` | Unit tests for `MailAddress`, `MailAttachment`, `MailMessage` validation (text-only / html-only / both / neither / empty recipients / null sender / empty subject), `MailSendResult` semantics, `MailTemplateId` implicit conversions, `RenderedMailTemplate.Create` validation, and `MailingOptions` defaults, plus a `TestServer` integration test for `AddPlatformMailing` defaults, configuration overrides, and a consumer-registered `IMailService`. |
+| `tests/Platform.Mailing.ProviderAdapters.Tests` | Deterministic adapter coverage for `Platform.Mailing.Smtp` (in-process fake SMTP server: MIME payload, attachments, authentication, recipient/mail rejection classification, connection refusal, operation timeout, cancellation preservation, configuration failures without server contact, options validation) and `Platform.Mailing.SendGrid` (fake `ISendGridClient`: response classification, message mapping, transport failure, cancellation, configuration failures, options validation), plus opt-in DI registration and consumer-override semantics for both adapters. |
 | `tests/Platform.Eventing.Tests` | Unit tests for the envelope shape, the default `IntegrationEventEnvelopeSerializer` and `IntegrationEventEnvelopeDeserializer`, the `InProcessEventBus` (typed dispatch, consumer-failure isolation, idempotent disposal, bounded-capacity null guard), and `EventingOptions` defaults, plus a `TestServer` integration test for `AddPlatformEventing` and `AddPlatformEventingInProcess` defaults, configuration overrides, and a consumer-published envelope flowing to a typed `IIntegrationEventHandler<>`. |
 | `tests/Platform.Idempotency.Tests` | Unit tests for `RequestFingerprint` stability + method normalisation + body-hash helper, `IdempotencyOptions` defaults and metric-name constants, `InMemoryIdempotencyStore` round-trip / null-or-empty-key / oversize-key / retention sweep / expired-record-as-miss / null-dependency guards, plus a `TestServer` integration test for `AddPlatformIdempotency` defaults, configuration overrides, save/try-get round-trip, eviction sweep driven by a `MutableClock`, and the no-op path when `Idempotency:Enabled = false`. |
 | `tests/Platform.RateLimiting.Tests` | Unit tests for `RateLimitPolicies` default catalog + `Find` + invalid-entry dropping + null guard, `RateLimitingOptions` defaults, `InMemoryRateLimiter` (first request, burst over limit, window roll-over, per-subject isolation, unknown/empty policy / subject rejection, null dependency guards), `ConfigurationRateLimitBypassResolver`, and `InMemoryRateLimiterBackendStatusProvider`, plus a `TestServer` integration test for `AddPlatformRateLimiting` defaults, configuration overrides, limiter decisions through DI, and the readiness surface. |

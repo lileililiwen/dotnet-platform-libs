@@ -30,6 +30,10 @@
     <PackageVersion Include="Microsoft.FeatureManagement" Version="4.5.0" />
     <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="8.10.0" />
 
+    <!-- Optional mailing provider adapters -->
+    <PackageVersion Include="MailKit" Version="4.17.0" />
+    <PackageVersion Include="SendGrid" Version="9.29.3" />
+
     <!-- Optional persistence adapters -->
     <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="8.0.10" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.10" />
