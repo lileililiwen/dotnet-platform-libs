@@ -1,5 +1,99 @@
 # Handoff
 
+## Completed: platform-tenant-lifecycle-contracts
+
+- Added `Platform.Tenant.Lifecycle.Contracts` (framework-neutral, no
+  third-party packages, no project references): `TenantLifecycleStepOutcome`
+  and `TenantLifecycleOperationState` enums; `TenantLifecycleOperationId`,
+  `TenantLifecycleStepName`, `TenantLifecycleWorkflowName` opaque
+  identifiers; `ITenantLifecycleStep`, `ITenantLifecycleWorkflow`,
+  `ITenantLifecycleScopeCallback`, `ITenantLifecycleStore`,
+  `ITenantLifecycleOrchestrator`; `TenantLifecycleStepContext`,
+  `TenantLifecycleStepResult`, `TenantLifecycleStepStatus`,
+  `TenantLifecycleOperationStatus`; `TenantLifecycleReasons` stable
+  reason constants (`ready`, `running`, `retryable`,
+  `permanently_failed`, `canceled`, `policy_denied`, `unknown`).
+- Added `Platform.Tenant.Lifecycle` (depends on Contracts + Core):
+  `TenantLifecycleOrchestrator` runs ordered steps, skips completed
+  steps on resume, installs and disposes the tenant scope around
+  each tenant-scoped step, classifies outcomes into operation
+  states, and exposes `WithWorkflowRegistry` for resume.
+  `TenantLifecycleWorkflowRegistry` resolves workflows by name;
+  `InMemoryTenantLifecycleStore` is the dev/test store. DI
+  registration is `AddPlatformTenantLifecycle(IServiceCollection)`
+  with the orchestrator, store, scope callback, and registry wired
+  through `TryAddSingleton` so applications replace only the
+  pieces they own.
+- Added `Platform.Tenant.Lifecycle.AspNetCore` (depends on
+  Contracts + the lifecycle package + the `Microsoft.AspNetCore.App`
+  framework reference): `AddPlatformTenantLifecycleReadiness`,
+  `TenantLifecycleReadinessCheck`, `IReadinessCheck` /
+  `ReadinessResult` / `ReadinessContext` provider-neutral
+  readiness surface, `MapPlatformTenantLifecycleStatus` and
+  `MapPlatformTenantLifecycleResume` minimal-API helpers.
+- Added `Platform.Tenant.Lifecycle.Testing` (depends on
+  Contracts): `InMemoryTenantLifecycleStore` (test variant),
+  `ScriptedLifecycleStep`, `DelegateLifecycleStep`,
+  `StaticLifecycleWorkflow`, `RecordingLifecycleScopeCallback`.
+- Tests in `tests/Platform.Tenant.Lifecycle.Tests` (15 new,
+  passing): ordered execution + succeeded status, retryable
+  classification stops the run, permanent classification fails
+  closed, cancellation transitions to `Canceled`, tenant scope
+  is installed and disposed around every tenant-scoped step,
+  duplicate step names are rejected, `ResumeAsync` skips
+  completed steps and recovers, `ResumeAsync` throws on
+  unknown operations and un-registered workflows, safe messages
+  are preserved on step status records; status endpoint
+  (`404` for unknown operations, `OK` with snapshot), resume
+  endpoint (operator-driven run to completion), readiness check
+  (healthy for succeeded, unhealthy for retryable).
+- Architecture tests added to `tests/Platform.Architecture.Tests`:
+  `Platform_Tenant_Lifecycle_Contracts_has_no_package_or_project_references`,
+  `Platform_Tenant_Lifecycle_Testing_references_only_tenant_lifecycle_contracts`,
+  `Platform_Tenant_Lifecycle_references_only_tenant_lifecycle_contracts_and_core`,
+  `Platform_Tenant_Lifecycle_AspNetCore_references_only_tenant_lifecycle_contracts_and_orchestrator`,
+  `Platform_Tenant_Lifecycle_does_not_reference_forbidden_packages`,
+  and the `Platform.Tenant.Lifecycle.AspNetCore` allowance in
+  the `FrameworkReference` allow-list. Existing
+  `Identity_contract_projects_have_no_package_or_project_references`
+  test now also asserts `Platform.Tenant.Lifecycle.Contracts`.
+- Docs: `docs/packages.md` adds a "Tenant lifecycle" subsection to
+  `Platform.Tenant.Lifecycle.Contracts` and per-package sections
+  for the orchestrator, ASP.NET Core adapter, and testing fakes.
+  The per-package reference at
+  `docs/platform-tenant-lifecycle.md` covers state machine, step
+  contract, store, scope isolation, resume, adoption, and
+  starter-kit migration/rollback.
+- Archived the change at
+  `openspec/changes/archive/2026-09-10-platform-tenant-lifecycle-contracts/`
+  with synchronized
+  `openspec/specs/platform-tenant-lifecycle/spec.md` covering
+  application-owned lifecycle, idempotent resume, classified
+  failures, and tenant-scope isolation.
+
+## Verification evidence
+
+- `dotnet build Platform.sln -c Release` — 0 warnings, 0 errors.
+- `dotnet test Platform.sln -c Release --no-build --nologo -m:1` —
+  all projects green, including the new tenant lifecycle tests
+  (15 passed, 0 failed) and the augmented architecture tests
+  (304 passed, 0 failed).
+- `openspec validate --changes --strict --no-interactive` — 2
+  passed (after archive; `platform-tenant-lifecycle-contracts` is
+  removed from the active queue).
+- `openspec validate --specs --strict --no-interactive` — 37
+  passed (after archive; the new `platform-tenant-lifecycle`
+  spec is included).
+- `git diff --check` — clean for the staged change.
+- Implementation commit: recorded in the repository log for the
+  `platform-tenant-lifecycle-contracts` change.
+
+## Next change
+
+`platform-consumer-adoption-conformance` is the next active change
+returned by `openspec list` (2 active changes remain). Implement
+only that change in the next cycle.
+
 ## Completed: platform-identity-lifecycle-contracts
 
 - Extended `Platform.Identity.Contracts` (framework-neutral, no
@@ -310,9 +404,8 @@ governance verification because it was required for the full gate.
 
 The active planning queue is intentionally dependency-ordered. Implement one change at a time, archive it, update this handoff with evidence, and stop before selecting the next change.
 
-1. `platform-tenant-lifecycle-contracts` — add resumable provisioning/migration/seed orchestration seams; keep tenant catalog, migrations, and connection policy in consumers.
-2. `platform-consumer-adoption-conformance` — extend the consumer conformance harness with platform-versioning adoption assertions.
-3. `platform-testing-toolkit` — add a shared xUnit collection, fixtures, and assertion helpers for platform tests.
+1. `platform-consumer-adoption-conformance` — extend the consumer conformance harness with platform-versioning adoption assertions.
+2. `platform-testing-toolkit` — add a shared xUnit collection, fixtures, and assertion helpers for platform tests.
 5. `platform-consumer-adoption-conformance` — verify pinned packed-package adoption, upgrade, rollback, and dependency boundaries.
 6. `platform-testing-toolkit` — expand deterministic test-only fixtures after the public contracts and adoption path stabilize.
 
