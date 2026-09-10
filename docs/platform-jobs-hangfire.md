@@ -126,3 +126,31 @@ a failure.
    `IJobPayloadHandler`.
 5. Remove the duplicate starter registration. Rollback is disabling the
    adapter registration; Hangfire storage remains application-owned.
+
+## Test-host storage ownership
+
+When a test fixture or application needs explicit ownership of the
+`JobStorage` lifetime (for example, to share storage across hosts, to
+verify that the storage is disposed with the host, or to control the
+in-memory dispatcher's lifecycle deterministically), pass the storage
+instance to the adapter:
+
+```csharp
+var storage = new InMemoryStorage();
+services.AddPlatformHangfireJobs(options => options.Queues = new[] { "default" }, storage);
+```
+
+The supplied `JobStorage` is registered as a DI singleton so the
+service provider owns its lifetime. The Hangfire `BackgroundJobServer`,
+the `IBackgroundJobClient`, the `IRecurringJobManager`, and the platform
+`HangfireJobDispatcher` all resolve the same instance. When the host is
+disposed (via `host.StopAsync()` followed by `host.DisposeAsync()`),
+the service provider disposes the storage, which joins the in-memory
+dispatcher's worker thread.
+
+The reliability test suite ships a `HangfireEndToEndHost` helper that
+exercises this ownership path: each test creates, starts, and disposes
+an isolated host and waits for the background server to register itself
+with the storage before enqueuing. The host's `DisposeAsync` runs the
+shutdown with a bounded timeout so the test suite never hangs on a
+misconfigured host.

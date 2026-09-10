@@ -128,10 +128,12 @@ public sealed class RecordingJobContextBridge : IJobExecutionContext
 public sealed class RecordingPayloadHandler : IJobPayloadHandler
 {
     private readonly TaskCompletionSource<JobPayload> _completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly TaskCompletionSource<JobPayload> _failed = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     public List<JobPayload> Handled { get; } = new();
 
     public Task<JobPayload> HandledTask => _completion.Task;
+    public Task<JobPayload> FailedTask => _failed.Task;
 
     public Exception? Failure { get; set; }
 
@@ -140,6 +142,7 @@ public sealed class RecordingPayloadHandler : IJobPayloadHandler
         Handled.Add(payload);
         if (Failure is not null)
         {
+            _failed.TrySetResult(payload);
             throw Failure;
         }
 

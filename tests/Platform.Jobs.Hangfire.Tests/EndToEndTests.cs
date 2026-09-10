@@ -1,7 +1,5 @@
 using Hangfire;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Platform.Jobs;
 using Platform.Jobs.Hangfire;
@@ -18,42 +16,37 @@ public class EndToEndTests : HangfireTest
     {
         var bridge = new RecordingJobContextBridge();
         var handler = new RecordingPayloadHandler();
-        using var host = BuildHost(
-            services =>
+        await using var host = HangfireEndToEndHost.CreateBuilder()
+            .ConfigureServices(services =>
             {
                 services.AddSingleton<IJobExecutionContext>(bridge);
                 services.AddSingleton<IJobPayloadHandler>(handler);
-            });
+            })
+            .Build();
         await host.StartAsync();
+
+        RecordingJobContextBridge.SetAmbient("tenant-1", "subject-1");
         try
         {
-            RecordingJobContextBridge.SetAmbient("tenant-1", "subject-1");
-            try
-            {
-                var dispatcher = host.Services.GetRequiredService<IJobDispatcher>();
-                await dispatcher.EnqueueAsync(JobPayload.Create(
-                    "cleanup",
-                    new Dictionary<string, object?> { ["tenant"] = "tenant-1" }));
-            }
-            finally
-            {
-                RecordingJobContextBridge.SetAmbient(null, null);
-            }
-
-            var handled = await AwaitOrTimeout(handler.HandledTask);
-            Assert.Equal("cleanup", handled.Name);
-            Assert.Equal("tenant-1", handled.Arguments!["tenant"]);
-
-            var restored = Assert.Single(bridge.Restored);
-            Assert.Equal("tenant-1", restored.TenantId);
-            Assert.Equal("subject-1", restored.SubjectId);
-
-            await AwaitOrTimeout(WaitForDisposal(bridge));
+            var dispatcher = host.Services.GetRequiredService<IJobDispatcher>();
+            await dispatcher.EnqueueAsync(JobPayload.Create(
+                "cleanup",
+                new Dictionary<string, object?> { ["tenant"] = "tenant-1" }));
         }
         finally
         {
-            await host.StopAsync();
+            RecordingJobContextBridge.SetAmbient(null, null);
         }
+
+        var handled = await AwaitOrTimeout(handler.HandledTask);
+        Assert.Equal("cleanup", handled.Name);
+        Assert.Equal("tenant-1", handled.Arguments!["tenant"]);
+
+        var restored = Assert.Single(bridge.Restored);
+        Assert.Equal("tenant-1", restored.TenantId);
+        Assert.Equal("subject-1", restored.SubjectId);
+
+        await AwaitOrTimeout(WaitForDisposal(bridge));
     }
 
     [Fact]
@@ -61,84 +54,60 @@ public class EndToEndTests : HangfireTest
     {
         var bridge = new RecordingJobContextBridge();
         var handler = new RecordingPayloadHandler();
-        using var host = BuildHost(
-            services =>
+        await using var host = HangfireEndToEndHost.CreateBuilder()
+            .ConfigureServices(services =>
             {
                 services.AddSingleton<IJobExecutionContext>(bridge);
                 services.AddSingleton<IJobPayloadHandler>(handler);
-            });
+            })
+            .Build();
         await host.StartAsync();
-        try
-        {
-            RecordingJobContextBridge.SetAmbient(null, null);
-            var dispatcher = host.Services.GetRequiredService<IJobDispatcher>();
-            await dispatcher.EnqueueAsync(JobPayload.Create("cleanup"));
 
-            await AwaitOrTimeout(handler.HandledTask);
+        RecordingJobContextBridge.SetAmbient(null, null);
+        var dispatcher = host.Services.GetRequiredService<IJobDispatcher>();
+        await dispatcher.EnqueueAsync(JobPayload.Create("cleanup"));
 
-            Assert.Empty(bridge.Restored);
-        }
-        finally
-        {
-            await host.StopAsync();
-        }
+        await AwaitOrTimeout(handler.HandledTask);
+
+        Assert.Empty(bridge.Restored);
     }
 
     [Fact]
     public async Task Recurring_jobs_execute_their_registered_handler()
     {
         var handler = new RecordingRecurringHandler();
-        using var host = BuildHost(services => services.AddSingleton<IRecurringJobHandler>(handler));
+        await using var host = HangfireEndToEndHost.CreateBuilder()
+            .ConfigureServices(services => services.AddSingleton<IRecurringJobHandler>(handler))
+            .Build();
         await host.StartAsync();
-        try
-        {
-            var registry = host.Services.GetRequiredService<IRecurringJobRegistry>();
-            registry.Register(new RecurringJobDescriptor(
-                "e2e-recurring",
-                "* * * * *",
-                typeof(RecordingRecurringHandler)));
 
-            var manager = host.Services.GetRequiredService<IRecurringJobManager>();
-            manager.Trigger("e2e-recurring");
+        var registry = host.Services.GetRequiredService<IRecurringJobRegistry>();
+        registry.Register(new RecurringJobDescriptor(
+            "e2e-recurring",
+            "* * * * *",
+            typeof(RecordingRecurringHandler)));
 
-            await AwaitOrTimeout(WaitForExecutions(handler));
-        }
-        finally
-        {
-            await host.StopAsync();
-        }
+        var manager = host.Services.GetRequiredService<IRecurringJobManager>();
+        manager.Trigger("e2e-recurring");
+
+        await AwaitOrTimeout(WaitForExecutions(handler));
     }
 
     [Fact]
     public async Task Server_options_are_applied_from_the_validated_configuration()
     {
-        using var host = BuildHost(configureOptions: options =>
-        {
-            options.WorkerCount = 2;
-            options.Queues = new[] { "default", "email" };
-        });
+        await using var host = HangfireEndToEndHost.CreateBuilder()
+            .ConfigureOptions(options =>
+            {
+                options.WorkerCount = 2;
+                options.Queues = new[] { "default", "email" };
+            })
+            .Build();
         await host.StartAsync();
-        try
-        {
-            var options = host.Services.GetRequiredService<IOptions<HangfireJobsOptions>>().Value;
-            Assert.Equal(2, options.WorkerCount);
-            Assert.Equal(new[] { "default", "email" }, options.Queues);
-        }
-        finally
-        {
-            await host.StopAsync();
-        }
-    }
 
-    private static IHost BuildHost(
-        Action<IServiceCollection>? configure = null,
-        Action<HangfireJobsOptions>? configureOptions = null)
-    {
-        var builder = Host.CreateApplicationBuilder();
-        builder.Services.AddLogging();
-        builder.Services.AddPlatformHangfireJobs(configureOptions);
-        configure?.Invoke(builder.Services);
-        return builder.Build();
+        var options = host.Services.GetRequiredService<IOptions<HangfireJobsOptions>>().Value;
+        Assert.Equal(2, options.WorkerCount);
+        Assert.Equal(new[] { "default", "email" }, options.Queues);
     }
 
     private static async Task<T> AwaitOrTimeout<T>(Task<T> task)

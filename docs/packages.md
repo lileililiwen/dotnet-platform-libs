@@ -171,6 +171,7 @@ Optional Hangfire adapter for the platform scheduling contracts. Depends on `Pla
 ### Registration
 
 - `AddPlatformHangfireJobs(IServiceCollection, Action<HangfireJobsOptions>?)` — validates the options, wires the application-selected storage, the scoped activator, the capture filter, and the Hangfire server, then `TryAdd`s `HangfireJobExecutor`, `IJobDispatcher`, `IRecurringJobRegistry`, `IHealthCheck`, and `IClock`. Registration is idempotent; application-owned dispatcher/registry registrations win.
+- `AddPlatformHangfireJobs(IServiceCollection, Action<HangfireJobsOptions>?, JobStorage)` — same as above but uses an application-owned `JobStorage` instance, which the service provider registers as a DI singleton so the storage lifetime is owned by the host (used by tests for isolated lifetime and disposal).
 - `UsePlatformHangfireDashboard(IApplicationBuilder)` — maps the dashboard only when `DashboardEnabled` is `true` and fails fast with `InvalidOperationException` when the authorization callback is missing.
 
 ## Platform.Mailing

@@ -23,7 +23,9 @@ public static class ServiceCollectionExtensions
     /// Registers the validated <see cref="HangfireJobsOptions"/>, wires the
     /// application-selected Hangfire storage, the scoped job activator, the
     /// context-capture filter, the Hangfire server, and the platform
-    /// dispatcher/registry/health seams.
+    /// dispatcher/registry/health seams. The storage is created from
+    /// <see cref="HangfireJobsOptions"/> inside the Hangfire configuration
+    /// callback.
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <param name="configure">The optional configuration delegate.</param>
@@ -35,7 +37,41 @@ public static class ServiceCollectionExtensions
         Action<HangfireJobsOptions>? configure = null)
     {
         ArgumentNullException.ThrowIfNull(services);
+        return RegisterHangfireJobs(services, configure, storage: null);
+    }
 
+    /// <summary>
+    /// Registers the Hangfire adapter using an application-owned
+    /// <see cref="JobStorage"/> instance. The provided storage is registered
+    /// as the DI singleton so the service provider owns its lifetime, and
+    /// is wired into Hangfire's global configuration so the background
+    /// server, clients, and the platform dispatcher all use the same
+    /// instance. Use this overload when the application or a test fixture
+    /// wants explicit storage ownership (for example, to share storage
+    /// across hosts, to dispose it deterministically, or to verify storage
+    /// disposal in a regression test).
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="configure">The optional configuration delegate.</param>
+    /// <param name="storage">The application-owned Hangfire storage.</param>
+    /// <returns>The same <paramref name="services"/> for chaining.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="services"/> or <paramref name="storage"/> is <c>null</c>.</exception>
+    /// <exception cref="ArgumentException">The configured options are invalid.</exception>
+    public static IServiceCollection AddPlatformHangfireJobs(
+        this IServiceCollection services,
+        Action<HangfireJobsOptions>? configure,
+        JobStorage storage)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(storage);
+        return RegisterHangfireJobs(services, configure, storage);
+    }
+
+    private static IServiceCollection RegisterHangfireJobs(
+        IServiceCollection services,
+        Action<HangfireJobsOptions>? configure,
+        JobStorage? storage)
+    {
         if (services.Any(descriptor => descriptor.ServiceType == typeof(HangfireJobsRegistrationMarker)))
         {
             return services;
@@ -51,13 +87,24 @@ public static class ServiceCollectionExtensions
 
         services.TryAddSingleton<IClock>(_ => new SystemClock());
 
+        if (storage is not null)
+        {
+            // The application-owned storage wins; registering it explicitly
+            // before AddHangfire ensures TryAdd inside AddHangfire does not
+            // overwrite the registration with the JobStorage.Current factory.
+            services.AddSingleton(storage);
+        }
+
         services.AddHangfire((provider, configuration) =>
         {
             // The storage is created inside the configuration callback so it
             // is constructed after Hangfire has bound the host's log
             // provider; Hangfire resolves JobStorage lazily from
-            // JobStorage.Current once the configuration has run.
-            configuration.UseStorage(CreateStorage(validated));
+            // JobStorage.Current once the configuration has run. When the
+            // application supplied an explicit storage, the explicit
+            // registration in the service collection takes precedence over
+            // the storage selected from the options.
+            configuration.UseStorage(storage ?? CreateStorage(validated));
             configuration.UseActivator(new ScopedJobActivator(provider.GetRequiredService<IServiceScopeFactory>()));
             configuration.UseFilter(new JobContextCaptureFilter(provider));
         });
@@ -82,6 +129,17 @@ public static class ServiceCollectionExtensions
     {
     }
 
+    // The storage returned from this factory is the default when the
+    // application does not supply its own JobStorage instance. Its lifetime
+    // is tied to the Hangfire global configuration (which sets
+    // JobStorage.Current) and to the DI service provider that resolves the
+    // IBackgroundProcessingServer hosted service: when the host is
+    // disposed, the service provider disposes the registered storage, and
+    // the InMemoryStorage's background Dispatcher joins its worker thread
+    // before the storage becomes unreachable. Tests that want to share or
+    // observe this lifetime should register a storage explicitly via the
+    // AddPlatformHangfireJobs(Action<HangfireJobsOptions>?, JobStorage)
+    // overload.
     private static JobStorage CreateStorage(HangfireJobsOptions options) => options.Storage switch
     {
         HangfireStorageKind.InMemory => new InMemoryStorage(),
