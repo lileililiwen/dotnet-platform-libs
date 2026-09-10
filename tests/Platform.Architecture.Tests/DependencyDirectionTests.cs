@@ -1575,6 +1575,79 @@ public class DependencyDirectionTests
         }
     }
 
+    [Fact]
+    public void Package_manifest_exists_and_is_generated_alongside_its_script()
+    {
+        var manifestPath = Path.Combine(RepositoryRoot, "eng/package-manifest.json");
+        var scriptPath = Path.Combine(RepositoryRoot, "scripts/generate-package-manifest.sh");
+        Assert.True(File.Exists(manifestPath), "Package manifest must exist at " + manifestPath);
+        Assert.True(File.Exists(scriptPath), "Manifest generator script must exist at " + scriptPath);
+        var contents = File.ReadAllText(scriptPath);
+        Assert.Contains("--check", contents, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Package_manifest_is_in_sync_with_source()
+    {
+        var scriptPath = Path.Combine(RepositoryRoot, "scripts/generate-package-manifest.sh");
+        if (!File.Exists(scriptPath))
+        {
+            return;
+        }
+        var exitCode = RunCommand(scriptPath, "--check");
+        Assert.True(
+            exitCode == 0,
+            "scripts/generate-package-manifest.sh --check must succeed; regenerate the manifest if it drifted.");
+    }
+
+    [Fact]
+    public void Consumer_conformance_project_pins_every_Platform_package()
+    {
+        var path = Path.Combine(RepositoryRoot, "tests/Platform.ConsumerConformance/Platform.ConsumerConformance.csproj");
+        Assert.True(File.Exists(path), "Consumer conformance project must exist.");
+        var document = XDocument.Load(path);
+        foreach (var reference in document
+                     .Descendants()
+                     .Where(e => string.Equals(e.Name.LocalName, "PackageReference", StringComparison.OrdinalIgnoreCase))
+                     .Where(e => (e.Attribute("Include")?.Value ?? string.Empty).StartsWith("Platform.", StringComparison.OrdinalIgnoreCase)))
+        {
+            var name = reference.Attribute("Include")?.Value ?? string.Empty;
+            var version = reference.Attribute("Version")?.Value ?? string.Empty;
+            Assert.False(string.IsNullOrWhiteSpace(version), $"{name} must declare a pinned Version attribute.");
+            Assert.False(version.Contains('*') || version.Contains('[') || version.Contains('('), $"{name} must use an exact version. Saw '{version}'.");
+        }
+    }
+
+    [Fact]
+    public void Consumer_conformance_project_does_not_reference_testing_packages_from_production_projects()
+    {
+        // Production projects must never appear as a PackageReference target of the
+        // consumer conformance fixture — only Platform.* packages are allowed.
+        var path = Path.Combine(RepositoryRoot, "tests/Platform.ConsumerConformance/Platform.ConsumerConformance.csproj");
+        var document = XDocument.Load(path);
+        var references = document
+            .Descendants()
+            .Where(e => string.Equals(e.Name.LocalName, "ProjectReference", StringComparison.OrdinalIgnoreCase))
+            .Select(e => e.Attribute("Include")?.Value ?? string.Empty)
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .ToArray();
+        Assert.Empty(references);
+    }
+
+    private static int RunCommand(string script, string arg)
+    {
+        var psi = new System.Diagnostics.ProcessStartInfo("bash", $"\"{script}\" {arg}")
+        {
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            WorkingDirectory = RepositoryRoot,
+        };
+        using var process = System.Diagnostics.Process.Start(psi) ?? throw new InvalidOperationException("Failed to start " + script);
+        process.WaitForExit();
+        return process.ExitCode;
+    }
+
     private static string LocateRepositoryRoot()
     {
         var current = new DirectoryInfo(AppContext.BaseDirectory);
