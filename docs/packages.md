@@ -484,6 +484,56 @@ migrations, or database credentials.
 - `ScopedTenantConnectionProvider` — returns the connection descriptor for the current scope; caches within a single generation.
 - `TenantConnectionReadinessCheck` and `AddPlatformTenantConnectionReadinessCheck` — readiness aggregation for tenant connections.
 
+## Platform.Tenant.Lifecycle (contracts)
+
+Provider-neutral tenant provisioning and lifecycle orchestration. Framework-neutral; targets `net8.0`. Zero third-party packages and no project references.
+
+### State machine
+
+- `TenantLifecycleStepOutcome` — `Succeeded`, `Retryable`, `Permanent`, `Canceled`, `PolicyDenied`.
+- `TenantLifecycleOperationState` — `Pending`, `Running`, `Succeeded`, `Retryable`, `PermanentlyFailed`, `Canceled`, `PolicyDenied`. The store refuses to transition a terminal state.
+- `TenantLifecycleOperationId` / `TenantLifecycleStepName` / `TenantLifecycleWorkflowName` — opaque, stable identifiers.
+- `TenantLifecycleStepContext` — operation, workflow, step, tenant id, attempt counter, and an opaque metadata bag the application populates.
+- `TenantLifecycleStepResult` / `TenantLifecycleStepStatus` / `TenantLifecycleOperationStatus` — safe, secret-free status snapshots.
+- `TenantLifecycleReasons` — provider-neutral reason constants for readiness (`ready`, `running`, `retryable`, `permanently_failed`, `canceled`, `policy_denied`, `unknown`).
+
+### Workflow
+
+- `ITenantLifecycleStep` — application-owned step. `Name` is the idempotency boundary; `Order` resolves execution order; `IsTenantScoped` tells the orchestrator to install the scope around the step.
+- `ITenantLifecycleWorkflow` — ordered, named list of steps; the workflow name plus the operation id is the durable identity for resume.
+- `ITenantLifecycleScopeCallback` — application hook that installs and restores the tenant scope. The platform never imports the multitenancy adapter directly.
+- `ITenantLifecycleStore` — application-owned durable store; the platform provides only the contract and an in-memory test implementation.
+- `ITenantLifecycleOrchestrator` — `StartAsync` and `ResumeAsync`; the orchestrator skips already-completed steps and classifies step outcomes into operation states.
+
+## Platform.Tenant.Lifecycle
+
+Default orchestrator. Depends on `Platform.Tenant.Lifecycle.Contracts` and `Platform.Core` (for `IClock` and logging abstractions). No EF Core, Hangfire, Quartz, or ASP.NET Core references.
+
+- `TenantLifecycleOrchestrator` — `ITenantLifecycleOrchestrator` default. Runs ordered steps, installs and disposes the tenant scope around each `IsTenantScoped` step, and routes step outcomes to the operation state.
+- `TenantLifecycleWorkflowRegistry` / `ITenantLifecycleWorkflowRegistry` — workflow-by-name lookup the orchestrator uses to resume an operation.
+- `InMemoryTenantLifecycleStore` — in-memory, non-production store. Production callers replace it with a durable adapter.
+- `TenantLifecycleOrchestratorExtensions.WithWorkflowRegistry` — fluent attachment for the registry; required for `ResumeAsync` to locate the workflow by name.
+- `AddPlatformTenantLifecycle(IServiceCollection)` / `AddPlatformTenantLifecycle(IServiceCollection, Action<TenantLifecycleOptions>)` — DI registration. Replaces the in-memory store with the application-owned adapter in production.
+
+## Platform.Tenant.Lifecycle.AspNetCore
+
+Status and readiness adapter. Depends on `Platform.Tenant.Lifecycle`, `Platform.Tenant.Lifecycle.Contracts`, and the `Microsoft.AspNetCore.App` framework reference. No third-party packages.
+
+- `AddPlatformTenantLifecycleReadiness` — registers the platform readiness check that maps the most recent operation state to the readiness taxonomy.
+- `TenantLifecycleReadinessCheck` — default readiness check; reads the store, maps `Succeeded` / `Running` / `Pending` to healthy and every terminal failure to unhealthy with a stable reason.
+- `MapPlatformTenantLifecycleStatus` / `MapPlatformTenantLifecycleResume` — minimal-API mappers for the status and operator-driven resume flows.
+- `IReadinessCheck` / `ReadinessResult` / `ReadinessContext` — provider-neutral readiness surface that the host's readiness endpoint adapts.
+
+## Platform.Tenant.Lifecycle.Testing
+
+Deterministic fakes. Depends on `Platform.Tenant.Lifecycle.Contracts`. No third-party packages.
+
+- `InMemoryTenantLifecycleStore` — test in-memory store with linearizable status reads and writes.
+- `ScriptedLifecycleStep` — step that consumes pre-configured results; otherwise returns the configured default. `Invocations` records every call.
+- `DelegateLifecycleStep` — step that delegates to a caller-supplied `Func<TenantLifecycleStepContext, CancellationToken, ValueTask<TenantLifecycleStepResult>>`.
+- `StaticLifecycleWorkflow` — composes a workflow from a list of steps in declaration order.
+- `RecordingLifecycleScopeCallback` — records every `BeginTenantScope` invocation and tracks the active scope count.
+
 ## Platform.Testing
 
 Test-only helpers. Depends on `Platform.Core`, `Platform.AspNetCore`, and `Platform.Billing.Contracts`. No xUnit, NUnit, or mocking-framework dependencies. Targets `net8.0`. Production projects must not reference this package.
@@ -521,6 +571,7 @@ Test-only helpers. Depends on `Platform.Core`, `Platform.AspNetCore`, and `Platf
 | `tests/Platform.RateLimiting.Tests` | Unit tests for `RateLimitPolicies` default catalog + `Find` + invalid-entry dropping + null guard, `RateLimitingOptions` defaults, `InMemoryRateLimiter` (first request, burst over limit, window roll-over, per-subject isolation, unknown/empty policy / subject rejection, null dependency guards), `ConfigurationRateLimitBypassResolver`, and `InMemoryRateLimiterBackendStatusProvider`, plus a `TestServer` integration test for `AddPlatformRateLimiting` defaults, configuration overrides, limiter decisions through DI, and the readiness surface. |
 | `tests/Platform.Persistence.EfCore.Tests` | In-memory and SQLite tests for explicit options, audit/soft-delete interception, tenant filters, paging/specification helpers, concurrent independent contexts, read-only migration status, and readiness behavior. |
 | `tests/Platform.Persistence.Multitenancy.Tests` | Multitenancy options validation, scope factory installation/restoration, EF Core model filter application, global-entity opt-out, scoped connection routing (tenant/global/shared), connection caching, HTTP middleware TestServer coverage (resolved/disabled/length-bounded), and tenant readiness check aggregation. |
+| `tests/Platform.Tenant.Lifecycle.Tests` | Tenant lifecycle orchestrator: ordered execution + succeeded status, retryable classification stops the run, permanent classification fails closed, cancellation transitions to `Canceled`, tenant scope is installed and disposed around every tenant-scoped step, duplicate step names are rejected, `ResumeAsync` skips completed steps and recovers, `ResumeAsync` throws on unknown operations and un-registered workflows, and safe messages are preserved on step status records; status endpoint (404 for unknown operations, OK with snapshot), resume endpoint (operator-driven run to completion), readiness check (healthy for succeeded, unhealthy for retryable). |
 | `tests/Platform.Persistence.Postgres.Tests` | Provider-boundary test for PostgreSQL options configuration. |
 | `tests/Platform.Testing.Tests` | Unit tests for `ControllableClock`, `SubscriptionBuilder`, `EntitlementBuilder`, `FakeEntitlementStore`, and `RecordingUsageMeter`. |
 | `tests/Platform.Webhooks.Tests` | Synthetic signature, replay, normalization, and HTTP mapping coverage for the inbound and outbound flows. |

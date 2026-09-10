@@ -49,6 +49,10 @@ public class DependencyDirectionTests
         "src/Platform.Identity.AspNetCore/Platform.Identity.AspNetCore.csproj",
         "src/Platform.Identity.EntityFrameworkCore/Platform.Identity.EntityFrameworkCore.csproj",
         "src/Platform.Identity.Testing/Platform.Identity.Testing.csproj",
+        "src/Platform.Tenant.Lifecycle.Contracts/Platform.Tenant.Lifecycle.Contracts.csproj",
+        "src/Platform.Tenant.Lifecycle/Platform.Tenant.Lifecycle.csproj",
+        "src/Platform.Tenant.Lifecycle.Testing/Platform.Tenant.Lifecycle.Testing.csproj",
+        "src/Platform.Tenant.Lifecycle.AspNetCore/Platform.Tenant.Lifecycle.AspNetCore.csproj",
         "src/Platform.Admin.Contracts/Platform.Admin.Contracts.csproj",
         "src/Platform.Admin.AspNetCore/Platform.Admin.AspNetCore.csproj",
         "src/Platform.Admin.Testing/Platform.Admin.Testing.csproj",
@@ -373,6 +377,7 @@ public class DependencyDirectionTests
     [Theory]
     [InlineData("src/Platform.Identity.Contracts/Platform.Identity.Contracts.csproj")]
     [InlineData("src/Platform.Authorization/Platform.Authorization.csproj")]
+    [InlineData("src/Platform.Tenant.Lifecycle.Contracts/Platform.Tenant.Lifecycle.Contracts.csproj")]
     public void Identity_contract_projects_have_no_package_or_project_references(string relativePath)
     {
         Assert.Empty(ReadPackageReferences(relativePath));
@@ -420,6 +425,52 @@ public class DependencyDirectionTests
         Assert.Equal(2, references.Length);
         Assert.Contains("Platform.Identity.Contracts", references, StringComparer.OrdinalIgnoreCase);
         Assert.Contains("Platform.Authorization", references, StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Platform_Tenant_Lifecycle_Contracts_has_no_package_or_project_references()
+    {
+        Assert.Empty(ReadPackageReferences("src/Platform.Tenant.Lifecycle.Contracts/Platform.Tenant.Lifecycle.Contracts.csproj"));
+        Assert.Empty(ReadProjectReferences("src/Platform.Tenant.Lifecycle.Contracts/Platform.Tenant.Lifecycle.Contracts.csproj"));
+    }
+
+    [Fact]
+    public void Platform_Tenant_Lifecycle_Testing_references_only_tenant_lifecycle_contracts()
+    {
+        var references = ReadProjectReferences("src/Platform.Tenant.Lifecycle.Testing/Platform.Tenant.Lifecycle.Testing.csproj");
+        Assert.Single(references);
+        Assert.Contains("Platform.Tenant.Lifecycle.Contracts", references, StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Platform_Tenant_Lifecycle_references_only_tenant_lifecycle_contracts_and_core()
+    {
+        var references = ReadProjectReferences("src/Platform.Tenant.Lifecycle/Platform.Tenant.Lifecycle.csproj");
+        Assert.Equal(2, references.Length);
+        Assert.Contains("Platform.Tenant.Lifecycle.Contracts", references, StringComparer.OrdinalIgnoreCase);
+        Assert.Contains("Platform.Core", references, StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Platform_Tenant_Lifecycle_AspNetCore_references_only_tenant_lifecycle_contracts_and_orchestrator()
+    {
+        var references = ReadProjectReferences("src/Platform.Tenant.Lifecycle.AspNetCore/Platform.Tenant.Lifecycle.AspNetCore.csproj");
+        Assert.Equal(2, references.Length);
+        Assert.Contains("Platform.Tenant.Lifecycle.Contracts", references, StringComparer.OrdinalIgnoreCase);
+        Assert.Contains("Platform.Tenant.Lifecycle", references, StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Platform_Tenant_Lifecycle_does_not_reference_forbidden_packages()
+    {
+        var packages = ReadPackageReferences("src/Platform.Tenant.Lifecycle/Platform.Tenant.Lifecycle.csproj");
+        var violations = packages.Where(package => new[]
+        {
+            "Microsoft.EntityFrameworkCore",
+            "Hangfire",
+            "Quartz",
+        }.Any(prefix => package.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))).ToArray();
+        Assert.Empty(violations);
     }
 
     [Fact]
@@ -497,7 +548,8 @@ public class DependencyDirectionTests
                 || project.EndsWith("Platform.Realtime.AspNetCore.csproj", StringComparison.OrdinalIgnoreCase)
                 || project.EndsWith("Platform.Quota.AspNetCore.csproj", StringComparison.OrdinalIgnoreCase)
                 || project.EndsWith("Platform.Auditing.AspNetCore.csproj", StringComparison.OrdinalIgnoreCase)
-                || project.EndsWith("Platform.Jobs.Hangfire.csproj", StringComparison.OrdinalIgnoreCase))
+                || project.EndsWith("Platform.Jobs.Hangfire.csproj", StringComparison.OrdinalIgnoreCase)
+                || project.EndsWith("Platform.Tenant.Lifecycle.AspNetCore.csproj", StringComparison.OrdinalIgnoreCase))
             {
                 Assert.True(
                     references.Length == 1 && references[0].Equals("Microsoft.AspNetCore.App", StringComparison.OrdinalIgnoreCase),
