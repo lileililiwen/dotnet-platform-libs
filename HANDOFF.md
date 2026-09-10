@@ -1,5 +1,105 @@
 # Handoff
 
+## Completed: platform-identity-lifecycle-contracts
+
+- Extended `Platform.Identity.Contracts` (framework-neutral, no
+  third-party packages) with lifecycle contracts and the
+  `IIdentityLifecycleCoordinator` composition:
+  - `IdentityLifecycleOutcome`, `IdentityLifecycleResult<T>`, and
+    `IdentityLifecycleResults` (stable codes: `Succeeded`,
+    `InvalidHandle`, `Expired`, `Revoked`, `Replayed`, `PolicyDenied`,
+    `PreconditionNotMet`, `ProviderUnavailable`, `InvalidRequest`,
+    `Unknown`).
+  - `IRefreshTokenStore` (atomic consume-and-replace), `RefreshToken`,
+    `RefreshTokenRotation`, `IRefreshTokenService`,
+    `DefaultRefreshTokenService` (delegates to the application store
+    and the `IIdentityAuditHook`).
+  - `IPasswordRecoveryService`, `PasswordRecoveryChallenge`
+    (no-enumeration, replay-rejected, expired-window).
+  - `ITwoFactorService`, `TwoFactorChallenge` with channel selection
+    and code verification.
+  - `IImpersonationPolicy`, `IImpersonationService`,
+    `ImpersonationAuthorizationRequest`, `ImpersonationGrant`,
+    `ImpersonationContext` (fail-closed without a policy; audited
+    start/end).
+- Extended `Platform.Identity.Testing` with deterministic, non-production
+  fakes: `InMemoryRefreshTokenStore` (linearizable, family-revoked),
+  `FakePasswordRecoveryService`, `FakeTwoFactorService`,
+  `FakeImpersonationService` (delegates to a swappable
+  `IImpersonationPolicy`; defaults to `DenyAllImpersonationPolicy`),
+  `AllowImpersonationPolicy`, `DenyAllImpersonationPolicy`, and
+  `RecordingIdentityAuditHook`.
+- Extended `Platform.Identity.AspNetCore` (depends on
+  `Platform.Identity.Contracts` + `Platform.Authorization` + the
+  `Microsoft.AspNetCore.App` framework reference) with:
+  - `AddPlatformIdentityLifecycle(IServiceCollection)` — composes the
+    coordinator and the `DefaultRefreshTokenService`; reports
+    `ProviderUnavailable` for any lifecycle contract the application
+    has not yet wired.
+  - `MapPlatformRefreshTokenRotation` /
+    `MapPlatformRefreshTokenRevocation` /
+    `MapPlatformPasswordRecoveryInitiation` /
+    `MapPlatformPasswordRecoveryCompletion` /
+    `MapPlatformTwoFactorChallenge` /
+    `MapPlatformTwoFactorVerification` /
+    `MapPlatformImpersonationStart` /
+    `MapPlatformImpersonationEnd` — minimal-API mappers that
+    translate the `IdentityLifecycleOutcome` to ProblemDetails and
+    reuse the consumer's authentication scheme and claim projection.
+- Tests in `tests/Platform.Identity.Tests` (+27 new, +45 total in the
+  project): refresh-token rotation + replay + expiry + revocation,
+  32-thread concurrent rotation with a single success, audit-event
+  emission; password recovery with no-enumeration, replay rejection,
+  invalid-challenge handling; two-factor challenge + verify with wrong
+  code, unknown challenge, empty subject; impersonation fail-closed
+  default, allow policy grants, active context lookup, end-after-start,
+  unknown-grant end, invalid request shape; endpoint integration via
+  `TestServer` for refresh rotation, refresh replay, password-recovery
+  initiation returning `202` for known and unknown subjects, two-factor
+  challenge + verify, and impersonation start failing closed without a
+  policy.
+- Architecture tests already enforce the production/test boundary and
+  the forbidden-package list; existing assertions for
+  `Platform.Identity.Contracts`, `Platform.Identity.AspNetCore`, and
+  `Platform.Identity.Testing` continue to pass (286 architecture
+  tests, 0 failed).
+- Docs: `docs/packages.md` adds a "Lifecycle" subsection to
+  `Platform.Identity.Contracts`, a "Lifecycle integration" subsection
+  to `Platform.Identity.AspNetCore`, and a lifecycle-fakes subsection
+  to `Platform.Identity.Testing`. The per-package reference at
+  `docs/platform-identity-lifecycle.md` covers adoption, refresh
+  rotation, password recovery, two-factor, impersonation, outcome
+  codes, security requirements, and starter-kit migration/rollback.
+- Archived the change at
+  `openspec/changes/archive/2026-09-10-platform-identity-lifecycle-contracts/`
+  with synchronized
+  `openspec/specs/platform-identity-lifecycle/spec.md` covering
+  provider-neutral contracts, atomic refresh rotation, safe failure
+  outcomes (no user enumeration), and impersonation that fails closed.
+
+## Verification evidence
+
+- `dotnet build Platform.sln -c Release` — 0 warnings, 0 errors.
+- `dotnet test Platform.sln -c Release --no-build --nologo -m:1` —
+  all projects green, including the new identity lifecycle tests
+  (45 passed, 0 failed) and the unchanged architecture tests (286
+  passed, 0 failed).
+- `openspec validate --changes --strict --no-interactive` — 3
+  passed (after archive; `platform-identity-lifecycle-contracts` is
+  removed from the active queue).
+- `openspec validate --specs --strict --no-interactive` — 36
+  passed (after archive; the new
+  `platform-identity-lifecycle` spec is included).
+- `git diff --check` — clean for the staged change.
+- Implementation commit: recorded in the repository log for the
+  `platform-identity-lifecycle-contracts` change.
+
+## Next change
+
+`platform-tenant-lifecycle-contracts` is the next active change
+returned by `openspec list` (3 active changes remain). Implement
+only that change in the next cycle.
+
 ## Completed: platform-web-api-versioning
 
 - Added `Platform.Web.Versioning` (net8.0) with centrally managed
@@ -210,10 +310,9 @@ governance verification because it was required for the full gate.
 
 The active planning queue is intentionally dependency-ordered. Implement one change at a time, archive it, update this handoff with evidence, and stop before selecting the next change.
 
-1. `platform-identity-lifecycle-contracts` — add provider-neutral refresh/session/password/2FA/impersonation seams; keep Identity entities and policy in consumers.
-2. `platform-tenant-lifecycle-contracts` — add resumable provisioning/migration/seed orchestration seams; keep tenant catalog, migrations, and connection policy in consumers.
-3. `platform-consumer-adoption-conformance` — extend the consumer conformance harness with platform-versioning adoption assertions.
-4. `platform-testing-toolkit` — add a shared xUnit collection, fixtures, and assertion helpers for platform tests.
+1. `platform-tenant-lifecycle-contracts` — add resumable provisioning/migration/seed orchestration seams; keep tenant catalog, migrations, and connection policy in consumers.
+2. `platform-consumer-adoption-conformance` — extend the consumer conformance harness with platform-versioning adoption assertions.
+3. `platform-testing-toolkit` — add a shared xUnit collection, fixtures, and assertion helpers for platform tests.
 5. `platform-consumer-adoption-conformance` — verify pinned packed-package adoption, upgrade, rollback, and dependency boundaries.
 6. `platform-testing-toolkit` — expand deterministic test-only fixtures after the public contracts and adoption path stabilize.
 
