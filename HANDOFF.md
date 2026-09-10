@@ -1,5 +1,83 @@
 # Handoff
 
+## Completed: platform-testing-toolkit
+
+- `Platform.Testing` extended with `RecordingEventBus` (in-memory
+  `IEventBus` that records every published
+  `IntegrationEventEnvelope` in invocation order, with
+  `EnvelopesOfType(payloadType)` filter and `Reset`) and
+  `TransientFailureInjector` (fluent `WithTransient` / `WithPermanent`
+  with safe `InjectedFailure` records carrying `Label`, `Kind`, and
+  `Sequence`; `Run` / `RunAsync` for sync and async delegates; `History`
+  and `Reset`).
+- New `Platform.Testing.AspNetCore` package with
+  `PlatformTestWebApplicationFactory` (non-generic factory that builds
+  an in-memory `WebApplication` with `TestServer`, applies
+  `WebApplicationOptions { EnvironmentName = "Testing" }`, exposes
+  `WithConfiguration(key, value)` and `ConfigureTestServices((s, c) => ...)`,
+  and returns a test `HttpClient` via `CreateClient()`), the
+  `PlatformTestHostConfiguration` delegate, and the
+  `PlatformTestEnvironments.Testing` constant.
+- Tests: `tests/Platform.Testing.Tests/Core/PlatformTestingToolkitTests.cs`
+  (11 new tests covering `RecordingEventBus` and
+  `TransientFailureInjector` reset, isolation, recording, async
+  propagation, and unknown-label pass-through),
+  `tests/Platform.Testing.Tests/AspNetCore/PlatformTestWebApplicationFactoryTests.cs`
+  (5 tests covering environment, configuration, service replacement,
+  in-memory `HttpClient` round-trip, and the public environment
+  constant), and
+  `tests/Platform.Testing.Tests/Scenarios/CheckoutScenarioTests.cs`
+  (1 end-to-end scenario wiring the toolkit into a real host).
+  `Platform.Testing.Tests` now reports 53 passed (was 41).
+- Architecture rules added to
+  `tests/Platform.Architecture.Tests/DependencyDirectionTests.cs`:
+  `Platform_Testing_AspNetCore_only_depends_on_public_contracts_and_core`,
+  `Platform_Testing_AspNetCore_declares_FrameworkReference_for_ASPNET`,
+  and `Production_projects_do_not_reference_Platform_Testing_toolkit`.
+  `TestOnlyAssemblyNames` now includes `Platform.Tenant.Lifecycle.Tests`
+  (added earlier but not wired into the architecture list).
+  Architecture suite: 311 passed (was 304).
+- Docs: `docs/platform-testing-toolkit.md` covers adoption,
+  scenarios (clock, event bus, failure injection, test host), what
+  is intentionally not in the toolkit (Testcontainers, mocking
+  frameworks, provider credentials), and environment-blocked
+  semantics. `docs/packages.md` adds sections for
+  `Platform.Testing` eventing + failure injection and the new
+  `Platform.Testing.AspNetCore` package, and the test inventory
+  row for `tests/Platform.Testing.Tests` is updated.
+- The package manifest is regenerated and committed (71 packages).
+  `scripts/generate-package-manifest.sh --check` passes.
+- Archived the change at
+  `openspec/changes/archive/2026-09-10-platform-testing-toolkit/`
+  with the synchronized
+  `openspec/specs/platform-testing-toolkit/spec.md` covering
+  deterministic test fixtures, recorded fakes, failure
+  injection, in-memory TestServer host, environment-blocked
+  verification semantics, and the production/test package
+  boundary.
+
+## Verification evidence
+
+- `dotnet build Platform.sln -c Release` — 0 warnings, 0 errors.
+- `dotnet test Platform.sln -c Release --no-build --nologo -m:1` —
+  all 42 test projects green. `Platform.Testing.Tests` reports 53
+  passed (was 41). Architecture suite reports 311 passed (was 304).
+  No regressions.
+- `openspec validate --changes --strict --no-interactive` — 0 active
+  changes (the change is archived; the queue is empty).
+- `openspec validate --specs --strict --no-interactive` — 38 passed
+  (the new `platform-testing-toolkit` spec is included).
+- `scripts/generate-package-manifest.sh --check` — `Manifest matches
+  source.`
+- `git diff --check` — clean for the staged change.
+- Implementation commit: recorded in the repository log for the
+  `platform-testing-toolkit` change.
+
+## Next change
+
+`openspec list` is empty. The ten ROADMAP phases are all implemented
+and archived. New work, if any, starts with a fresh OpenSpec proposal.
+
 ## Completed: platform-consumer-adoption-conformance
 
 - Manifest generator `scripts/generate-package-manifest.sh` (with
@@ -475,7 +553,7 @@ governance verification because it was required for the full gate.
 
 The active planning queue is intentionally dependency-ordered. Implement one change at a time, archive it, update this handoff with evidence, and stop before selecting the next change.
 
-1. `platform-testing-toolkit` — add a shared xUnit collection, fixtures, and assertion helpers for platform tests.
+1. The starter-kit gap audit queue is now exhausted (10/10 changes archived). New work starts with a fresh OpenSpec proposal.
 5. `platform-consumer-adoption-conformance` — verify pinned packed-package adoption, upgrade, rollback, and dependency boundaries.
 6. `platform-testing-toolkit` — expand deterministic test-only fixtures after the public contracts and adoption path stabilize.
 
