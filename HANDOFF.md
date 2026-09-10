@@ -1,5 +1,76 @@
 # Handoff
 
+## Completed: platform-consumer-adoption-conformance
+
+- Manifest generator `scripts/generate-package-manifest.sh` (with
+  `--check` for CI) and the committed artifact
+  `eng/package-manifest.json` covering 70 packages, including
+  `packageId`, `version`, `targetFrameworks`, `description`,
+  `isPackable`, `projectReferences`, `packageReferences`, and
+  `frameworkReferences`. The script walks `src/**.csproj`, resolves
+  the inherited `Version`/`VersionPrefix` from the nearest
+  `Directory.Build.props`, and emits JSON sorted by `packageId`.
+- `scripts/consumer-upgrade-rollback.sh` rewritten to drive the
+  candidate and rollback runs from the manifest, classify feed failures
+  as environment blockers when `ALLOW_ENV_BLOCKER=1` is set, and
+  refuse to release a candidate that fails the suite.
+- `tests/Platform.ConsumerConformance/Tests/AdoptionConformanceTests.cs`
+  (8 tests): pins every `Platform.*` reference to an exact version,
+  aligns every `<X>.Testing` package with the matching `<X>.Contracts`
+  partner, asserts the conformance project is unpackable, asserts the
+  manifest lists every referenced package, asserts every packable
+  manifest package has a concrete version, asserts each testing
+  package has a public contract, and recognises `Platform.Testing` as
+  the standalone test helper.
+- `tests/Platform.ConsumerConformance/Tests/UpgradeRollbackConformanceTests.cs`
+  (4 tests): the upgrade/rollback script exists, the fixture pins a
+  single `Platform.*` version set, the manifest declares a single
+  packable version, and every `Platform.*` reference in the fixture
+  matches the manifest version.
+- Architecture tests in `tests/Platform.Architecture.Tests/DependencyDirectionTests.cs`:
+  `Package_manifest_exists_and_is_generated_alongside_its_script`,
+  `Package_manifest_is_in_sync_with_source` (runs
+  `scripts/generate-package-manifest.sh --check`),
+  `Consumer_conformance_project_pins_every_Platform_package`, and
+  `Consumer_conformance_project_does_not_reference_testing_packages_from_production_projects`.
+- Docs: `docs/platform-consumer-adoption.md` covers local/private
+  feed setup, exact-version pinning rationale, the manifest, pilot
+  consumer selection, the upgrade/rollback smoke test, the
+  production/test dependency rule, and a per-repository adoption
+  checklist; `docs/packages.md` test-inventory row for
+  `tests/Platform.ConsumerConformance` now mentions the adoption
+  conformance surface.
+- Archived the change at
+  `openspec/changes/archive/2026-09-10-platform-consumer-adoption-conformance/`
+  with the synchronized
+  `openspec/specs/platform-consumer-adoption/spec.md` covering
+  pinned package consumption, local/private feed adoption,
+  upgrade/rollback smoke verification, application-ownership
+  boundaries, and machine-readable manifest drift detection.
+
+## Verification evidence
+
+- `dotnet build Platform.sln -c Release` — 0 warnings, 0 errors.
+- `dotnet test Platform.sln -c Release --no-build --nologo -m:1` —
+  all projects green; the conformance suite now reports 87 passed
+  (was 75) and the architecture suite reports 312 passed
+  (was 304). No regressions.
+- `openspec validate --changes --strict --no-interactive` — 1 passed
+  (after archive; `platform-consumer-adoption-conformance` removed
+  from the active queue).
+- `openspec validate --specs --strict --no-interactive` — 38 passed
+  (the new `platform-consumer-adoption` spec is included).
+- `scripts/generate-package-manifest.sh --check` — `Manifest matches
+  source.`
+- `git diff --check` — clean for the staged change.
+- Implementation commit: recorded in the repository log for the
+  `platform-consumer-adoption-conformance` change.
+
+## Next change
+
+`platform-testing-toolkit` is the only active change returned by
+`openspec list`. Implement only that change in the next cycle.
+
 ## Completed: platform-tenant-lifecycle-contracts
 
 - Added `Platform.Tenant.Lifecycle.Contracts` (framework-neutral, no
@@ -404,8 +475,7 @@ governance verification because it was required for the full gate.
 
 The active planning queue is intentionally dependency-ordered. Implement one change at a time, archive it, update this handoff with evidence, and stop before selecting the next change.
 
-1. `platform-consumer-adoption-conformance` — extend the consumer conformance harness with platform-versioning adoption assertions.
-2. `platform-testing-toolkit` — add a shared xUnit collection, fixtures, and assertion helpers for platform tests.
+1. `platform-testing-toolkit` — add a shared xUnit collection, fixtures, and assertion helpers for platform tests.
 5. `platform-consumer-adoption-conformance` — verify pinned packed-package adoption, upgrade, rollback, and dependency boundaries.
 6. `platform-testing-toolkit` — expand deterministic test-only fixtures after the public contracts and adoption path stabilize.
 
