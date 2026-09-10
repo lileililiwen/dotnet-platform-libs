@@ -1,5 +1,88 @@
 # Handoff
 
+## Completed: platform-hangfire-reliability
+
+- Added a `JobStorage` registration seam to `AddPlatformHangfireJobs`:
+  `AddPlatformHangfireJobs(IServiceCollection, Action<HangfireJobsOptions>?, JobStorage)`
+  registers an application-owned `JobStorage` as a DI singleton, so the
+  service provider owns the storage lifetime, the Hangfire
+  `BackgroundJobServer`, the `IBackgroundJobClient`, the
+  `IRecurringJobManager`, and the platform `HangfireJobDispatcher` all
+  resolve the same instance, and the storage is disposed with the host.
+  The existing `AddPlatformHangfireJobs(IServiceCollection, Action<HangfireJobsOptions>?)`
+  overload still owns the default storage creation; production behavior is
+  unchanged. Documented the storage ownership contract on `CreateStorage`
+  and on the new overload.
+- Added a `HangfireEndToEndHost` test helper under
+  `tests/Platform.Jobs.Hangfire.Tests` that builds an isolated host with
+  a fresh `InMemoryStorage`, a private service provider, and the new
+  `JobStorage` registration seam. The host exposes:
+  - `StartAsync()` / `StartAsync(TimeSpan readyTimeout,
+    CancellationToken)` which start the host and poll the storage until
+    the background server has registered itself, failing fast with
+    `TimeoutException` if the worker never reports in;
+  - `DisposeAsync()` which stops the host with a bounded
+    `CancellationTokenSource` and disposes the service provider, so the
+    in-memory dispatcher's worker thread joins before the storage is
+    torn down;
+  - a fluent `Builder.ConfigureServices` /
+    `Builder.ConfigureOptions` / `Builder.UseStorage` API; the builder
+    forces the static Hangfire log provider to a no-op before each
+    build so the disposed `ILoggerFactory` from a previous host is
+    never observed by the next host's in-memory dispatcher.
+- Refactored the existing `EndToEndTests` (4 tests) to use
+  `HangfireEndToEndHost`, removing the inline `BuildHost` helper.
+- Added 8 new regression tests:
+  - `EndToEndReliabilityTests` (6 tests, sequential collection):
+    sequential repeated-dispatch independence, failed-job lifecycle
+    with redacted telemetry, cancellation observed through the
+    handler, worker-readiness signal before the first enqueue,
+    deterministic post-disposal enqueue failure, multiple isolated
+    hosts in sequence;
+  - `ParallelEndToEndIsolationTests` (2 tests, parallel collection):
+    two hosts built concurrently keep their job state isolated, and a
+    builder-supplied storage is observable through the host.
+- Added a new recording surface `RecordingPayloadHandler.FailedTask`
+  so the failed-job lifecycle test can await the failure without
+  depending on the success `HandledTask`. Existing tests that use the
+  handler are unchanged.
+- Updated `docs/platform-jobs-hangfire.md` with a "Test-host storage
+  ownership" section documenting the new overload, and updated
+  `docs/packages.md` with the second registration overload.
+- Archived the change at
+  `openspec/changes/archive/2026-09-10-platform-hangfire-reliability/`
+  with synchronized `openspec/specs/platform-hangfire-reliability/spec.md`
+  covering end-to-end lifecycle ownership, lifecycle-failure surfacing,
+  and bounded synchronization.
+
+## Verification evidence
+
+- `dotnet test Platform.sln -c Release --no-build --nologo -m:1` — 1142
+  tests passed, 0 failed, 0 skipped, including the new
+  `Platform.Jobs.Hangfire.Tests` (69 tests, +8 new reliability
+  assertions) and the extended `Platform.Architecture.Tests` (278
+  tests, unchanged because the new registration is a production-code
+  seam and the existing package guards already cover the adapter).
+- `Platform.Jobs.Hangfire.Tests` ran 5 consecutive serial runs, all
+  green (69 passed, 0 failed, 0 skipped each time) — the deterministic
+  per-host storage ownership and bounded worker-readiness wait hold
+  across repeated process executions.
+- `openspec validate --changes --strict --no-interactive` — 5 passed
+  (after archive; `platform-hangfire-reliability` is removed from the
+  active queue).
+- `openspec validate --specs --strict --no-interactive` — 34 passed
+  (after archive; the new `platform-hangfire-reliability` spec is
+  included).
+- `git diff --check` — clean for the staged change.
+- Implementation commit: recorded in the repository log for the
+  `platform-hangfire-reliability` change.
+
+## Next change
+
+`platform-web-api-versioning` is the next active change returned by
+`openspec list` (5 active changes remain). Implement only that change
+in the next cycle.
+
 ## Completed: platform-release-governance
 
 Implemented and verified the package governance foundation: explicit `src/`
@@ -38,10 +121,9 @@ governance verification because it was required for the full gate.
 
 The active planning queue is intentionally dependency-ordered. Implement one change at a time, archive it, update this handoff with evidence, and stop before selecting the next change.
 
-1. `platform-hangfire-reliability` — resolve the disposed Hangfire in-memory dispatcher failure and harden lifecycle synchronization.
-2. `platform-web-api-versioning` — add an opt-in Asp.Versioning adapter with API Explorer/OpenAPI integration.
-3. `platform-identity-lifecycle-contracts` — add provider-neutral refresh/session/password/2FA/impersonation seams; keep Identity entities and policy in consumers.
-4. `platform-tenant-lifecycle-contracts` — add resumable provisioning/migration/seed orchestration seams; keep tenant catalog, migrations, and connection policy in consumers.
+1. `platform-web-api-versioning` — add an opt-in Asp.Versioning adapter with API Explorer/OpenAPI integration.
+2. `platform-identity-lifecycle-contracts` — add provider-neutral refresh/session/password/2FA/impersonation seams; keep Identity entities and policy in consumers.
+3. `platform-tenant-lifecycle-contracts` — add resumable provisioning/migration/seed orchestration seams; keep tenant catalog, migrations, and connection policy in consumers.
 5. `platform-consumer-adoption-conformance` — verify pinned packed-package adoption, upgrade, rollback, and dependency boundaries.
 6. `platform-testing-toolkit` — expand deterministic test-only fixtures after the public contracts and adoption path stabilize.
 
