@@ -553,6 +553,24 @@ Test-only helpers. Depends on `Platform.Core`, `Platform.AspNetCore`, and `Platf
 - `UsageCall` — record describing one recorded call: `Subject`, `Feature`, `Units`, `OperationKind` (`Check` or `Record`).
 - `RecordingUsageMeter` — `IUsageMeter` that records every call and accumulates totals per `(subject, feature)`. `SetLimit(feature, limit?)` configures per-feature limits; `TotalFor`; `Calls`; `Reset` clears totals and calls but preserves limits.
 
+### Eventing
+
+- `RecordingEventBus` — `IEventBus` that records every published `IntegrationEventEnvelope` in invocation order, supports `EnvelopesOfType(payloadType)` filtering, and `Reset` clears the recorded envelopes. The fake never throws; tests that need failure behaviour pair it with the failure-injection helper.
+
+### Failure injection
+
+- `InjectedFailure` — record describing a single emission: `Label` (public, exception-message-free identifier), `Kind` (`Transient` or `Permanent`), `Sequence` (order in which the injector emitted it).
+- `InjectedFailureKind` — `Transient` failures exhaust on the next call; `Permanent` failures persist until `Reset`.
+- `TransientFailureInjector` — fluent configuration with `WithTransient(label, exception)` and `WithPermanent(label, exception)`. `Run(label, action)` / `RunAsync(label, action)` inject the configured exception on the next call. `History` returns a snapshot of every emission; `Reset` clears pending injections and history.
+
+## Platform.Testing.AspNetCore
+
+ASP.NET Core TestServer host builder. Depends on `Platform.Core` and the `Microsoft.AspNetCore.App` framework reference. The package pulls `Microsoft.AspNetCore.Mvc.Testing` transitively. Production projects must not reference this package.
+
+- `PlatformTestWebApplicationFactory` — non-generic factory that builds an in-memory `WebApplication` with `TestServer`, applies in-memory configuration, and exposes a fluent `WithConfiguration(key, value)` and `ConfigureTestServices((services, configuration) => ...)` API. `CreateClient()` returns a test `HttpClient` wired to the in-memory server. Implements `IAsyncDisposable`; tests should `await using` it.
+- `PlatformTestHostConfiguration` — delegate signature passed to `ConfigureTestServices`; receives the service collection and an `IConfigurationBuilder` so callers can swap services for fakes or extend the configuration surface.
+- `PlatformTestEnvironments.Testing` — the canonical environment name used by the factory.
+
 ## Test projects
 
 | Project | Coverage |
@@ -573,7 +591,7 @@ Test-only helpers. Depends on `Platform.Core`, `Platform.AspNetCore`, and `Platf
 | `tests/Platform.Persistence.Multitenancy.Tests` | Multitenancy options validation, scope factory installation/restoration, EF Core model filter application, global-entity opt-out, scoped connection routing (tenant/global/shared), connection caching, HTTP middleware TestServer coverage (resolved/disabled/length-bounded), and tenant readiness check aggregation. |
 | `tests/Platform.Tenant.Lifecycle.Tests` | Tenant lifecycle orchestrator: ordered execution + succeeded status, retryable classification stops the run, permanent classification fails closed, cancellation transitions to `Canceled`, tenant scope is installed and disposed around every tenant-scoped step, duplicate step names are rejected, `ResumeAsync` skips completed steps and recovers, `ResumeAsync` throws on unknown operations and un-registered workflows, and safe messages are preserved on step status records; status endpoint (404 for unknown operations, OK with snapshot), resume endpoint (operator-driven run to completion), readiness check (healthy for succeeded, unhealthy for retryable). |
 | `tests/Platform.Persistence.Postgres.Tests` | Provider-boundary test for PostgreSQL options configuration. |
-| `tests/Platform.Testing.Tests` | Unit tests for `ControllableClock`, `SubscriptionBuilder`, `EntitlementBuilder`, `FakeEntitlementStore`, and `RecordingUsageMeter`. |
+| `tests/Platform.Testing.Tests` | Unit tests for `ControllableClock`, `SubscriptionBuilder`, `EntitlementBuilder`, `FakeEntitlementStore`, and `RecordingUsageMeter`; toolkit tests for the `RecordingEventBus` (ordering, payload-type filter, reset, cancellation, null guard), `TransientFailureInjector` (transient and permanent, history ordering, reset, unknown label pass-through, async propagation); `PlatformTestWebApplicationFactory` host builder (testing environment default, in-memory configuration, `ConfigureTestServices` service replacement, in-memory `TestServer` `HttpClient` round-trip); and an end-to-end checkout scenario that wires the toolkit into a real host. |
 | `tests/Platform.Webhooks.Tests` | Synthetic signature, replay, normalization, and HTTP mapping coverage for the inbound and outbound flows. |
 | `tests/Platform.Auditing.Tests` | Event validation, default masking rules, enricher/recorder semantics, `InMemoryAuditSink` and options, HTTP middleware capture (request, exception, security status, fail-open), exception classification, and EF Core `IAuditedEntity` change capture with masking and diffs. |
 | `tests/Platform.Web.Edge.Tests` | Telemetry contract, CORS option and TestServer coverage, HTTP resilience option/handler/circuit-breaker coverage, OpenAPI registry and TestServer coverage. |

@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Platform.Testing\Platform.Testing.csproj" />
+    <ProjectReference Include="..\..\src\Platform.Testing.AspNetCore\Platform.Testing.AspNetCore.csproj" />
   </ItemGroup>
 
   <ItemGroup>

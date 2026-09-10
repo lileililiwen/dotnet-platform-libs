@@ -111,6 +111,7 @@ public class DependencyDirectionTests
         "Platform.Realtime.Tests",
         "Platform.Mailing.ProviderAdapters.Tests",
         "Platform.Jobs.Hangfire.Tests",
+        "Platform.Tenant.Lifecycle.Tests",
     };
 
     private static readonly string[] FrameworkIndependentProjects =
@@ -352,6 +353,58 @@ public class DependencyDirectionTests
         var references = ReadProjectReferences("src/Platform.Testing/Platform.Testing.csproj");
 
         Assert.Contains("Platform.Core", references, StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Platform_Testing_AspNetCore_only_depends_on_public_contracts_and_core()
+    {
+        var references = ReadProjectReferences("src/Platform.Testing.AspNetCore/Platform.Testing.AspNetCore.csproj");
+        Assert.Contains("Platform.Core", references, StringComparer.OrdinalIgnoreCase);
+        var forbidden = references
+            .Where(r => r.Contains(".Testing", StringComparison.OrdinalIgnoreCase)
+                && !r.Equals("Platform.Testing.AspNetCore", StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+        Assert.True(
+            forbidden.Length == 0,
+            "Platform.Testing.AspNetCore must not reference any other testing-support package. Found: " + string.Join(", ", forbidden));
+    }
+
+    [Fact]
+    public void Platform_Testing_AspNetCore_declares_FrameworkReference_for_ASPNET()
+    {
+        var path = Path.Combine(RepositoryRoot, "src/Platform.Testing.AspNetCore/Platform.Testing.AspNetCore.csproj");
+        var document = System.Xml.Linq.XDocument.Load(path);
+        var frameworkReferences = document
+            .Descendants()
+            .Where(e => string.Equals(e.Name.LocalName, "FrameworkReference", StringComparison.OrdinalIgnoreCase))
+            .Select(e => e.Attribute("Include")?.Value ?? string.Empty)
+            .Where(v => !string.IsNullOrWhiteSpace(v))
+            .ToArray();
+        Assert.Contains("Microsoft.AspNetCore.App", frameworkReferences, StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Production_projects_do_not_reference_Platform_Testing_toolkit()
+    {
+        var testingToolkitProjects = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "Platform.Testing",
+            "Platform.Testing.AspNetCore",
+        };
+        foreach (var project in ProductionProjects)
+        {
+            if (testingToolkitProjects.Contains(Path.GetFileNameWithoutExtension(project)))
+            {
+                continue;
+            }
+            var references = ReadProjectReferences(project);
+            var leaks = references
+                .Where(r => testingToolkitProjects.Contains(Path.GetFileNameWithoutExtension(r) ?? string.Empty))
+                .ToArray();
+            Assert.True(
+                leaks.Length == 0,
+                $"{project} must not reference any testing toolkit project. Found: " + string.Join(", ", leaks));
+        }
     }
 
     [Fact]

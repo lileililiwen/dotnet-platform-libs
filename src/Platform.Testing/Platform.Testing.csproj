@@ -9,6 +9,7 @@
     <ProjectReference Include="..\Platform.Core\Platform.Core.csproj" />
     <ProjectReference Include="..\Platform.AspNetCore\Platform.AspNetCore.csproj" />
     <ProjectReference Include="..\Platform.Billing.Contracts\Platform.Billing.Contracts.csproj" />
+    <ProjectReference Include="..\Platform.Eventing\Platform.Eventing.csproj" />
   </ItemGroup>
 
 </Project>

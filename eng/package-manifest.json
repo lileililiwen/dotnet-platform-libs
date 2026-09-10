@@ -1347,7 +1347,30 @@
       "projectReferences": [
         "../Platform.Core/Platform.Core.csproj",
         "../Platform.AspNetCore/Platform.AspNetCore.csproj",
-        "../Platform.Billing.Contracts/Platform.Billing.Contracts.csproj"
+        "../Platform.Billing.Contracts/Platform.Billing.Contracts.csproj",
+        "../Platform.Eventing/Platform.Eventing.csproj"
+      ],
+      "targetFrameworks": [
+        "net8.0"
+      ],
+      "version": "0.1.0"
+    },
+    {
+      "description": "ASP.NET Core TestServer host builder for platform consumers. Production projects must not reference this package.",
+      "frameworkReferences": [
+        "Microsoft.AspNetCore.App"
+      ],
+      "isPackable": true,
+      "packageId": "Platform.Testing.AspNetCore",
+      "packageReferences": [
+        {
+          "name": "Microsoft.AspNetCore.Mvc.Testing",
+          "version": ""
+        }
+      ],
+      "path": "src/Platform.Testing.AspNetCore/Platform.Testing.AspNetCore.csproj",
+      "projectReferences": [
+        "../Platform.Core/Platform.Core.csproj"
       ],
       "targetFrameworks": [
         "net8.0"
