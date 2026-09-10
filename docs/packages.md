@@ -526,6 +526,7 @@ Test-only helpers. Depends on `Platform.Core`, `Platform.AspNetCore`, and `Platf
 | `tests/Platform.Webhooks.Tests` | Synthetic signature, replay, normalization, and HTTP mapping coverage for the inbound and outbound flows. |
 | `tests/Platform.Auditing.Tests` | Event validation, default masking rules, enricher/recorder semantics, `InMemoryAuditSink` and options, HTTP middleware capture (request, exception, security status, fail-open), exception classification, and EF Core `IAuditedEntity` change capture with masking and diffs. |
 | `tests/Platform.Web.Edge.Tests` | Telemetry contract, CORS option and TestServer coverage, HTTP resilience option/handler/circuit-breaker coverage, OpenAPI registry and TestServer coverage. |
+| `tests/Platform.Identity.Tests` | Identity contract coverage (anonymous user, fake credential verifier, fake external provider, permission catalog), JWT options validation (disabled-by-default, required fields, redacted diagnostics), ASP.NET Core identity host integration (claim projection, default/empty claim, anonymous fallback, permission handler, audit hook), and the new identity lifecycle contracts (refresh-token rotation + replay + expiry + revocation + 32-thread concurrent rotation + audit events; password recovery with no-enumeration for known/unknown subjects, replay rejection, invalid-challenge handling; two-factor challenge/verify with wrong code, unknown challenge, empty subject; impersonation fail-closed default, allow policy grants, active context lookup, end-after-start, unknown-grant end, invalid request shape; endpoint integration via `TestServer` for refresh rotation, refresh replay, password-recovery initiation returning `202` for known and unknown subjects, two-factor challenge + verify, and impersonation start failing closed without a policy). |
 | `tests/Platform.Web.Versioning.Tests` | `PlatformWebVersioningOptions` validation (default values, negative `DefaultMajor`, out-of-range `DefaultMinor`, reader-specific names, format/constraint non-emptiness); reader selection (URL segment default, header, query, media type, composite) and explorer options propagation (`GroupNameFormat`, `ReportApiVersions`, `RouteConstraintName`); `TestServer` coverage for opt-in behavior, default-version assumption, URL/header/query readers, two-version API Explorer groups, and the `IPlatformVersioningDefaultsProvider` seam. |
 | `tests/Platform.ConsumerConformance` | Test-only consumer fixture that restores platform packages from a local NuGet feed and verifies registration, replacement, health, failure classification, opt-in boundaries, and end-to-end host behavior. Driven by `scripts/conformance.sh`; intentionally not part of `Platform.sln`. |
 ## Platform.Identity (contracts)
@@ -541,6 +542,15 @@ Provider-neutral identity and authentication contracts. Framework-neutral; targe
 
 - `ICredentialVerifier`, `IExternalIdentityProvider`, `IVerificationProvider`, `ISessionStore` — replaceable contracts returning `IdentityProviderResult<T>` with a normalized `IdentityFailureReason`. Secrets, provider response bodies, and vendor exceptions are never placed in the result.
 - `IIdentityAuditHook` — receives `IdentityAuditEvent` for security-sensitive mutations without prescribing a store.
+
+### Lifecycle
+
+- `IdentityLifecycleOutcome` / `IdentityLifecycleResults` / `IdentityLifecycleResult<T>` — stable, provider-neutral outcome codes (`Succeeded`, `InvalidHandle`, `Expired`, `Revoked`, `Replayed`, `PolicyDenied`, `PreconditionNotMet`, `ProviderUnavailable`, `InvalidRequest`, `Unknown`).
+- `IRefreshTokenStore` / `IRefreshTokenService` — atomic consume-and-replace rotation. `RefreshToken`, `RefreshTokenRotation`, `DefaultRefreshTokenService`, `IIdentityLifecycleCoordinator` compose application-owned stores with the platform audit hook.
+- `IPasswordRecoveryService` — initiate and complete; safe-failure semantics return the same `Succeeded` outcome for unknown and known subjects.
+- `ITwoFactorService` — opaque `TwoFactorChallenge` with channel selection; verification reports `PolicyDenied` for mismatched codes and `Expired` past the issued window.
+- `IImpersonationPolicy` / `IImpersonationService` / `ImpersonationGrant` / `ImpersonationContext` / `ImpersonationAuthorizationRequest` — fail-closed impersonation: without a registered policy, every `StartAsync` call is denied and the platform records an `identity.impersonation.denied` audit event.
+- `PasswordRecoveryChallenge` / `TwoFactorChallenge` — opaque handles only; the platform never sees the user's enrolled factors or the raw codes.
 
 ## Platform.Authorization
 
@@ -576,6 +586,11 @@ Optional ASP.NET Core host adapter. Depends on `Platform.Identity.Contracts` and
 - `PlatformPermissionHandler` — succeeds for authenticated subjects carrying the permission and records a denied `IdentityAuditEvent` (`authorization.denied`) to a registered `IIdentityAuditHook` without token contents; `IAuthorizationDecisionAuditor` continues to receive the normalized decision.
 - `PlatformIdentityJwtOptions` — `Enabled`, `Issuer`, `Audience`, `SigningKey`. `GetDiagnosticName()` returns a redacted view that never includes the signing key. Startup validation fails fast with a secret-free message when `Enabled` and any of `SigningKey`/`Issuer`/`Audience` is missing.
 
+### Lifecycle integration
+
+- `AddPlatformIdentityLifecycle(IServiceCollection)` — registers the `IIdentityLifecycleCoordinator` composition, the default `DefaultRefreshTokenService`, and a `MissingRefreshTokenService` / `MissingPasswordRecoveryService` / `MissingTwoFactorService` / `MissingImpersonationService` for any contract the application has not yet wired. The extension throws when the application calls a refresh-token method without an `IRefreshTokenStore`.
+- `MapPlatformRefreshTokenRotation()` / `MapPlatformRefreshTokenRevocation()` / `MapPlatformPasswordRecoveryInitiation()` / `MapPlatformPasswordRecoveryCompletion()` / `MapPlatformTwoFactorChallenge()` / `MapPlatformTwoFactorVerification()` / `MapPlatformImpersonationStart()` / `MapPlatformImpersonationEnd()` — minimal-API helpers that route the lifecycle operations to the registered services. The helpers reuse the consumer's authentication scheme and claim projection; they never replace them.
+
 ## Platform.Identity.EntityFrameworkCore
 
 Optional schema-independent EF Core identity store contracts. Depends on `Platform.Identity.Contracts` and `Platform.Persistence.EfCore`; references `Microsoft.EntityFrameworkCore`. No platform user entity, schema, migration, or business relationship is supplied.
@@ -590,6 +605,12 @@ Deterministic identity and authorization test providers. Depends on `Platform.Id
 
 - `FakeCurrentUserAccessor`, `FakeCredentialVerifier`, `FakeExternalIdentityProvider`, `FakeVerificationProvider` — deterministic in-memory providers keyed by fixture input.
 - `RecordingAuthorizationDecisionAuditor` — collects `AuthorizationDecision` records for assertions.
+- `InMemoryRefreshTokenStore` — deterministic, linearizable refresh-token store with `Replayed` / `Revoked` family revocation. Not for production; consumers must provide a hashed-at-rest, multi-instance-capable store.
+- `FakePasswordRecoveryService` — same `Succeeded` outcome for known and unknown subjects, with `Replayed` on second completion. `InitiatedChallenges` records every issued challenge.
+- `FakeTwoFactorService` — opaque `TwoFactorChallenge` with configurable `AcceptedCode`. `IssuedChallenges` records every issued challenge.
+- `FakeImpersonationService` — delegates to a swappable `IImpersonationPolicy`; defaults to `DenyAllImpersonationPolicy` so the platform's fail-closed behavior is preserved in tests.
+- `AllowImpersonationPolicy` / `DenyAllImpersonationPolicy` — out-of-the-box policies.
+- `RecordingIdentityAuditHook` — collects every `IdentityAuditEvent` for assertions.
 
 # Platform.Realtime
 
