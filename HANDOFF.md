@@ -1,5 +1,94 @@
 # Handoff
 
+## Completed: platform-web-api-versioning
+
+- Added `Platform.Web.Versioning` (net8.0) with centrally managed
+  `Asp.Versioning.Http` and `Asp.Versioning.Mvc.ApiExplorer` references
+  (both pinned at 8.1.0 in `Directory.Packages.props`).
+- `PlatformWebVersioningOptions` (XML-documented, validated at
+  registration via `IValidateOptions<>`) — `DefaultMajor`,
+  `DefaultMinor`, `AssumeDefaultVersionWhenUnspecified`,
+  `ReportApiVersions`, `RouteConstraintName`, `GroupNameFormat`,
+  `Reader`, `HeaderName`, `QueryParameterName`. `Validate()` rejects
+  negative versions, missing reader-specific names, and empty
+  format/constraint strings.
+- `PlatformVersionReaderKind` — `UrlSegment`, `Header`, `QueryString`,
+  `MediaType`, `Composite`. The default is `UrlSegment`; the
+  configurator selects the matching `IApiVersionReader` from the
+  platform options and falls back to `UrlSegmentApiVersionReader`
+  when the consumer does not opt in.
+- `DependencyInjection/ServiceCollectionExtensions.cs`:
+  - `AddPlatformWebVersioning(IServiceCollection)` and the
+    `Action<...>` overload — register the platform options, the
+    Asp.Versioning services, and the API Explorer services. The
+    registration is idempotent through `TryAddSingleton<>` and the
+    options `Configure` chain (the last `configure` call wins, which
+    is the documented `IOptions<>` behavior).
+  - `EnablePlatformApiVersionBinding(IApiVersioningBuilder)` — opt-in
+    helper for minimal-API `ApiVersion` parameter binding.
+  - `MapPlatformApiExplorerDescriptions(configure)` — groups
+    `ApiVersionDescription` instances by `GroupNameFormat` and
+    invokes the consumer callback for each group, so applications
+    can attach their own endpoint, authorization, and OpenAPI
+    conventions. Throws `InvalidOperationException` when called
+    before the registration extension.
+- `IPlatformVersioningDefaultsProvider` /
+  `PlatformVersioningDefaultsProvider` — exposes the configured
+  `DefaultApiVersion` and `AssumeDefaultVersionWhenUnspecified` flag
+  for tests and application code.
+- `PlatformWebVersioningAssemblyMarker` — kept the package's
+  assembly marker for downstream reflection.
+- Architecture guards (`Platform.Architecture.Tests`):
+  - `Platform.Web.Versioning` was added to the production-project
+    inventory and the test-only assembly inventory; the framework
+    reference allow-list was extended; three new architecture tests
+    assert no forbidden packages, only `Platform.Core` references,
+    and the single `Microsoft.AspNetCore.App` framework reference.
+- `tests/Platform.Web.Versioning.Tests` (net8.0, xUnit +
+  `Microsoft.AspNetCore.Mvc.Testing`): 26 tests across four files —
+  option validation, reader selection (URL/header/query/media type
+  composite and the explorer-options / report-versions / constraint
+  propagation), `TestServer` registration (opt-in behavior, default
+  assumption, URL/header/query readers, repeat registration,
+  invalid options at `IOptions<>` resolution), and API Explorer
+  grouping (distinct groups, two-version convention, configuration
+  error when the provider is not registered).
+- Docs: `docs/packages.md` has a new `Platform.Web.Versioning`
+  section; the per-package reference at
+  `docs/platform-web-versioning.md` covers adoption, options,
+  reader selection, API Explorer integration, and starter-kit
+  migration/rollback.
+- Archived the change at
+  `openspec/changes/archive/2026-09-10-platform-web-api-versioning/`
+  with synchronized
+  `openspec/specs/platform-web-api-versioning/spec.md` covering
+  opt-in registration, configurable version policy, and API
+  description integration.
+
+## Verification evidence
+
+- `dotnet build Platform.sln -c Release` — 0 warnings, 0 errors.
+- `dotnet test Platform.sln -c Release --no-build --nologo -m:1` —
+  all projects green, including the new
+  `Platform.Web.Versioning.Tests` (26 passed, 0 failed) and the
+  extended `Platform.Architecture.Tests` (286 passed, 0 failed,
+  +8 new assertions for the versioning package).
+- `openspec validate --changes --strict --no-interactive` — 4
+  passed (after archive; `platform-web-api-versioning` is removed
+  from the active queue).
+- `openspec validate --specs --strict --no-interactive` — 35
+  passed (after archive; the new
+  `platform-web-api-versioning` spec is included).
+- `git diff --check` — clean for the staged change.
+- Implementation commit: recorded in the repository log for the
+  `platform-web-api-versioning` change.
+
+## Next change
+
+`platform-identity-lifecycle-contracts` is the next active change
+returned by `openspec list` (4 active changes remain). Implement
+only that change in the next cycle.
+
 ## Completed: platform-hangfire-reliability
 
 - Added a `JobStorage` registration seam to `AddPlatformHangfireJobs`:
@@ -121,9 +210,10 @@ governance verification because it was required for the full gate.
 
 The active planning queue is intentionally dependency-ordered. Implement one change at a time, archive it, update this handoff with evidence, and stop before selecting the next change.
 
-1. `platform-web-api-versioning` — add an opt-in Asp.Versioning adapter with API Explorer/OpenAPI integration.
-2. `platform-identity-lifecycle-contracts` — add provider-neutral refresh/session/password/2FA/impersonation seams; keep Identity entities and policy in consumers.
-3. `platform-tenant-lifecycle-contracts` — add resumable provisioning/migration/seed orchestration seams; keep tenant catalog, migrations, and connection policy in consumers.
+1. `platform-identity-lifecycle-contracts` — add provider-neutral refresh/session/password/2FA/impersonation seams; keep Identity entities and policy in consumers.
+2. `platform-tenant-lifecycle-contracts` — add resumable provisioning/migration/seed orchestration seams; keep tenant catalog, migrations, and connection policy in consumers.
+3. `platform-consumer-adoption-conformance` — extend the consumer conformance harness with platform-versioning adoption assertions.
+4. `platform-testing-toolkit` — add a shared xUnit collection, fixtures, and assertion helpers for platform tests.
 5. `platform-consumer-adoption-conformance` — verify pinned packed-package adoption, upgrade, rollback, and dependency boundaries.
 6. `platform-testing-toolkit` — expand deterministic test-only fixtures after the public contracts and adoption path stabilize.
 
