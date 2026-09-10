@@ -98,7 +98,7 @@ capabilities and must not become a second monolithic starter-kit architecture.
 ## Status summary
 
 - Active changes: none (`openspec list` is empty).
-- Archived changes: twenty (see `openspec/changes/archive/`).
-- Generated specs: nineteen (see `openspec/specs/`).
-- Source projects: thirty production/adaptor projects plus six testing-support projects, including the AI packages described in `docs/platform-ai.md`.
-- Tests: 484 passing across 22 test projects.
+- Archived changes: forty-four (see `openspec/changes/archive/`).
+- Generated specs: thirty-eight (see `openspec/specs/`).
+- Source projects: seventy production/adaptor/contracts projects plus eight testing-support projects, plus the `Platform.Testing.AspNetCore` test toolkit.
+- Tests: seven hundred and forty-six passing across forty-two test projects (excluding the solution-excluded consumer-conformance fixture, which adds eighty-seven more).

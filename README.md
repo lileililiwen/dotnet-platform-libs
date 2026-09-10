@@ -29,9 +29,17 @@ This repository is a platform library, not a replacement for every application's
 | `Platform.Quota.Testing` | Test/support | `Platform.Quota` | Deterministic quota scenarios and reservation inspection helpers. |
 | `Platform.Idempotency` | Production | `Platform.Core` | Framework-neutral idempotency contract: `IdempotencyRecord`, `IIdempotencyStore`, `InMemoryIdempotencyStore`, `RequestFingerprint` (stable SHA-256 over method/route/body-hash), `IdempotencyOptions` (with documented metric-name constants), `IdempotencyMetrics`, and `AddPlatformIdempotency` opt-in registration (no-op when `Enabled` is `false`). |
 | `Platform.RateLimiting` | Production | `Platform.Core` | Framework-neutral rate-limit contract: `IRateLimiter`, `InMemoryRateLimiter` (per-key windowed counter), `RateLimitDecision`, `RateLimitKey`, `RateLimitPolicies` (documented default catalog), `IRateLimitBypassResolver`, `IRateLimiterBackendStatusProvider`, `RateLimitingOptions`, and `AddPlatformRateLimiting` opt-in registration. |
-| `Platform.Testing` | Test-only | `Platform.Core`, `Platform.AspNetCore`, `Platform.Billing.Contracts` | Deterministic test doubles: `ControllableClock`, `SubscriptionBuilder`, `EntitlementBuilder`, `FakeEntitlementStore`, `RecordingUsageMeter`. Production projects must not reference this package. |
+| `Platform.Testing` | Test-only | `Platform.Core`, `Platform.AspNetCore`, `Platform.Billing.Contracts`, `Platform.Eventing` | Deterministic test doubles: `ControllableClock`, `SubscriptionBuilder`, `EntitlementBuilder`, `FakeEntitlementStore`, `RecordingUsageMeter`, `RecordingEventBus`, `TransientFailureInjector`. Production projects must not reference this package. |
+| `Platform.Testing.AspNetCore` | Test-only | `Platform.Core` + `Microsoft.AspNetCore.App` framework reference | In-memory `TestServer` host builder: `PlatformTestWebApplicationFactory` with `WithConfiguration` and `ConfigureTestServices` extensions, plus `PlatformTestEnvironments.Testing`. Pulls `Microsoft.AspNetCore.Mvc.Testing` transitively. Production projects must not reference this package. |
 | `Platform.Billing.Stripe` | Optional production adapter | `Platform.Billing` | Raw-HTTP Stripe checkout, portal, subscription lookup, webhook verification/normalization, and status. |
 | `Platform.Billing.LemonSqueezy` | Optional production adapter | `Platform.Billing` | Raw-HTTP Lemon Squeezy checkout, subscription lookup, webhook verification/normalization, and status. |
+| `Platform.Identity.Contracts` | Production | (none) | Identity lifecycle and authorization contracts: `IdentityLifecycleResult<T>`, `IdentityLifecycleOutcome`, `IRefreshTokenStore`, `IRefreshTokenService`, `IPasswordRecoveryService`, `ITwoFactorService`, `IImpersonationPolicy`, `IImpersonationService`, `IIdentityLifecycleCoordinator`. Framework-neutral, no third-party packages. |
+| `Platform.Identity.AspNetCore` | Production | `Platform.Identity.Contracts`, `Platform.Authorization` | ASP.NET Core identity lifecycle integration: `AddPlatformIdentityLifecycle` plus minimal-API endpoints for refresh rotation, password recovery, two-factor, and impersonation flows. |
+| `Platform.Identity.Testing` | Test-only | `Platform.Identity.Contracts`, `Platform.Authorization` | Deterministic identity test providers: `InMemoryRefreshTokenStore`, `FakePasswordRecoveryService`, `FakeTwoFactorService`, `FakeImpersonationService`, `RecordingIdentityAuditHook`. |
+| `Platform.Tenant.Lifecycle.Contracts` | Production | (none) | Provider-neutral tenant lifecycle contracts: `TenantLifecycleStepOutcome`, `TenantLifecycleOperationState`, `ITenantLifecycleStep`, `ITenantLifecycleWorkflow`, `ITenantLifecycleScopeCallback`, `ITenantLifecycleStore`, `ITenantLifecycleOrchestrator`. Framework-neutral, no third-party packages. |
+| `Platform.Tenant.Lifecycle` | Production | `Platform.Tenant.Lifecycle.Contracts`, `Platform.Core` | Default tenant lifecycle orchestrator and in-memory store. `ITenantLifecycleWorkflowRegistry` for resume. `AddPlatformTenantLifecycle` opt-in registration. No EF Core, Hangfire, Quartz, or ASP.NET Core references. |
+| `Platform.Tenant.Lifecycle.AspNetCore` | Production | `Platform.Tenant.Lifecycle`, `Platform.Tenant.Lifecycle.Contracts` + `Microsoft.AspNetCore.App` framework reference | Status and readiness adapter: `AddPlatformTenantLifecycleReadiness`, `MapPlatformTenantLifecycleStatus`, `MapPlatformTenantLifecycleResume`, and the provider-neutral `IReadinessCheck` / `ReadinessContext` / `ReadinessResult` surface. |
+| `Platform.Tenant.Lifecycle.Testing` | Test-only | `Platform.Tenant.Lifecycle.Contracts` | Deterministic fakes: `InMemoryTenantLifecycleStore`, `ScriptedLifecycleStep`, `DelegateLifecycleStep`, `StaticLifecycleWorkflow`, `RecordingLifecycleScopeCallback`. |
 
 Product-specific EF Core entities, migrations, Stripe price IDs, invoice rules, plan names, and business workflows remain in consuming applications.
 
@@ -39,31 +47,39 @@ Product-specific EF Core entities, migrations, Stripe price IDs, invoice rules, 
 
 ```
 src/
-  Platform.Core/                Framework-independent contracts
-  Platform.AspNetCore/          ASP.NET Core integration
-  Platform.Billing.Contracts/   Subscription and entitlement contracts
-  Platform.Testing/             Test-only helpers
+  Platform.Core/                  Framework-independent contracts
+  Platform.AspNetCore/            ASP.NET Core integration
+  Platform.Billing.Contracts/     Subscription and entitlement contracts
+  Platform.Testing/               Test-only helpers
+  Platform.Testing.AspNetCore/    In-memory TestServer host builder
 tests/
-  Platform.Core.Tests/          Unit tests for Platform.Core
-  Platform.AspNetCore.Tests/    Unit + TestServer integration tests
+  Platform.Core.Tests/            Unit tests for Platform.Core
+  Platform.AspNetCore.Tests/      Unit + TestServer integration tests
   Platform.Billing.Contracts.Tests/
-  Platform.Testing.Tests/
-  Platform.Architecture.Tests/  Dependency-direction and isolation guardrails
-  docs/
-  build-test-pack.md            Restore, build, test, pack, and validate commands
-  packages.md                   Per-package contract reference
-   platform-eventing-durable.md  Durable eventing adoption and ownership guidance
-   platform-eventing-rabbitmq.md RabbitMQ durable publisher adoption and failure classification
-  platform-caching.md           Cache authority, key/version, failure, and adoption guidance
-  platform-storage.md           Object storage ownership, safety, limits, and migration guidance
-  platform-quota.md             Quota lifecycle, concurrency, and application ownership guidance
+  Platform.Testing.Tests/         Platform.Testing + Platform.Testing.AspNetCore coverage
+  Platform.Architecture.Tests/    Dependency-direction and isolation guardrails
+  Platform.ConsumerConformance/   Solution-excluded consumer-conformance fixture
+docs/
+  build-test-pack.md              Restore, build, test, pack, and validate commands
+  packages.md                     Per-package contract reference
+  platform-*.md                   Per-capability adoption and ownership guidance
 openspec/
-  changes/archive/              Archived proposals
-  specs/                        Generated capability specs
-Directory.Build.props           Shared MSBuild defaults and packaging metadata
-Directory.Packages.props        Central package version management
-HANDOFF.md                      Most recent change completion and next action
-ROADMAP.md                      Phased delivery plan and current status
+  changes/archive/                Archived proposals
+  specs/                          Generated capability specs
+eng/
+  package-manifest.json           Machine-readable platform package manifest
+  public-api-baseline.txt         Public API surface baseline
+scripts/
+  conformance.sh                  Pack + restore + run consumer conformance
+  consumer-upgrade-rollback.sh    Upgrade/rollback smoke test
+  generate-package-manifest.sh    Manifest generator (with --check)
+  audit-packages.sh               NuGet vulnerability audit
+  check-public-api.sh             Public API surface diff
+  package-inventory.sh            List of source projects
+Directory.Build.props             Shared MSBuild defaults and packaging metadata
+Directory.Packages.props          Central package version management
+HANDOFF.md                        Most recent change completion and next action
+ROADMAP.md                        Phased delivery plan and current status
 ```
 
 ## Quickstart
@@ -102,4 +118,4 @@ Incomplete or blocked work must not be reported as complete. The handoff must re
 
 ## Current status
 
-All 37 OpenSpec changes are implemented and archived. The repository contains 65 source projects and 41 test projects (including the solution-excluded consumer-conformance fixture), with 1105 passing tests and 32 generated capability specs. `Platform.Testing` and the other testing-support packages are not referenced by production projects; `Platform.Architecture.Tests` enforces the dependency direction. `openspec list` is empty; the next work starts with a fresh OpenSpec proposal. See [`docs/packages.md`](docs/packages.md), `HANDOFF.md`, and `ROADMAP.md` for package, completion, and planning details.
+All forty-seven OpenSpec changes (Phase 1, 2, 3, 4, 5, plus the starter-kit gap audit) are implemented and archived. The repository contains seventy source projects and forty-two in-solution test projects (plus the solution-excluded `Platform.ConsumerConformance` fixture), with seven hundred and forty-six passing tests and thirty-eight generated capability specs. `Platform.Testing`, `Platform.Testing.AspNetCore`, and the other testing-support packages are not referenced by production projects; `Platform.Architecture.Tests` enforces the dependency direction with three hundred and eleven guard tests. `openspec list` is empty; the next work starts with a fresh OpenSpec proposal. See [`docs/packages.md`](docs/packages.md), `HANDOFF.md`, and `ROADMAP.md` for package, completion, and planning details.
