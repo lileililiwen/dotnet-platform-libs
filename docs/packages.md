@@ -526,6 +526,7 @@ Test-only helpers. Depends on `Platform.Core`, `Platform.AspNetCore`, and `Platf
 | `tests/Platform.Webhooks.Tests` | Synthetic signature, replay, normalization, and HTTP mapping coverage for the inbound and outbound flows. |
 | `tests/Platform.Auditing.Tests` | Event validation, default masking rules, enricher/recorder semantics, `InMemoryAuditSink` and options, HTTP middleware capture (request, exception, security status, fail-open), exception classification, and EF Core `IAuditedEntity` change capture with masking and diffs. |
 | `tests/Platform.Web.Edge.Tests` | Telemetry contract, CORS option and TestServer coverage, HTTP resilience option/handler/circuit-breaker coverage, OpenAPI registry and TestServer coverage. |
+| `tests/Platform.Web.Versioning.Tests` | `PlatformWebVersioningOptions` validation (default values, negative `DefaultMajor`, out-of-range `DefaultMinor`, reader-specific names, format/constraint non-emptiness); reader selection (URL segment default, header, query, media type, composite) and explorer options propagation (`GroupNameFormat`, `ReportApiVersions`, `RouteConstraintName`); `TestServer` coverage for opt-in behavior, default-version assumption, URL/header/query readers, two-version API Explorer groups, and the `IPlatformVersioningDefaultsProvider` seam. |
 | `tests/Platform.ConsumerConformance` | Test-only consumer fixture that restores platform packages from a local NuGet feed and verifies registration, replacement, health, failure classification, opt-in boundaries, and end-to-end host behavior. Driven by `scripts/conformance.sh`; intentionally not part of `Platform.sln`. |
 ## Platform.Identity (contracts)
 
@@ -937,6 +938,37 @@ EF Core, or application projects.
 - `MapPlatformOpenApiDocument(name)` — maps `/openapi/{name}.json`. Authorization
   metadata applied with `RequireAuthorization()` is preserved.
 - `MapPlatformOpenApiDocuments()` — maps every registered document.
+
+## Platform.Web.Versioning
+
+Optional ASP.NET Core API versioning and API Explorer conventions. Depends on
+`Platform.Core`, `Microsoft.AspNetCore.App` (via `FrameworkReference`), and the
+centrally managed `Asp.Versioning.Http` and `Asp.Versioning.Mvc.ApiExplorer`
+packages; targets `net8.0`. Does not reference Swashbuckle, NSwag, EF Core, or
+application projects.
+
+- `PlatformWebVersioningOptions` — `DefaultMajor` (1) / `DefaultMinor` (0),
+  `AssumeDefaultVersionWhenUnspecified` (true), `ReportApiVersions`,
+  `RouteConstraintName` (`apiVersion`), `GroupNameFormat` (`'v'VVV`), `Reader`
+  (`UrlSegment` default), `HeaderName` (`X-Api-Version`), `QueryParameterName`
+  (`api-version`). `Validate()` rejects negative versions, missing
+  reader-specific names, and empty format strings.
+- `PlatformVersionReaderKind` — `UrlSegment`, `Header`, `QueryString`,
+  `MediaType`, `Composite`.
+- `IPlatformVersioningDefaultsProvider` / `PlatformVersioningDefaultsProvider`
+  — exposes the configured `DefaultApiVersion` and
+  `AssumeDefaultVersionWhenUnspecified` flag for tests and applications.
+- `AddPlatformWebVersioning(IServiceCollection)` and the `Action<...>` overload
+  — registers the platform options, the Asp.Versioning services, and the API
+  Explorer services.
+- `EnablePlatformApiVersionBinding(IApiVersioningBuilder)` — opt-in helper
+  that turns on `IApiVersioningBuilder.EnableApiVersionBinding()` for
+  consumers that bind `ApiVersion` in minimal API parameter lists.
+- `MapPlatformApiExplorerDescriptions(Action<IEndpointConventionBuilder, ApiVersionDescription>)`
+  — groups descriptions by `GroupNameFormat` and routes each group under
+  `/v<groupName>`. The platform never generates OpenAPI documents; consumers
+  that need JSON should still register an `IPlatformOpenApiDocumentProvider`
+  via `Platform.Web.OpenApi`.
 
 ## Platform.FeatureManagement
 

@@ -43,6 +43,10 @@
     <PackageVersion Include="Hangfire.InMemory" Version="1.0.0" />
     <PackageVersion Include="Hangfire.PostgreSql" Version="1.21.1" />
 
+    <!-- Optional ASP.NET Core web versioning adapter -->
+    <PackageVersion Include="Asp.Versioning.Http" Version="8.1.0" />
+    <PackageVersion Include="Asp.Versioning.Mvc.ApiExplorer" Version="8.1.0" />
+
     <!-- Optional persistence adapters -->
     <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="8.0.10" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.10" />

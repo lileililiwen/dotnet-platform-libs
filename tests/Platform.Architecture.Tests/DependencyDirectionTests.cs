@@ -40,6 +40,7 @@ public class DependencyDirectionTests
         "src/Platform.FeatureManagement/Platform.FeatureManagement.csproj",
         "src/Platform.Http.Resilience/Platform.Http.Resilience.csproj",
         "src/Platform.Web.OpenApi/Platform.Web.OpenApi.csproj",
+        "src/Platform.Web.Versioning/Platform.Web.Versioning.csproj",
         "src/Platform.Testing/Platform.Testing.csproj",
         "src/Platform.Persistence.EfCore/Platform.Persistence.EfCore.csproj",
         "src/Platform.Persistence.Postgres/Platform.Persistence.Postgres.csproj",
@@ -88,6 +89,7 @@ public class DependencyDirectionTests
         "Platform.Testing.Tests",
         "Platform.Web.Tests",
         "Platform.Web.Edge.Tests",
+        "Platform.Web.Versioning.Tests",
         "Platform.Persistence.EfCore.Tests",
         "Platform.Persistence.Postgres.Tests",
         "Platform.Identity.Tests",
@@ -489,6 +491,7 @@ public class DependencyDirectionTests
                 || project.EndsWith("Platform.Web.Resilience.csproj", StringComparison.OrdinalIgnoreCase)
                 || project.EndsWith("Platform.FeatureManagement.csproj", StringComparison.OrdinalIgnoreCase)
                 || project.EndsWith("Platform.Web.OpenApi.csproj", StringComparison.OrdinalIgnoreCase)
+                || project.EndsWith("Platform.Web.Versioning.csproj", StringComparison.OrdinalIgnoreCase)
                 || project.EndsWith("Platform.Observability.csproj", StringComparison.OrdinalIgnoreCase)
                 || project.EndsWith("Platform.Persistence.Multitenancy.csproj", StringComparison.OrdinalIgnoreCase)
                 || project.EndsWith("Platform.Realtime.AspNetCore.csproj", StringComparison.OrdinalIgnoreCase)
@@ -1277,6 +1280,45 @@ public class DependencyDirectionTests
         Assert.Equal(2, references.Length);
         Assert.Contains("Platform.Core", references, StringComparer.OrdinalIgnoreCase);
         Assert.Contains("Platform.Web.Telemetry", references, StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Platform_Web_Versioning_does_not_reference_forbidden_packages()
+    {
+        var path = "src/Platform.Web.Versioning/Platform.Web.Versioning.csproj";
+        var packages = ReadPackageReferences(path);
+        var violations = packages
+            .Where(p => p.StartsWith("Swashbuckle", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("NSwag", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("Microsoft.EntityFrameworkCore", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("Stripe", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("Polly", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("Hangfire", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("Quartz", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("RabbitMQ", StringComparison.OrdinalIgnoreCase)
+                || p.StartsWith("StackExchange.Redis", StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+
+        Assert.True(
+            violations.Length == 0,
+            "Platform.Web.Versioning must not reference forbidden packages but references: " + string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void Platform_Web_Versioning_references_only_platform_core()
+    {
+        var references = ReadProjectReferences("src/Platform.Web.Versioning/Platform.Web.Versioning.csproj");
+        Assert.Single(references);
+        Assert.Contains("Platform.Core", references, StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Platform_Web_Versioning_declares_only_the_aspnetcore_framework_reference()
+    {
+        var references = ReadFrameworkReferences("src/Platform.Web.Versioning/Platform.Web.Versioning.csproj");
+        Assert.True(
+            references.Length == 1 && references[0].Equals("Microsoft.AspNetCore.App", StringComparison.OrdinalIgnoreCase),
+            "Platform.Web.Versioning must declare only Microsoft.AspNetCore.App but declares: " + string.Join(", ", references));
     }
 
     [Fact]
