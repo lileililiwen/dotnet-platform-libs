@@ -1,5 +1,93 @@
 # Handoff
 
+## Planned next queue: starter-kit complexity gap reduction
+
+This queue is based on a source comparison with `/home/paul/code/dotnet-starter-kit`.
+The starter kit is treated as a capability reference only; these changes keep the
+platform small, opt-in, provider-neutral, and application-owned.
+
+Implement one change at a time in this order:
+
+1. `platform-domain-primitives` — framework-neutral entities, aggregates, domain
+   events, money, optional markers, and safe domain errors.
+2. `platform-web-composition-contracts` — explicit per-host module composition
+   without global discovery, Mediator, or FluentValidation coupling.
+3. `platform-efcore-migrator-host` — application-owned migration runner with
+   pending/apply operations, optional seed/lock callbacks, and redacted failures.
+4. `platform-dotnet-template-pack` — installable minimal `dotnet new` template,
+   detached generated source, and no full-stack starter infrastructure.
+5. `platform-adoption-tooling` — explicit-directory, read-only doctor/inventory/
+   conformance and package-alignment preview tooling.
+6. `platform-application-sample-matrix` — focused minimal-web, EF Core, identity,
+   tenancy, and provider-adapter samples proving incremental adoption.
+
+All six changes are planning-only until implementation begins. Their artifacts are
+under `openspec/changes/`; strict validation is required before implementation.
+
+## Completed: platform-domain-primitives
+
+- Added `Platform.Domain` (net8.0, depends on `Platform.Core` only; no
+  package or framework references): `IEntity<TId>`, `IAggregateRoot<TId>`,
+  `IDomainEvent`, `IHasDomainEvents` (record in insertion order, clear
+  without dispatch) plus optional `Entity<TId>`, `AggregateRoot<TId>`, and
+  `DomainEvent` bases (with `DomainEvent.Create` supplying id + UTC
+  timestamp); validated `Money` (trimmed/uppercased currency, `Zero`,
+  `Add`/`Subtract`/`Multiply` + operators, deterministic
+  `InvalidOperationException` on cross-currency arithmetic, no
+  exchange-rate or rounding policy); opt-in `ISoftDeletable` and
+  `IHasTenant` markers (exposed only, no query filters or mappings); safe
+  `DomainException` carrying a stable `Platform.Core` `Error` with no HTTP
+  status, plus `DomainValidationException` (`platform.validation`),
+  `DomainNotFoundException` (`platform.not_found`), and
+  `DomainConflictException` (`domain.conflict`).
+- Added `tests/Platform.Domain.Tests` (30 tests): typed identity (base and
+  contract-only), event ordering/clearing/null-guard/contract-only
+  aggregate, `DomainEvent.Create` semantics, money normalization +
+  arithmetic + cross-currency rejection, marker exposure, and safe errors
+  including web-boundary mapping from `Error.Code` alone.
+- Architecture rules added to
+  `tests/Platform.Architecture.Tests/DependencyDirectionTests.cs`:
+  `Platform_Domain_only_references_Platform_Core`,
+  `Platform_Domain_does_not_reference_forbidden_packages`, and
+  `Platform_Domain_does_not_declare_a_framework_reference`; production and
+  test-only inventories now list the new projects. Architecture suite: 317
+  passed.
+- Docs: `docs/platform-domain-primitives.md` covers adoption, contracts,
+  money, markers, safe errors, starter-kit migration/rollback, and
+  security. `docs/packages.md` adds the `Platform.Domain` section and the
+  test-inventory row; `README.md` lists the package and directories.
+- The package manifest is regenerated (72 packages).
+  `scripts/generate-package-manifest.sh --check` passes.
+- Archived the change at
+  `openspec/changes/archive/2026-09-11-platform-domain-primitives/`
+  with the synchronized `openspec/specs/domain-primitives/spec.md`
+  covering framework-neutral contracts, entity/aggregate primitives, the
+  money value object, optional markers, and safe domain errors.
+
+## Verification evidence
+
+- `dotnet build Platform.sln -c Release` — 0 warnings, 0 errors.
+- `dotnet test tests/Platform.Domain.Tests -c Release` — 30 passed.
+  `Platform.Architecture.Tests` — 317 passed.
+- Full `dotnet test Platform.sln -c Release --no-build -m:1` — all
+  projects green except one pre-existing Hangfire timing flake
+  (`EndToEndReliabilityTests.Sequential_dispatches_use_independent_handler_state`,
+  30s `TimeoutException` under full-suite load, untouched by this
+  change); isolated re-run of `Platform.Jobs.Hangfire.Tests` — 69 passed.
+- `openspec validate --changes --strict` — 5 passed (remaining queue).
+- `openspec validate --specs --strict` — 39 passed (the new
+  `domain-primitives` spec is included).
+- `scripts/generate-package-manifest.sh --check` — `Manifest matches
+  source.`
+- `git diff --check` — clean for the staged change.
+- Implementation commit: `5a7eda7` (`Implement platform domain
+  primitives`).
+
+## Next change
+
+`platform-web-composition-contracts` is the next planned change in the
+queue above. Implement only that change in the next cycle.
+
 ## Completed: platform-testing-toolkit
 
 - `Platform.Testing` extended with `RecordingEventBus` (in-memory
@@ -75,8 +163,9 @@
 
 ## Next change
 
-`openspec list` is empty. The ten ROADMAP phases are all implemented
-and archived. New work, if any, starts with a fresh OpenSpec proposal.
+`platform-domain-primitives` is the first planned change in the new queue above.
+Do not begin the next change until the selected change is implemented, verified,
+archived, and committed according to the repository workflow.
 
 ## Completed: platform-consumer-adoption-conformance
 
