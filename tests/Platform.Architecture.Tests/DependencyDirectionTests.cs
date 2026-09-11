@@ -9,6 +9,7 @@ public class DependencyDirectionTests
     private static readonly string[] ProductionProjects =
     {
         "src/Platform.Core/Platform.Core.csproj",
+        "src/Platform.Domain/Platform.Domain.csproj",
         "src/Platform.AspNetCore/Platform.AspNetCore.csproj",
         "src/Platform.Billing.Contracts/Platform.Billing.Contracts.csproj",
         "src/Platform.Eventing/Platform.Eventing.csproj",
@@ -80,6 +81,7 @@ public class DependencyDirectionTests
     {
         "Platform.Architecture.Tests",
         "Platform.Core.Tests",
+        "Platform.Domain.Tests",
         "Platform.AspNetCore.Tests",
         "Platform.Billing.Contracts.Tests",
         "Platform.Eventing.Contracts.Tests",
@@ -1563,6 +1565,47 @@ public class DependencyDirectionTests
         var path = "src/Platform.Core/Platform.Core.csproj";
         var packages = ReadPackageReferences(path);
         Assert.Empty(packages);
+    }
+
+    [Fact]
+    public void Platform_Domain_only_references_Platform_Core()
+    {
+        Assert.Equal(["Platform.Core"], ReadProjectReferences("src/Platform.Domain/Platform.Domain.csproj"));
+    }
+
+    [Fact]
+    public void Platform_Domain_does_not_reference_forbidden_packages()
+    {
+        var packages = ReadPackageReferences("src/Platform.Domain/Platform.Domain.csproj");
+        var violations = packages
+            .Where(package => new[]
+            {
+                "Microsoft.AspNetCore",
+                "Microsoft.EntityFrameworkCore",
+                "Mediator",
+                "MediatR",
+                "FluentValidation",
+                "Hangfire",
+                "Quartz",
+                "RabbitMQ",
+                "MassTransit",
+                "StackExchange.Redis",
+                "Stripe",
+                "MailKit",
+                "SendGrid",
+                "Npgsql",
+                "MongoDB",
+            }.Any(prefix => package.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
+            .ToArray();
+        Assert.True(
+            violations.Length == 0,
+            "Platform.Domain must not reference forbidden packages but references: " + string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void Platform_Domain_does_not_declare_a_framework_reference()
+    {
+        Assert.Empty(ReadFrameworkReferences("src/Platform.Domain/Platform.Domain.csproj"));
     }
 
     [Fact]

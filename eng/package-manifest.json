@@ -498,6 +498,21 @@
       "version": "0.1.0"
     },
     {
+      "description": "Framework-neutral domain primitives: typed entity identity, aggregate roots, transient domain events, money, opt-in markers, and safe domain errors. Must not reference ASP.NET Core, EF Core, Mediator, validation libraries, provider SDKs, or application projects.",
+      "frameworkReferences": [],
+      "isPackable": true,
+      "packageId": "Platform.Domain",
+      "packageReferences": [],
+      "path": "src/Platform.Domain/Platform.Domain.csproj",
+      "projectReferences": [
+        "../Platform.Core/Platform.Core.csproj"
+      ],
+      "targetFrameworks": [
+        "net8.0"
+      ],
+      "version": "0.1.0"
+    },
+    {
       "description": "Transport-agnostic event-bus contract, envelope shape, and in-process default adapter. Must not reference ASP.NET Core, EF Core, RabbitMQ, or application projects.",
       "frameworkReferences": [],
       "isPackable": true,

@@ -433,6 +433,37 @@ Framework-neutral rate-limit contract. Depends on `Platform.Core`, `Microsoft.Ex
 
 - `AddPlatformRateLimiting(IServiceCollection)` and `AddPlatformRateLimiting(IServiceCollection, Action<RateLimitingOptions>)` — bind `RateLimitingOptions` and register `IRateLimiter`, `IRateLimitBypassResolver`, `IRateLimiterBackendStatusProvider`, and `IClock` when no implementation is already present.
 
+## Platform.Domain
+
+Framework-neutral domain primitives. Depends on `Platform.Core` only; targets `net8.0`. Does not reference ASP.NET Core, EF Core, Mediator, validation libraries, provider SDKs, or application projects.
+
+### Contracts
+
+- `IEntity<TId>` — typed entity identity. Identity equality and persistence remain application-owned.
+- `IAggregateRoot<TId>` — combines `IEntity<TId>` with `IHasDomainEvents`. The interfaces are the preferred integration seam; applications may implement them without inheriting.
+- `IDomainEvent` — transient event with `EventId`, `OccurredOnUtc`, optional `CorrelationId`/`TenantId`. Deliberately not a mediator notification; the platform never dispatches.
+- `IHasDomainEvents` — `DomainEvents` (insertion order), `AddDomainEvent(@event)`, `ClearDomainEvents()`.
+
+### Base implementations
+
+- `Entity<TId>` — optional `IEntity<TId>` base with a protected-set `Id`.
+- `AggregateRoot<TId>` — optional `IAggregateRoot<TId>` base with an insertion-ordered transient event collection. `RaiseDomainEvent` is the protected recording hook for derived behaviors.
+- `DomainEvent` — optional abstract base record with `DomainEvent.Create(factory)` supplying a fresh identifier and the current UTC timestamp.
+
+### Value types
+
+- `Money` — sealed record with decimal `Amount` and normalized `Currency` (trimmed, uppercased invariant). `Zero(currency)` defaults to `USD`. `Add`/`Subtract` (and `+`/`-`) reject cross-currency arithmetic with a deterministic `InvalidOperationException` naming both currencies. `Multiply` (and `*`) scales by a scalar. No exchange-rate conversion; rounding policy remains application-owned.
+
+### Markers
+
+- `ISoftDeletable` — `IsDeleted`, `DeletedOnUtc`, `DeletedBy`. Exposed only; no query filters or delete behavior.
+- `IHasTenant` — `TenantId`. Exposed only; no query filters, mappings, or isolation behavior.
+
+### Errors
+
+- `DomainException` — carries a stable `Platform.Core.Results.Error` with no HTTP or provider-specific status code. `Message` is always the safe `Error.Message`.
+- `DomainValidationException` — carries `platform.validation`. `DomainNotFoundException` — carries `platform.not_found`. `DomainConflictException` — carries `domain.conflict` (see `DomainErrorCodes.Conflict`).
+
 ## Platform.Persistence.EfCore
 
 Optional provider-neutral EF Core conventions. Depends on `Platform.Core`, EF Core, relational
@@ -575,7 +606,7 @@ ASP.NET Core TestServer host builder. Depends on `Platform.Core` and the `Micros
 
 | Project | Coverage |
 | --- | --- |
-| `tests/Platform.Architecture.Tests` | Dependency-direction guardrails (no production project references test projects, ASP.NET Core, EF Core, or Stripe; `FrameworkReference` is allowed only for `Platform.AspNetCore`; `Platform.Core` and `Platform.Billing.Contracts` declare no `<PackageReference>` entries; per-package forbidden-reference rules for `Platform.Jobs`, `Platform.Mailing`, `Platform.Eventing`, `Platform.Idempotency`, and `Platform.RateLimiting`). |
+| `tests/Platform.Architecture.Tests` | Dependency-direction guardrails (no production project references test projects, ASP.NET Core, EF Core, or Stripe; `FrameworkReference` is allowed only for `Platform.AspNetCore`; `Platform.Core` and `Platform.Billing.Contracts` declare no `<PackageReference>` entries; per-package forbidden-reference rules for `Platform.Jobs`, `Platform.Mailing`, `Platform.Eventing`, `Platform.Idempotency`, `Platform.RateLimiting`, and `Platform.Domain`). |
 | `tests/Platform.Core.Tests` | Unit tests for time, results, context, and audit contracts. |
 | `tests/Platform.AspNetCore.Tests` | Unit tests for the ProblemDetails mapper, exception middleware, and correlation middleware, plus a `TestServer` integration test for the minimal host (known failure → ProblemDetails, unknown failure → sanitized 500, correlation generation, health endpoint). |
 | `tests/Platform.Billing.Contracts.Tests` | Unit tests for identifiers, subscription status and period boundaries, entitlement defaults, feature check decisions, usage-meter contract (in-memory implementation), and processed-event idempotency. |
@@ -587,6 +618,7 @@ ASP.NET Core TestServer host builder. Depends on `Platform.Core` and the `Micros
 | `tests/Platform.Eventing.Tests` | Unit tests for the envelope shape, the default `IntegrationEventEnvelopeSerializer` and `IntegrationEventEnvelopeDeserializer`, the `InProcessEventBus` (typed dispatch, consumer-failure isolation, idempotent disposal, bounded-capacity null guard), and `EventingOptions` defaults, plus a `TestServer` integration test for `AddPlatformEventing` and `AddPlatformEventingInProcess` defaults, configuration overrides, and a consumer-published envelope flowing to a typed `IIntegrationEventHandler<>`. |
 | `tests/Platform.Idempotency.Tests` | Unit tests for `RequestFingerprint` stability + method normalisation + body-hash helper, `IdempotencyOptions` defaults and metric-name constants, `InMemoryIdempotencyStore` round-trip / null-or-empty-key / oversize-key / retention sweep / expired-record-as-miss / null-dependency guards, plus a `TestServer` integration test for `AddPlatformIdempotency` defaults, configuration overrides, save/try-get round-trip, eviction sweep driven by a `MutableClock`, and the no-op path when `Idempotency:Enabled = false`. |
 | `tests/Platform.RateLimiting.Tests` | Unit tests for `RateLimitPolicies` default catalog + `Find` + invalid-entry dropping + null guard, `RateLimitingOptions` defaults, `InMemoryRateLimiter` (first request, burst over limit, window roll-over, per-subject isolation, unknown/empty policy / subject rejection, null dependency guards), `ConfigurationRateLimitBypassResolver`, and `InMemoryRateLimiterBackendStatusProvider`, plus a `TestServer` integration test for `AddPlatformRateLimiting` defaults, configuration overrides, limiter decisions through DI, and the readiness surface. |
+| `tests/Platform.Domain.Tests` | Unit tests for typed entity identity (base class and contract-only), aggregate event recording in insertion order + clearing without dispatch + null guard + contract-only aggregate, `DomainEvent.Create` identifier/timestamp semantics, `Money` currency normalization/validation/arithmetic/cross-currency rejection/null guards, opt-in soft-delete and tenant markers, and safe domain errors (stable `Error` carriage, validation/not-found/conflict codes, web-boundary mapping without inspecting internals). |
 | `tests/Platform.Persistence.EfCore.Tests` | In-memory and SQLite tests for explicit options, audit/soft-delete interception, tenant filters, paging/specification helpers, concurrent independent contexts, read-only migration status, and readiness behavior. |
 | `tests/Platform.Persistence.Multitenancy.Tests` | Multitenancy options validation, scope factory installation/restoration, EF Core model filter application, global-entity opt-out, scoped connection routing (tenant/global/shared), connection caching, HTTP middleware TestServer coverage (resolved/disabled/length-bounded), and tenant readiness check aggregation. |
 | `tests/Platform.Tenant.Lifecycle.Tests` | Tenant lifecycle orchestrator: ordered execution + succeeded status, retryable classification stops the run, permanent classification fails closed, cancellation transitions to `Canceled`, tenant scope is installed and disposed around every tenant-scoped step, duplicate step names are rejected, `ResumeAsync` skips completed steps and recovers, `ResumeAsync` throws on unknown operations and un-registered workflows, and safe messages are preserved on step status records; status endpoint (404 for unknown operations, OK with snapshot), resume endpoint (operator-driven run to completion), readiness check (healthy for succeeded, unhealthy for retryable). |
