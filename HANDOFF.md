@@ -341,10 +341,62 @@ under `openspec/changes/`; strict validation is required before implementation.
 - Implementation commit: `4a228af` (`Implement platform adoption
   tooling`).
 
+## Completed: platform-application-sample-matrix
+
+- Added five focused samples under `samples/`, each unpacked,
+  `net8.0`, independently buildable, with an ownership/rollback
+  README:
+  - `Platform.MinimalWeb.Sample` — `Platform.Starter` web runtime
+    only, `/` plus `MapPlatformApplicationEndpoints`.
+  - `Platform.EfCore.Sample` — application-owned `SampleDbContext`,
+    `SampleItem`, and hand-written `202609110001_CreateSampleItems`
+    migration on SQLite plus opt-in `AddPlatformPersistenceEfCore`.
+  - `Platform.Identity.Sample` — application-owned
+    `SampleCredentialVerifier` behind `Platform.Identity.Contracts`
+    with `/sample/login` (200/401/400).
+  - `Platform.Tenancy.Sample` — application-owned provisioning
+    workflow, two tenant-scoped steps, scope recording, and
+    in-memory `ITenantLifecycleStore` through
+    `AddPlatformTenantLifecycle`.
+  - `Platform.ProviderStorage.Sample` — `IObjectStorage` via an
+    explicitly constructed `LocalFileStorage` root; no credentials,
+    network, or Docker.
+- Added `samples/matrix.json` (target framework, platform refs,
+  prerequisites, verify command, rollback per stage) and
+  `tests/Platform.SampleMatrix.Tests` (9 tests): per-stage wiring
+  plus a metadata test asserting every entry matches its project
+  and no sample references another sample.
+- Architecture: `Platform.SampleMatrix.Tests` joined the test-only
+  inventory; new `All_samples_are_unpacked` guard. Suite: 332
+  passed. Package manifest unchanged (scans `src/` only, `--check`
+  clean).
+- Docs: `docs/platform-sample-matrix.md` (gradual route,
+  environment-blocked semantics), `docs/packages.md` (guardrails +
+  test-table rows), `README.md` (`samples/` + test layout).
+- Archived the change at
+  `openspec/changes/archive/2026-09-11-platform-application-sample-matrix/`
+  with the synchronized `openspec/specs/sample-matrix/spec.md`.
+  `openspec list` is now empty.
+
+## Verification evidence
+
+- `dotnet build Platform.sln -c Release` — 0 warnings, 0 errors.
+- `dotnet test tests/Platform.SampleMatrix.Tests -c Release` — 9
+  passed. `Platform.Architecture.Tests` — 332 passed.
+- `openspec validate --changes --strict` — 1 passed (empty queue:
+  no active changes).
+- `openspec validate --specs --strict` — 44 passed (the new
+  `sample-matrix` spec is included).
+- `scripts/generate-package-manifest.sh --check` — `Manifest matches
+  source.`
+- `git diff --check` — clean for the staged change.
+- Implementation commit: `946ed30` (`Implement platform
+  application sample matrix`).
+
 ## Next change
 
-`platform-application-sample-matrix` is the next planned change in
-the queue above. Implement only that change in the next cycle.
+The spec queue is empty. Any further work starts with a fresh
+OpenSpec proposal.
 
 ## Completed: platform-testing-toolkit
 
