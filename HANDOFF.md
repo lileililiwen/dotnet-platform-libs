@@ -222,10 +222,79 @@ under `openspec/changes/`; strict validation is required before implementation.
 - Implementation commit: `7d077e4` (`Implement platform EFCore
   migrator host`).
 
+## Completed: platform-dotnet-template-pack
+
+- Reworked `templates/platform-application-starter/` into a tracked
+  template content tree: `.template.config/template.json` (identity
+  `Platform.ApplicationStarter`, short name `platform-app`, sourceName
+  `StarterApp`, symbols `IncludeTests` default true plus
+  `EnableIdentity` / `EnablePersistence` default false, file excludes
+  for `tests/**` and `Data/**`, comment-style conditional operations
+  for `*.cs` and `*.csproj`); minimal `Program.cs` over real
+  `Platform.Starter` APIs; single-project app with exact pins
+  (`Platform.Starter 0.1.0`, persistence variant adds
+  `Platform.Persistence.EfCore 0.1.0` + SQLite `8.0.10`);
+  application-owned `Data/AppDbContext` plus interceptor registration
+  in the persistence variant; static `appsettings.json`; generated
+  ownership `README.md`; xUnit + `Mvc.Testing 8.0.10` smoke tests
+  hitting `/` and `/live`. Removed the empty
+  `src/StarterApp.Domain` / `src/StarterApp.Infrastructure` stub
+  projects.
+- Added pack-only
+  `templates/Platform.Application.Template/Platform.Application.Template.csproj`
+  (`PackageType=Template`, `IncludeBuildOutput=false`,
+  `IncludeSymbols=false`, `NU5128` suppression for the content-only
+  pack, explicit `bin`/`obj` content excludes, root-README unpacked)
+  producing `Platform.Application.Template 0.1.0`, wired into
+  `Platform.sln`. The pack carries only `content/`; the manifest
+  generator scans `src/` only, so the manifest is unchanged and
+  `--check` passes.
+- Added `tests/Platform.Template.Tests` (9 tests, serial collection):
+  a shared fixture packs the solution plus the template into a private
+  feed and installs the template; the theory generates, asserts
+  (renames, conditional files/code, no marker remnants, no template
+  metadata or pack references), builds, and tests all 8 symbol
+  combinations from the local feed; the detachment fact regenerates,
+  uninstalls the template pack, rebuilds/retests, and reinstalls.
+  Fixture children inherit the repo `global.json` SDK pin through a
+  copied pin file because temp working directories escape the repo pin
+  (otherwise a newer machine-wide SDK is selected and apphost creation
+  fails with `MissingMethodException`).
+- Architecture rules added to
+  `tests/Platform.Architecture.Tests/DependencyDirectionTests.cs`:
+  `Template_pack_project_is_content_only` and
+  `Template_content_is_pinned_detached_and_minimal` (template metadata,
+  exact `Version` on every reference, project references contained in
+  the content tree, no React/Aspire/Docker/Terraform markers, no
+  `bin`/`obj`); `Platform.Template.Tests` joined the test-only
+  inventory. Architecture suite: 330 passed.
+- Docs: `docs/platform-template-pack.md` covers install, the variant
+  table, generated ownership, pinning, and rollback; `README.md` lists
+  the `templates/` tree.
+- Archived the change at
+  `openspec/changes/archive/2026-09-11-platform-dotnet-template-pack/`
+  with the synchronized `openspec/specs/dotnet-template-pack/spec.md`.
+
+## Verification evidence
+
+- `dotnet build Platform.sln -c Release` — 0 errors; the 8 warnings are
+  the pre-existing Hangfire/Testing analyzer notices.
+- `dotnet test tests/Platform.Template.Tests -c Release` — 9 passed
+  (pack + install + 8 generated build/test combinations + uninstall
+  detachment). `Platform.Architecture.Tests` — 330 passed.
+- `openspec validate --changes --strict` — 3 passed (remaining queue).
+- `openspec validate --specs --strict` — 42 passed (the new
+  `dotnet-template-pack` spec is included).
+- `scripts/generate-package-manifest.sh --check` — `Manifest matches
+  source.`
+- `git diff --check` — clean for the staged change.
+- Implementation commit: `858195c` (`Implement platform dotnet
+  template pack`).
+
 ## Next change
 
-`platform-dotnet-template-pack` is the next planned change in the
-queue above. Implement only that change in the next cycle.
+`platform-adoption-tooling` is the next planned change in the queue
+above. Implement only that change in the next cycle.
 
 ## Completed: platform-testing-toolkit
 
