@@ -83,9 +83,74 @@ under `openspec/changes/`; strict validation is required before implementation.
 - Implementation commit: `5a7eda7` (`Implement platform domain
   primitives`).
 
+## Completed: platform-web-composition-contracts
+
+- Added `Platform.Web.Composition` (net8.0, depends on `Platform.Core`
+  plus the `Microsoft.AspNetCore.App` framework reference; no package
+  references): `IPlatformWebModule` with stable `Name`, deterministic
+  `Order`, required `ConfigureServices`, and default no-op
+  `ConfigureMiddleware` / `MapEndpoints` hooks; explicit
+  `AddPlatformWebModule<T>()` / `AddPlatformWebModule(Type)` registration
+  that instantiates the module, validates its name, invokes
+  `ConfigureServices`, and rejects duplicate types or names
+  deterministically with `InvalidOperationException`; immutable ordered
+  `PlatformWebModuleRegistry` built per host via `FromProvider`
+  (`Order`, then `Name` ordinal) with state in DI and no static fields;
+  opt-in `UsePlatformWebModules` / `MapPlatformWebModules` that run each
+  hook at most once per call in registry order.
+- Added `tests/Platform.Web.Composition.Tests` (17 tests): explicit
+  registration (service-hook invocation, ordering, duplicate type/name
+  rejection, empty-name/missing-constructor/non-module/null guards),
+  ordered per-host registry snapshot, plus `TestServer` integration tests
+  for middleware order, endpoints mapped once per call, no pipeline
+  contribution without the opt-in extensions, unregistered module types
+  never instantiated or mapped, and two hosts in one process keeping
+  independent module sets.
+- Architecture rules added to
+  `tests/Platform.Architecture.Tests/DependencyDirectionTests.cs`:
+  `Platform_Web_Composition_only_references_Platform_Core`,
+  `Platform_Web_Composition_does_not_reference_forbidden_packages`
+  (EF Core, Mediator/MediatR, FluentValidation, Hangfire, Quartz,
+  RabbitMQ, MassTransit, Redis, Stripe), and
+  `Platform_Web_Composition_declares_only_the_aspnetcore_framework_reference`;
+  the new projects joined the production/test-only inventories and the
+  `Microsoft.AspNetCore.App` allowlist. Architecture suite: 323 passed.
+- Docs: `docs/platform-web-composition.md` covers adoption, contracts,
+  registration, pipeline, the deliberate differences from the starter
+  `ModuleLoader` (explicit registration, no validator coupling, per-host
+  DI state, module-declared order), starter migration/rollback, and
+  security. `docs/packages.md` adds the `Platform.Web.Composition`
+  section and the test-inventory row; `README.md` lists the package and
+  directories.
+- The package manifest is regenerated (73 packages).
+  `scripts/generate-package-manifest.sh --check` passes.
+- Archived the change at
+  `openspec/changes/archive/2026-09-11-platform-web-composition-contracts/`
+  with the synchronized `openspec/specs/web-composition/spec.md`
+  covering the explicit module contract, explicit-only registration,
+  deterministic isolated composition, and opt-in pipeline integration.
+
+## Verification evidence
+
+- `dotnet build Platform.sln -c Release` — 0 errors; the 8 warnings are
+  pre-existing Hangfire/Testing analyzer notices, none from the new
+  projects.
+- `dotnet test tests/Platform.Web.Composition.Tests -c Release` — 17
+  passed. `Platform.Architecture.Tests` — 323 passed (includes a fix to
+  the `Only_Platform_AspNetCore_declares_a_FrameworkReference` allowlist
+  for the new package).
+- `openspec validate --changes --strict` — 5 passed (remaining queue).
+- `openspec validate --specs --strict` — 40 passed (the new
+  `web-composition` spec is included).
+- `scripts/generate-package-manifest.sh --check` — `Manifest matches
+  source.`
+- `git diff --check` — clean for the staged change.
+- Implementation commit: `de13b49` (`Implement platform web
+  composition contracts`).
+
 ## Next change
 
-`platform-web-composition-contracts` is the next planned change in the
+`platform-efcore-migrator-host` is the next planned change in the
 queue above. Implement only that change in the next cycle.
 
 ## Completed: platform-testing-toolkit
