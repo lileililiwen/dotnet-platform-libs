@@ -148,9 +148,83 @@ under `openspec/changes/`; strict validation is required before implementation.
 - Implementation commit: `de13b49` (`Implement platform web
   composition contracts`).
 
+## Completed: platform-efcore-migrator-host
+
+- Added `Platform.Persistence.EfCore.Migrator` (net8.0, depends on
+  `Platform.Persistence.EfCore` plus provider-neutral EF Core and
+  Relational packages; no provider, web, messaging, or job references):
+  `IMigrationRunner` / `MigrationRunner` with `ListPendingAsync`
+  (read-only; a missing database reports every defined migration as
+  pending via `ExistsAsync` plus `IMigrationsAssembly`) and `ApplyAsync`
+  (captures pending, `MigrateAsync` when non-empty, then the optional
+  seed callback; seed runs after every successful apply so application
+  seeds must be idempotent); `MigrationRunnerRequest` carrying the
+  application-owned context factory, `SeedAfterApply`, optional
+  `IMigrationSeeder`, and optional `IMigrationExclusiveExecutor` (absent
+  means no lock); `MigrationPendingResult` / `MigrationRunResult` /
+  `MigrationFailure` with stable `MigrationFailureCategory`
+  (`Unavailable`, `MigrationFailed`, `SeedFailed`) and fixed secret-free
+  diagnostics (category plus exception type only); cancellation
+  propagates `OperationCanceledException`; throwing factories fail fast
+  with a type-naming message.
+- Added the thin console-host adapter in the same package:
+  `MigrationCommand` parsing (`apply` default, `list-pending`, `--seed`,
+  `-h|--help`) and `MigrationConsoleRunner.RunAsync` owning exit codes
+  (0 success/help, 1 failure/cancellation, 2 unknown verb) with
+  injectable output/error writers. Application wiring stays in the
+  `configure` factory.
+- Added `tests/Platform.Persistence.EfCore.Migrator.Tests` (25 tests):
+  unit tests for request validation, cancellation propagation,
+  exclusive-executor delegation and pass-through, seed suppression on
+  failure, factory failure redaction, and result-factory guards
+  (InMemory contexts, recording callbacks); SQLite integration tests
+  with an application-owned context and hand-written `CreateNotes`
+  migration covering read-only pending inspection, apply-to-head,
+  seed-inside-lock ordering with seed-on-no-op, `SeedFailed`
+  classification without leaking the cause, and `Unavailable`
+  classification without leaking the path; console-adapter tests for
+  parsing, exit codes, `--seed` enablement, configuration-failure
+  redaction, and cancellation.
+- Architecture rules added to
+  `tests/Platform.Architecture.Tests/DependencyDirectionTests.cs`:
+  `Platform_Persistence_EfCore_Migrator_only_references_EfCore_persistence`
+  and
+  `Platform_Persistence_EfCore_Migrator_has_no_provider_web_or_messaging_references`
+  (ASP.NET Core, SQLite/Npgsql providers, Stripe, Redis, RabbitMQ,
+  Hangfire, Quartz, Mediator/MediatR, FluentValidation, VisualFlow);
+  the new projects joined the production/test-only inventories.
+  Architecture suite: 328 passed.
+- Docs: `docs/platform-efcore-migrator.md` covers contracts, failure
+  results, the console adapter, deployment/lock/rollback ownership, and
+  security. `docs/packages.md` adds the migrator section and the
+  test-inventory row; `README.md` lists the new directories.
+- The package manifest is regenerated (74 packages).
+  `scripts/generate-package-manifest.sh --check` passes.
+- Archived the change at
+  `openspec/changes/archive/2026-09-11-platform-efcore-migrator-host/`
+  with the synchronized `openspec/specs/efcore-migrator/spec.md`
+  covering the application-owned runner, pending/apply operations,
+  seed/lock seams, and safe failure results.
+
+## Verification evidence
+
+- `dotnet build Platform.sln -c Release` — 0 errors; the 8 warnings are
+  the pre-existing Hangfire/Testing analyzer notices, none from the new
+  projects.
+- `dotnet test tests/Platform.Persistence.EfCore.Migrator.Tests -c Release`
+  — 25 passed. `Platform.Architecture.Tests` — 328 passed.
+- `openspec validate --changes --strict` — 4 passed (remaining queue).
+- `openspec validate --specs --strict` — 41 passed (the new
+  `efcore-migrator` spec is included).
+- `scripts/generate-package-manifest.sh --check` — `Manifest matches
+  source.`
+- `git diff --check` — clean for the staged change.
+- Implementation commit: `7d077e4` (`Implement platform EFCore
+  migrator host`).
+
 ## Next change
 
-`platform-efcore-migrator-host` is the next planned change in the
+`platform-dotnet-template-pack` is the next planned change in the
 queue above. Implement only that change in the next cycle.
 
 ## Completed: platform-testing-toolkit
