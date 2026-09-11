@@ -1,28 +1,22 @@
 # Handoff
 
-## Planned next queue: starter-kit complexity gap reduction
+## Completed queue: starter-kit complexity gap reduction
 
-This queue is based on a source comparison with `/home/paul/code/dotnet-starter-kit`.
-The starter kit is treated as a capability reference only; these changes keep the
+This queue was based on a source comparison with `/home/paul/code/dotnet-starter-kit`.
+The starter kit was treated as a capability reference only; the changes kept the
 platform small, opt-in, provider-neutral, and application-owned.
 
-Implement one change at a time in this order:
+All six changes are implemented, strictly validated, archived, and committed:
 
-1. `platform-domain-primitives` — framework-neutral entities, aggregates, domain
-   events, money, optional markers, and safe domain errors.
-2. `platform-web-composition-contracts` — explicit per-host module composition
-   without global discovery, Mediator, or FluentValidation coupling.
-3. `platform-efcore-migrator-host` — application-owned migration runner with
-   pending/apply operations, optional seed/lock callbacks, and redacted failures.
-4. `platform-dotnet-template-pack` — installable minimal `dotnet new` template,
-   detached generated source, and no full-stack starter infrastructure.
-5. `platform-adoption-tooling` — explicit-directory, read-only doctor/inventory/
-   conformance and package-alignment preview tooling.
-6. `platform-application-sample-matrix` — focused minimal-web, EF Core, identity,
-   tenancy, and provider-adapter samples proving incremental adoption.
+1. `platform-domain-primitives` — archived at `openspec/changes/archive/2026-09-11-platform-domain-primitives/`.
+2. `platform-web-composition-contracts` — archived at `openspec/changes/archive/2026-09-11-platform-web-composition-contracts/`.
+3. `platform-efcore-migrator-host` — archived at `openspec/changes/archive/2026-09-11-platform-efcore-migrator-host/`.
+4. `platform-dotnet-template-pack` — archived at `openspec/changes/archive/2026-09-11-platform-dotnet-template-pack/`.
+5. `platform-adoption-tooling` — archived at `openspec/changes/archive/2026-09-11-platform-adoption-tooling/`.
+6. `platform-application-sample-matrix` — archived at `openspec/changes/archive/2026-09-11-platform-application-sample-matrix/`.
 
-All six changes are planning-only until implementation begins. Their artifacts are
-under `openspec/changes/`; strict validation is required before implementation.
+`openspec list` is empty; new work starts with a fresh OpenSpec proposal.
+Details for each change follow under its `Completed:` section below.
 
 ## Completed: platform-domain-primitives
 

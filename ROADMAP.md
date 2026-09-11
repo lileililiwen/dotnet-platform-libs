@@ -31,6 +31,22 @@ The roadmap is organized into four phases. Items marked **Done** are implemented
 - automatic synchronization of every application to the newest package version;
 - application-specific backends for the new framework-neutral packages (Hangfire/Quartz, SendGrid/Mailgun/SMTP, RabbitMQ/Service Bus, Redis/Postgres idempotency, Redis rate-limit).
 
+## Starter-kit complexity gap queue — Done
+
+The comparison with `/home/paul/code/dotnet-starter-kit` identified adoption
+friction rather than a need to reproduce the starter architecture. All six
+changes are implemented, strictly validated, and archived:
+
+1. `platform-domain-primitives` — framework-neutral entities, aggregates, domain events, money, optional markers, and safe domain errors (`openspec/changes/archive/2026-09-11-platform-domain-primitives/`).
+2. `platform-web-composition-contracts` — explicit per-host module composition without global discovery or Mediator/FluentValidation coupling (`openspec/changes/archive/2026-09-11-platform-web-composition-contracts/`).
+3. `platform-efcore-migrator-host` — application-owned migration runner with pending/apply operations and optional seed/lock callbacks (`openspec/changes/archive/2026-09-11-platform-efcore-migrator-host/`).
+4. `platform-dotnet-template-pack` — installable minimal `dotnet new` template with detached generated source (`openspec/changes/archive/2026-09-11-platform-dotnet-template-pack/`).
+5. `platform-adoption-tooling` — explicit-directory read-only diagnostics and package-alignment preview (`openspec/changes/archive/2026-09-11-platform-adoption-tooling/`).
+6. `platform-application-sample-matrix` — focused samples proving incremental adoption (`openspec/changes/archive/2026-09-11-platform-application-sample-matrix/`).
+
+The queue does not include React clients, Aspire, Docker/Terraform, product modules,
+shared invoices/wallets, or a workspace-wide migration.
+
 ## Phase 5: Web edge integrations — Done
 
 The next phase adds opt-in CORS, HTTP resilience, OpenAPI document mapping, and a shared
