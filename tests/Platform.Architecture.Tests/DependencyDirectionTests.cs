@@ -86,6 +86,7 @@ public class DependencyDirectionTests
         "Platform.Core.Tests",
         "Platform.Domain.Tests",
         "Platform.Template.Tests",
+        "Platform.Adoption.Tests",
         "Platform.Persistence.EfCore.Migrator.Tests",
         "Platform.Web.Composition.Tests",
         "Platform.AspNetCore.Tests",
@@ -384,6 +385,13 @@ public class DependencyDirectionTests
         Assert.True(
             violations.Length == 0,
             "Platform.Persistence.EfCore.Migrator must not reference forbidden packages but references: " + string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void Platform_Adoption_core_has_no_package_dependencies()
+    {
+        Assert.Empty(ReadPackageReferences("src/Platform.Adoption/Platform.Adoption.csproj"));
+        Assert.Empty(ReadProjectReferences("src/Platform.Adoption/Platform.Adoption.csproj"));
     }
 
     [Fact]

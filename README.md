@@ -53,6 +53,7 @@ src/
   Platform.Domain/                Framework-neutral domain primitives
   Platform.Web.Composition/       Explicit ASP.NET Core module composition
   Platform.Persistence.EfCore.Migrator/ Application-owned EF Core migration runner
+  Platform.Adoption/              Provider-neutral adoption diagnostics core
   Platform.AspNetCore/            ASP.NET Core integration
   Platform.Billing.Contracts/     Subscription and entitlement contracts
   Platform.Testing/               Test-only helpers
@@ -62,6 +63,7 @@ tests/
   Platform.Domain.Tests/          Unit tests for Platform.Domain
   Platform.Web.Composition.Tests/ Unit + TestServer integration tests for composition
   Platform.Persistence.EfCore.Migrator.Tests/ Unit + SQLite integration + console-adapter tests
+  Platform.Adoption.Tests/       Adoption diagnostics core + CLI tests
   Platform.Template.Tests/       Template pack/install/generate/build/test smoke tests
   Platform.AspNetCore.Tests/      Unit + TestServer integration tests
   Platform.Billing.Contracts.Tests/
@@ -71,6 +73,8 @@ tests/
 templates/
   platform-application-starter/ Tracked template content tree (platform-app template)
   Platform.Application.Template/ Pack-only template project (PackageType=Template)
+tools/
+  Platform.Adoption.Tool/    Read-only adoption diagnostics CLI (doctor/inventory/conformance/preview)
 docs/
   build-test-pack.md              Restore, build, test, pack, and validate commands
   packages.md                     Per-package contract reference

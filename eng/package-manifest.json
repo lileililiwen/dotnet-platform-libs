@@ -49,6 +49,19 @@
       "version": "0.1.0"
     },
     {
+      "description": "Provider-neutral adoption diagnostics core: explicit-directory SDK, package pinning, test-boundary, and project-quality checks with preview-only alignment suggestions, stable JSON, and secret-free evidence. No production package dependencies; never modifies the inspected target.",
+      "frameworkReferences": [],
+      "isPackable": true,
+      "packageId": "Platform.Adoption",
+      "packageReferences": [],
+      "path": "src/Platform.Adoption/Platform.Adoption.csproj",
+      "projectReferences": [],
+      "targetFrameworks": [
+        "net8.0"
+      ],
+      "version": "0.1.0"
+    },
+    {
       "description": "AI provider routing and policy orchestration.",
       "frameworkReferences": [],
       "isPackable": true,

@@ -521,6 +521,32 @@ messaging, or job packages.
   parsing (`apply` default, `list-pending`, `--seed`, `-h|--help`) and exit codes
   (0 success/help, 1 failure, 2 usage error).
 
+## Platform.Adoption
+
+Provider-neutral adoption diagnostics core. Depends on nothing but the
+`net8.0` framework; targets `net8.0`. It inspects an explicit absolute
+target directory and never modifies it.
+
+- `AdoptionAnalyzer` — deterministic checks: SDK pin (`global.json`),
+  solution/project discoverability, central package management,
+  exact `Platform.*` pinning (floating versions fail, unpinned or
+  outdated pins warn), production-to-`*.Testing` boundary, and
+  `Nullable`/`TreatWarningsAsErrors` signals, plus opt-in
+  environment-blocked feed/Docker probes with rerun instructions.
+- `AdoptionReport` / `AdoptionCheckResult` / `AdoptionStatus`
+  (`Pass`, `Warning`, `Failed`, `EnvironmentBlocked`) — stable
+  machine-readable JSON with secret-free evidence (relative paths,
+  identifiers, versions, exception type names only).
+- `AdoptionOptions`, `AdoptionExitCodes` (0 clean, 1 failures,
+  2 blocked-only, 64 usage), `ProposedEdit` preview-only alignment
+  suggestions, `AdoptionInventory` project/package listing,
+  `AdoptionPreview` JSON, and `AdoptionTargetException` for unusable
+  targets.
+
+The `platform-doctor` CLI (`tools/Platform.Adoption.Tool`, unpacked)
+adds the `doctor`, `inventory`, `conformance`, and `preview` commands
+over this core with the same exit codes.
+
 ## Platform.Persistence.Postgres
 
 Optional Npgsql adapter over `Platform.Persistence.EfCore`. It contains only PostgreSQL options
@@ -646,7 +672,7 @@ ASP.NET Core TestServer host builder. Depends on `Platform.Core` and the `Micros
 
 | Project | Coverage |
 | --- | --- |
-| `tests/Platform.Architecture.Tests` | Dependency-direction guardrails (no production project references test projects, ASP.NET Core, EF Core, or Stripe; `FrameworkReference` is allowed only for `Platform.AspNetCore`; `Platform.Core` and `Platform.Billing.Contracts` declare no `<PackageReference>` entries; per-package forbidden-reference rules for `Platform.Jobs`, `Platform.Mailing`, `Platform.Eventing`, `Platform.Idempotency`, `Platform.RateLimiting`, `Platform.Domain`, `Platform.Web.Composition`, and `Platform.Persistence.EfCore.Migrator`). |
+| `tests/Platform.Architecture.Tests` | Dependency-direction guardrails (no production project references test projects, ASP.NET Core, EF Core, or Stripe; `FrameworkReference` is allowed only for `Platform.AspNetCore`; `Platform.Core` and `Platform.Billing.Contracts` declare no `<PackageReference>` entries; per-package forbidden-reference rules for `Platform.Jobs`, `Platform.Mailing`, `Platform.Eventing`, `Platform.Idempotency`, `Platform.RateLimiting`, `Platform.Domain`, `Platform.Web.Composition`, `Platform.Persistence.EfCore.Migrator`, and `Platform.Adoption`; the template pack stays content-only). |
 | `tests/Platform.Core.Tests` | Unit tests for time, results, context, and audit contracts. |
 | `tests/Platform.AspNetCore.Tests` | Unit tests for the ProblemDetails mapper, exception middleware, and correlation middleware, plus a `TestServer` integration test for the minimal host (known failure → ProblemDetails, unknown failure → sanitized 500, correlation generation, health endpoint). |
 | `tests/Platform.Billing.Contracts.Tests` | Unit tests for identifiers, subscription status and period boundaries, entitlement defaults, feature check decisions, usage-meter contract (in-memory implementation), and processed-event idempotency. |
@@ -662,6 +688,7 @@ ASP.NET Core TestServer host builder. Depends on `Platform.Core` and the `Micros
 | `tests/Platform.Web.Composition.Tests` | Unit tests for explicit registration (service hook invocation, `Order`-then-`Name` ordering, duplicate type/name rejection, empty-name and missing-constructor rejection, non-module and null-argument guards) and the ordered per-host registry snapshot, plus `TestServer` integration tests for middleware running in module order, endpoints mapped once per call, no pipeline contribution without the opt-in extensions, unregistered module types never instantiated or mapped, and two hosts in one process keeping independent module sets. |
 | `tests/Platform.Persistence.EfCore.Tests` | In-memory and SQLite tests for explicit options, audit/soft-delete interception, tenant filters, paging/specification helpers, concurrent independent contexts, read-only migration status, and readiness behavior. |
 | `tests/Platform.Persistence.EfCore.Migrator.Tests` | Unit tests for request validation, cancellation propagation, exclusive-executor delegation and result pass-through, seed suppression on failure, factory failure redaction, and result-factory guards (InMemory contexts, recording callbacks), plus SQLite integration tests with an application-owned context and hand-written migration covering read-only pending inspection, apply-to-head, seed-inside-lock ordering with seed-on-no-op, seed-failure classification without leaking the cause, and unavailable classification without leaking the path, plus console-adapter tests for parsing, exit codes, seed-flag enablement, configuration-failure redaction, and cancellation. |
+| `tests/Platform.Adoption.Tests` | Analyzer unit tests over minimal/adopted/misconfigured fixtures (target validation, per-check statuses, preview proposals, explicit sibling-directory targeting, unreachable-feed blocked classification with rerun guidance, environment opt-in, stable secret-free JSON, inventory listing) with hash-snapshot read-only proof, plus CLI tests for doctor/conformance/preview output, exit codes (0/1/64), and preview write-freedom. |
 | `tests/Platform.Persistence.Multitenancy.Tests` | Multitenancy options validation, scope factory installation/restoration, EF Core model filter application, global-entity opt-out, scoped connection routing (tenant/global/shared), connection caching, HTTP middleware TestServer coverage (resolved/disabled/length-bounded), and tenant readiness check aggregation. |
 | `tests/Platform.Tenant.Lifecycle.Tests` | Tenant lifecycle orchestrator: ordered execution + succeeded status, retryable classification stops the run, permanent classification fails closed, cancellation transitions to `Canceled`, tenant scope is installed and disposed around every tenant-scoped step, duplicate step names are rejected, `ResumeAsync` skips completed steps and recovers, `ResumeAsync` throws on unknown operations and un-registered workflows, and safe messages are preserved on step status records; status endpoint (404 for unknown operations, OK with snapshot), resume endpoint (operator-driven run to completion), readiness check (healthy for succeeded, unhealthy for retryable). |
 | `tests/Platform.Persistence.Postgres.Tests` | Provider-boundary test for PostgreSQL options configuration. |
