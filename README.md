@@ -64,12 +64,20 @@ tests/
   Platform.Web.Composition.Tests/ Unit + TestServer integration tests for composition
   Platform.Persistence.EfCore.Migrator.Tests/ Unit + SQLite integration + console-adapter tests
   Platform.Adoption.Tests/       Adoption diagnostics core + CLI tests
+  Platform.SampleMatrix.Tests/   Sample matrix wiring + metadata tests
   Platform.Template.Tests/       Template pack/install/generate/build/test smoke tests
   Platform.AspNetCore.Tests/      Unit + TestServer integration tests
   Platform.Billing.Contracts.Tests/
   Platform.Testing.Tests/         Platform.Testing + Platform.Testing.AspNetCore coverage
   Platform.Architecture.Tests/    Dependency-direction and isolation guardrails
   Platform.ConsumerConformance/   Solution-excluded consumer-conformance fixture
+samples/
+  matrix.json                   Machine-readable sample matrix index
+  Platform.MinimalWeb.Sample/   Stage 1: web runtime only
+  Platform.EfCore.Sample/       Stage 2: application-owned context + migration
+  Platform.Identity.Sample/     Stage 3: application-owned credential store
+  Platform.Tenancy.Sample/      Stage 4: application-owned workflow/steps/store
+  Platform.ProviderStorage.Sample/ Stage 5: local storage adapter, no credentials
 templates/
   platform-application-starter/ Tracked template content tree (platform-app template)
   Platform.Application.Template/ Pack-only template project (PackageType=Template)

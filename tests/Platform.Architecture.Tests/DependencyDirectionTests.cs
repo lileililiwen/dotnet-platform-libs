@@ -87,6 +87,7 @@ public class DependencyDirectionTests
         "Platform.Domain.Tests",
         "Platform.Template.Tests",
         "Platform.Adoption.Tests",
+        "Platform.SampleMatrix.Tests",
         "Platform.Persistence.EfCore.Migrator.Tests",
         "Platform.Web.Composition.Tests",
         "Platform.AspNetCore.Tests",
@@ -275,6 +276,24 @@ public class DependencyDirectionTests
 
         var sample = XDocument.Load(Path.Combine(RepositoryRoot, "samples/Platform.Starter.Sample/Platform.Starter.Sample.csproj"));
         Assert.Equal("false", sample.Descendants("IsPackable").Single().Value, ignoreCase: true);
+    }
+
+    [Fact]
+    public void All_samples_are_unpacked()
+    {
+        var projects = Directory.EnumerateFiles(
+            Path.Combine(RepositoryRoot, "samples"),
+            "*.csproj",
+            SearchOption.AllDirectories);
+        Assert.NotEmpty(projects);
+        foreach (var project in projects.OrderBy(path => path, StringComparer.Ordinal))
+        {
+            var document = XDocument.Load(project);
+            Assert.Equal(
+                "false",
+                document.Descendants("IsPackable").Single().Value,
+                ignoreCase: true);
+        }
     }
 
     [Fact]
