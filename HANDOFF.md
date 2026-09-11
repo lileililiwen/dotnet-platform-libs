@@ -291,10 +291,60 @@ under `openspec/changes/`; strict validation is required before implementation.
 - Implementation commit: `858195c` (`Implement platform dotnet
   template pack`).
 
+## Completed: platform-adoption-tooling
+
+- Added `src/Platform.Adoption` (packable, zero package dependencies):
+  `AdoptionAnalyzer` with deterministic explicit-directory checks
+  (`sdk`, `solution`, `projects`, `central-packages`,
+  `platform-pinning` with exact-pin enforcement and preview edits,
+  `test-boundary` failing production-to-`*.Testing` references,
+  `nullable-warnings`, opt-in `environment-feed`/`environment-docker`
+  probes classified `EnvironmentBlocked` with rerun instructions);
+  `AdoptionReport`/`AdoptionCheckResult`/`AdoptionStatus` with stable
+  camelCase JSON and secret-free evidence; `AdoptionOptions`,
+  `AdoptionExitCodes` (0 clean, 1 failures, 2 blocked-only, 64 usage),
+  `ProposedEdit` preview-only suggestions, `AdoptionInventory`,
+  `AdoptionPreview`, `AdoptionTargetException`.
+- Added unpacked `tools/Platform.Adoption.Tool`
+  (`platform-doctor`) with `doctor`, `inventory`, `conformance`,
+  and `preview` commands, `--project-dir` (required absolute),
+  `--json`, `--include-environment`, `--feed-url`, `--check-docker`,
+  `--expected-platform-version`, and the same exit codes.
+- Added `tests/Platform.Adoption.Tests` (18 tests): analyzer units
+  over minimal/adopted/misconfigured fixtures, unreachable-feed
+  blocked classification against the adopted fixture, environment
+  opt-in behavior, JSON stability/secrecy, inventory listing,
+  hash-snapshot read-only proof, explicit sibling-directory
+  targeting, and CLI tests for output plus 0/1/64 exits.
+- Architecture: `Platform.Adoption.Tests` joined the test-only
+  inventory; new `Platform_Adoption_core_has_no_package_dependencies`
+  guard. Suite: 331 passed. Manifest regenerated (75 packages,
+  `--check` clean).
+- Docs: `docs/platform-adoption-tooling.md`, `docs/packages.md`
+  (`Platform.Adoption` + test-table rows), `README.md` (`src/`,
+  `tests/`, `tools/` layout).
+- Archived the change at
+  `openspec/changes/archive/2026-09-11-platform-adoption-tooling/`
+  with the synchronized `openspec/specs/adoption-tooling/spec.md`.
+
+## Verification evidence
+
+- `dotnet build Platform.sln -c Release` — 0 warnings, 0 errors.
+- `dotnet test tests/Platform.Adoption.Tests -c Release` — 18 passed.
+  `Platform.Architecture.Tests` — 331 passed.
+- `openspec validate --changes --strict` — 2 passed (remaining queue).
+- `openspec validate --specs --strict` — 43 passed (the new
+  `adoption-tooling` spec is included).
+- `scripts/generate-package-manifest.sh --check` — `Manifest matches
+  source.`
+- `git diff --check` — clean for the staged change.
+- Implementation commit: `4a228af` (`Implement platform adoption
+  tooling`).
+
 ## Next change
 
-`platform-adoption-tooling` is the next planned change in the queue
-above. Implement only that change in the next cycle.
+`platform-application-sample-matrix` is the next planned change in
+the queue above. Implement only that change in the next cycle.
 
 ## Completed: platform-testing-toolkit
 
