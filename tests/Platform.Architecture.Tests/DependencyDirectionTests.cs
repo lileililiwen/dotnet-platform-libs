@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Xml.Linq;
 
 namespace Platform.Architecture.Tests;
@@ -84,6 +85,7 @@ public class DependencyDirectionTests
         "Platform.Architecture.Tests",
         "Platform.Core.Tests",
         "Platform.Domain.Tests",
+        "Platform.Template.Tests",
         "Platform.Persistence.EfCore.Migrator.Tests",
         "Platform.Web.Composition.Tests",
         "Platform.AspNetCore.Tests",
@@ -382,6 +384,91 @@ public class DependencyDirectionTests
         Assert.True(
             violations.Length == 0,
             "Platform.Persistence.EfCore.Migrator must not reference forbidden packages but references: " + string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void Template_pack_project_is_content_only()
+    {
+        const string relativePath = "templates/Platform.Application.Template/Platform.Application.Template.csproj";
+        var path = Path.Combine(RepositoryRoot, relativePath);
+        Assert.True(File.Exists(path), "Template pack project must exist at " + path);
+        var document = XDocument.Load(path);
+        Assert.Equal(
+            "Template",
+            document.Descendants().FirstOrDefault(e => string.Equals(e.Name.LocalName, "PackageType", StringComparison.Ordinal))?.Value.Trim());
+        Assert.Equal(
+            "false",
+            document.Descendants().FirstOrDefault(e => string.Equals(e.Name.LocalName, "IncludeBuildOutput", StringComparison.Ordinal))?.Value.Trim());
+        Assert.Empty(ReadProjectReferences(relativePath));
+        Assert.Empty(ReadPackageReferences(relativePath));
+        var content = document.Descendants()
+            .Where(e => string.Equals(e.Name.LocalName, "Content", StringComparison.Ordinal))
+            .Select(e => e.Attribute("Include")?.Value ?? string.Empty)
+            .ToArray();
+        Assert.NotEmpty(content);
+        var excludes = document.Descendants()
+            .Where(e => string.Equals(e.Name.LocalName, "Content", StringComparison.Ordinal))
+            .Select(e => e.Attribute("Exclude")?.Value ?? string.Empty);
+        var excludeText = string.Join(";", excludes);
+        Assert.Contains("bin", excludeText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("obj", excludeText, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Template_content_is_pinned_detached_and_minimal()
+    {
+        var contentRoot = Path.Combine(RepositoryRoot, "templates", "platform-application-starter");
+        Assert.True(Directory.Exists(contentRoot), "Template content tree must exist at " + contentRoot);
+
+        using var templateJson = JsonDocument.Parse(File.ReadAllText(Path.Combine(contentRoot, ".template.config", "template.json")));
+        var template = templateJson.RootElement;
+        Assert.Equal("Platform.ApplicationStarter", template.GetProperty("identity").GetString());
+        Assert.Equal("platform-app", template.GetProperty("shortName").GetString());
+        Assert.Equal("StarterApp", template.GetProperty("sourceName").GetString());
+        var symbols = template.GetProperty("symbols");
+        Assert.True(symbols.TryGetProperty("IncludeTests", out var includeTests) && includeTests.GetProperty("defaultValue").GetString() == "true");
+        Assert.True(symbols.TryGetProperty("EnableIdentity", out var enableIdentity) && enableIdentity.GetProperty("defaultValue").GetString() == "false");
+        Assert.True(symbols.TryGetProperty("EnablePersistence", out var enablePersistence) && enablePersistence.GetProperty("defaultValue").GetString() == "false");
+
+        foreach (var project in Directory.EnumerateFiles(contentRoot, "*.csproj", SearchOption.AllDirectories))
+        {
+            var document = XDocument.Load(project);
+            var projectDirectory = Path.GetDirectoryName(project) ?? contentRoot;
+            foreach (var reference in document
+                         .Descendants()
+                         .Where(e => string.Equals(e.Name.LocalName, "ProjectReference", StringComparison.OrdinalIgnoreCase)))
+            {
+                var include = reference.Attribute("Include")?.Value ?? string.Empty;
+                var target = Path.GetFullPath(Path.Combine(projectDirectory, include.Replace('\\', Path.DirectorySeparatorChar)));
+                Assert.StartsWith(
+                    contentRoot + Path.DirectorySeparatorChar,
+                    target,
+                    StringComparison.Ordinal);
+            }
+
+            foreach (var reference in document
+                         .Descendants()
+                         .Where(e => string.Equals(e.Name.LocalName, "PackageReference", StringComparison.OrdinalIgnoreCase)))
+            {
+                var name = reference.Attribute("Include")?.Value ?? string.Empty;
+                var version = reference.Attribute("Version")?.Value ?? string.Empty;
+                Assert.False(string.IsNullOrWhiteSpace(version), $"{project}: {name} must declare a pinned Version attribute.");
+                Assert.False(version.Contains('*') || version.Contains('[') || version.Contains('('), $"{project}: {name} must use an exact version. Saw '{version}'.");
+            }
+        }
+
+        var forbiddenMarkers = new[] { "Dockerfile", "Aspire", "Terraform", "package.json", "node_modules", "React" };
+        foreach (var file in Directory.EnumerateFiles(contentRoot, "*", SearchOption.AllDirectories))
+        {
+            var content = File.ReadAllText(file);
+            foreach (var marker in forbiddenMarkers)
+            {
+                Assert.DoesNotContain(marker, content, StringComparison.Ordinal);
+            }
+        }
+
+        Assert.False(Directory.Exists(Path.Combine(contentRoot, "bin")), "Template content must not contain bin output.");
+        Assert.False(Directory.Exists(Path.Combine(contentRoot, "obj")), "Template content must not contain obj output.");
     }
 
     [Theory]

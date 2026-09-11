@@ -62,11 +62,15 @@ tests/
   Platform.Domain.Tests/          Unit tests for Platform.Domain
   Platform.Web.Composition.Tests/ Unit + TestServer integration tests for composition
   Platform.Persistence.EfCore.Migrator.Tests/ Unit + SQLite integration + console-adapter tests
+  Platform.Template.Tests/       Template pack/install/generate/build/test smoke tests
   Platform.AspNetCore.Tests/      Unit + TestServer integration tests
   Platform.Billing.Contracts.Tests/
   Platform.Testing.Tests/         Platform.Testing + Platform.Testing.AspNetCore coverage
   Platform.Architecture.Tests/    Dependency-direction and isolation guardrails
   Platform.ConsumerConformance/   Solution-excluded consumer-conformance fixture
+templates/
+  platform-application-starter/ Tracked template content tree (platform-app template)
+  Platform.Application.Template/ Pack-only template project (PackageType=Template)
 docs/
   build-test-pack.md              Restore, build, test, pack, and validate commands
   packages.md                     Per-package contract reference

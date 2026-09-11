@@ -3,9 +3,15 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>StarterApp</RootNamespace>
+    <AssemblyName>StarterApp</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Platform.Starter" Version="0.1.0" />
+    <!--#if (EnablePersistence) -->
+    <PackageReference Include="Platform.Persistence.EfCore" Version="0.1.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.10" />
+    <!--#endif -->
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="tests/**/*.cs" />
