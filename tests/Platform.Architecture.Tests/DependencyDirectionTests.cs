@@ -10,6 +10,7 @@ public class DependencyDirectionTests
     {
         "src/Platform.Core/Platform.Core.csproj",
         "src/Platform.Domain/Platform.Domain.csproj",
+        "src/Platform.Web.Composition/Platform.Web.Composition.csproj",
         "src/Platform.AspNetCore/Platform.AspNetCore.csproj",
         "src/Platform.Billing.Contracts/Platform.Billing.Contracts.csproj",
         "src/Platform.Eventing/Platform.Eventing.csproj",
@@ -82,6 +83,7 @@ public class DependencyDirectionTests
         "Platform.Architecture.Tests",
         "Platform.Core.Tests",
         "Platform.Domain.Tests",
+        "Platform.Web.Composition.Tests",
         "Platform.AspNetCore.Tests",
         "Platform.Billing.Contracts.Tests",
         "Platform.Eventing.Contracts.Tests",
@@ -204,6 +206,20 @@ public class DependencyDirectionTests
     private static readonly string[] ForbiddenWebhooksAspNetCoreProjectSegments =
     {
         "VisualFlow",
+    };
+
+    private static readonly string[] ForbiddenWebCompositionPackagePrefixes =
+    {
+        "Microsoft.EntityFrameworkCore",
+        "Mediator",
+        "MediatR",
+        "FluentValidation",
+        "Hangfire",
+        "Quartz",
+        "RabbitMQ",
+        "MassTransit",
+        "StackExchange.Redis",
+        "Stripe",
     };
 
     private static readonly string[] ForbiddenPersistenceEfCorePackagePrefixes =
@@ -604,6 +620,7 @@ public class DependencyDirectionTests
                 || project.EndsWith("Platform.Quota.AspNetCore.csproj", StringComparison.OrdinalIgnoreCase)
                 || project.EndsWith("Platform.Auditing.AspNetCore.csproj", StringComparison.OrdinalIgnoreCase)
                 || project.EndsWith("Platform.Jobs.Hangfire.csproj", StringComparison.OrdinalIgnoreCase)
+                || project.EndsWith("Platform.Web.Composition.csproj", StringComparison.OrdinalIgnoreCase)
                 || project.EndsWith("Platform.Tenant.Lifecycle.AspNetCore.csproj", StringComparison.OrdinalIgnoreCase))
             {
                 Assert.True(
@@ -1606,6 +1623,34 @@ public class DependencyDirectionTests
     public void Platform_Domain_does_not_declare_a_framework_reference()
     {
         Assert.Empty(ReadFrameworkReferences("src/Platform.Domain/Platform.Domain.csproj"));
+    }
+
+    [Fact]
+    public void Platform_Web_Composition_only_references_Platform_Core()
+    {
+        Assert.Equal(["Platform.Core"], ReadProjectReferences("src/Platform.Web.Composition/Platform.Web.Composition.csproj"));
+    }
+
+    [Fact]
+    public void Platform_Web_Composition_does_not_reference_forbidden_packages()
+    {
+        var packages = ReadPackageReferences("src/Platform.Web.Composition/Platform.Web.Composition.csproj");
+        var violations = packages
+            .Where(package => ForbiddenWebCompositionPackagePrefixes.Any(prefix =>
+                package.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
+            .ToArray();
+        Assert.True(
+            violations.Length == 0,
+            "Platform.Web.Composition must not reference forbidden packages but references: " + string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void Platform_Web_Composition_declares_only_the_aspnetcore_framework_reference()
+    {
+        var references = ReadFrameworkReferences("src/Platform.Web.Composition/Platform.Web.Composition.csproj");
+        Assert.True(
+            references.Length == 1 && references[0].Equals("Microsoft.AspNetCore.App", StringComparison.OrdinalIgnoreCase),
+            "Platform.Web.Composition must declare only Microsoft.AspNetCore.App but declares: " + string.Join(", ", references));
     }
 
     [Fact]

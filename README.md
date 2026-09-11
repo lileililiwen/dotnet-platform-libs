@@ -12,6 +12,7 @@ This repository is a platform library, not a replacement for every application's
 | --- | --- | --- | --- |
 | `Platform.Core` | Production | (none) | Framework-independent contracts: `IClock`, `Error`, `Result`, `Result<T>`, `CallerContext`, `IAuditable`. |
 | `Platform.Domain` | Production | `Platform.Core` | Framework-neutral domain primitives: `IEntity<TId>`, `IAggregateRoot<TId>`, `IDomainEvent`, `IHasDomainEvents`, `Entity<TId>`, `AggregateRoot<TId>`, `DomainEvent`, `Money`, `ISoftDeletable`, `IHasTenant`, and safe `DomainException` errors. |
+| `Platform.Web.Composition` | Production | `Platform.Core` + `Microsoft.AspNetCore.App` framework reference | Explicit ASP.NET Core module composition: `IPlatformWebModule` (stable name/order, service/middleware/endpoint hooks), `AddPlatformWebModule`, per-host `PlatformWebModuleRegistry`, and opt-in `UsePlatformWebModules` / `MapPlatformWebModules`. No assembly scanning, no static state, no Mediator/FluentValidation coupling. |
 | `Platform.AspNetCore` | Production | `Platform.Core` | ASP.NET Core integration: explicit registration extensions, sanitized `ProblemDetails` mapping, correlation middleware/accessor, and health-check helpers. |
 | `Platform.Billing.Contracts` | Production | (none) | Provider-neutral subscription and entitlement contracts: opaque identifiers, normalized subscription and entitlement snapshots, structured feature-check decisions, replaceable usage-meter interface, and idempotent processed-event store. |
 | `Platform.Jobs` | Production | `Platform.Core` | Engine-neutral scheduling contract: `IJobDispatcher`, `IRecurringJobHandler`, `IRecurringJobRegistry`, `IJobTelemetry`, `RecurringJobAttribute`, `RecurringJobDescriptor`, `BackgroundJobsOptions`, and `AddPlatformJobs` opt-in registration. |
@@ -50,6 +51,7 @@ Product-specific EF Core entities, migrations, Stripe price IDs, invoice rules, 
 src/
   Platform.Core/                  Framework-independent contracts
   Platform.Domain/                Framework-neutral domain primitives
+  Platform.Web.Composition/       Explicit ASP.NET Core module composition
   Platform.AspNetCore/            ASP.NET Core integration
   Platform.Billing.Contracts/     Subscription and entitlement contracts
   Platform.Testing/               Test-only helpers
@@ -57,6 +59,7 @@ src/
 tests/
   Platform.Core.Tests/            Unit tests for Platform.Core
   Platform.Domain.Tests/          Unit tests for Platform.Domain
+  Platform.Web.Composition.Tests/ Unit + TestServer integration tests for composition
   Platform.AspNetCore.Tests/      Unit + TestServer integration tests
   Platform.Billing.Contracts.Tests/
   Platform.Testing.Tests/         Platform.Testing + Platform.Testing.AspNetCore coverage

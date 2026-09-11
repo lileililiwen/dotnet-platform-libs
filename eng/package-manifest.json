@@ -1423,6 +1423,23 @@
       "version": "0.1.0"
     },
     {
+      "description": "Optional explicit ASP.NET Core module composition: stable module contract, deterministic ordered registration with duplicate rejection, and opt-in middleware/endpoint mapping without assembly scanning or static state. Depends on Platform.Core only. No Mediator, FluentValidation, EF Core, or product references.",
+      "frameworkReferences": [
+        "Microsoft.AspNetCore.App"
+      ],
+      "isPackable": true,
+      "packageId": "Platform.Web.Composition",
+      "packageReferences": [],
+      "path": "src/Platform.Web.Composition/Platform.Web.Composition.csproj",
+      "projectReferences": [
+        "../Platform.Core/Platform.Core.csproj"
+      ],
+      "targetFrameworks": [
+        "net8.0"
+      ],
+      "version": "0.1.0"
+    },
+    {
       "description": "Optional CORS configuration and production validation built on ASP.NET Core. Must not reference EF Core, third-party CORS providers, or application projects.",
       "frameworkReferences": [
         "Microsoft.AspNetCore.App"

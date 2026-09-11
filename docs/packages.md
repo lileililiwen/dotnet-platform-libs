@@ -464,6 +464,24 @@ Framework-neutral domain primitives. Depends on `Platform.Core` only; targets `n
 - `DomainException` — carries a stable `Platform.Core.Results.Error` with no HTTP or provider-specific status code. `Message` is always the safe `Error.Message`.
 - `DomainValidationException` — carries `platform.validation`. `DomainNotFoundException` — carries `platform.not_found`. `DomainConflictException` — carries `domain.conflict` (see `DomainErrorCodes.Conflict`).
 
+## Platform.Web.Composition
+
+Optional explicit ASP.NET Core module composition. Depends on `Platform.Core` plus the `Microsoft.AspNetCore.App` framework reference; targets `net8.0`. Does not reference Mediator, FluentValidation, EF Core, provider SDKs, or application projects.
+
+### Contracts
+
+- `IPlatformWebModule` — stable `Name`, deterministic `Order`, required `ConfigureServices(IServiceCollection)`, and default no-op `ConfigureMiddleware(IApplicationBuilder)` / `MapEndpoints(IEndpointRouteBuilder)` hooks. The interface is the integration seam; modules need only a public parameterless constructor.
+- `PlatformWebModuleRegistry` — immutable ordered snapshot (`Order`, then `Name` ordinal) built per host via `FromProvider(provider)`. Registry state lives in DI, so parallel hosts keep independent module sets.
+
+### Registration
+
+- `AddPlatformWebModule<TModule>()` and `AddPlatformWebModule(Type)` — explicit registration only. Each call instantiates the module, validates its name, invokes `ConfigureServices`, and records the instance. Duplicate types or names fail deterministically with `InvalidOperationException`. Nothing is scanned: unregistered module types are never instantiated or mapped.
+
+### Pipeline
+
+- `UsePlatformWebModules(app)` — invokes each `ConfigureMiddleware` hook at most once, in registry order. Opt-in: without the call, registered modules contribute no middleware.
+- `MapPlatformWebModules(endpoints)` — invokes each `MapEndpoints` hook at most once, in registry order. Opt-in: without the call, registered modules map no endpoints.
+
 ## Platform.Persistence.EfCore
 
 Optional provider-neutral EF Core conventions. Depends on `Platform.Core`, EF Core, relational
@@ -606,7 +624,7 @@ ASP.NET Core TestServer host builder. Depends on `Platform.Core` and the `Micros
 
 | Project | Coverage |
 | --- | --- |
-| `tests/Platform.Architecture.Tests` | Dependency-direction guardrails (no production project references test projects, ASP.NET Core, EF Core, or Stripe; `FrameworkReference` is allowed only for `Platform.AspNetCore`; `Platform.Core` and `Platform.Billing.Contracts` declare no `<PackageReference>` entries; per-package forbidden-reference rules for `Platform.Jobs`, `Platform.Mailing`, `Platform.Eventing`, `Platform.Idempotency`, `Platform.RateLimiting`, and `Platform.Domain`). |
+| `tests/Platform.Architecture.Tests` | Dependency-direction guardrails (no production project references test projects, ASP.NET Core, EF Core, or Stripe; `FrameworkReference` is allowed only for `Platform.AspNetCore`; `Platform.Core` and `Platform.Billing.Contracts` declare no `<PackageReference>` entries; per-package forbidden-reference rules for `Platform.Jobs`, `Platform.Mailing`, `Platform.Eventing`, `Platform.Idempotency`, `Platform.RateLimiting`, `Platform.Domain`, and `Platform.Web.Composition`). |
 | `tests/Platform.Core.Tests` | Unit tests for time, results, context, and audit contracts. |
 | `tests/Platform.AspNetCore.Tests` | Unit tests for the ProblemDetails mapper, exception middleware, and correlation middleware, plus a `TestServer` integration test for the minimal host (known failure → ProblemDetails, unknown failure → sanitized 500, correlation generation, health endpoint). |
 | `tests/Platform.Billing.Contracts.Tests` | Unit tests for identifiers, subscription status and period boundaries, entitlement defaults, feature check decisions, usage-meter contract (in-memory implementation), and processed-event idempotency. |
@@ -619,6 +637,7 @@ ASP.NET Core TestServer host builder. Depends on `Platform.Core` and the `Micros
 | `tests/Platform.Idempotency.Tests` | Unit tests for `RequestFingerprint` stability + method normalisation + body-hash helper, `IdempotencyOptions` defaults and metric-name constants, `InMemoryIdempotencyStore` round-trip / null-or-empty-key / oversize-key / retention sweep / expired-record-as-miss / null-dependency guards, plus a `TestServer` integration test for `AddPlatformIdempotency` defaults, configuration overrides, save/try-get round-trip, eviction sweep driven by a `MutableClock`, and the no-op path when `Idempotency:Enabled = false`. |
 | `tests/Platform.RateLimiting.Tests` | Unit tests for `RateLimitPolicies` default catalog + `Find` + invalid-entry dropping + null guard, `RateLimitingOptions` defaults, `InMemoryRateLimiter` (first request, burst over limit, window roll-over, per-subject isolation, unknown/empty policy / subject rejection, null dependency guards), `ConfigurationRateLimitBypassResolver`, and `InMemoryRateLimiterBackendStatusProvider`, plus a `TestServer` integration test for `AddPlatformRateLimiting` defaults, configuration overrides, limiter decisions through DI, and the readiness surface. |
 | `tests/Platform.Domain.Tests` | Unit tests for typed entity identity (base class and contract-only), aggregate event recording in insertion order + clearing without dispatch + null guard + contract-only aggregate, `DomainEvent.Create` identifier/timestamp semantics, `Money` currency normalization/validation/arithmetic/cross-currency rejection/null guards, opt-in soft-delete and tenant markers, and safe domain errors (stable `Error` carriage, validation/not-found/conflict codes, web-boundary mapping without inspecting internals). |
+| `tests/Platform.Web.Composition.Tests` | Unit tests for explicit registration (service hook invocation, `Order`-then-`Name` ordering, duplicate type/name rejection, empty-name and missing-constructor rejection, non-module and null-argument guards) and the ordered per-host registry snapshot, plus `TestServer` integration tests for middleware running in module order, endpoints mapped once per call, no pipeline contribution without the opt-in extensions, unregistered module types never instantiated or mapped, and two hosts in one process keeping independent module sets. |
 | `tests/Platform.Persistence.EfCore.Tests` | In-memory and SQLite tests for explicit options, audit/soft-delete interception, tenant filters, paging/specification helpers, concurrent independent contexts, read-only migration status, and readiness behavior. |
 | `tests/Platform.Persistence.Multitenancy.Tests` | Multitenancy options validation, scope factory installation/restoration, EF Core model filter application, global-entity opt-out, scoped connection routing (tenant/global/shared), connection caching, HTTP middleware TestServer coverage (resolved/disabled/length-bounded), and tenant readiness check aggregation. |
 | `tests/Platform.Tenant.Lifecycle.Tests` | Tenant lifecycle orchestrator: ordered execution + succeeded status, retryable classification stops the run, permanent classification fails closed, cancellation transitions to `Canceled`, tenant scope is installed and disposed around every tenant-scoped step, duplicate step names are rejected, `ResumeAsync` skips completed steps and recovers, `ResumeAsync` throws on unknown operations and un-registered workflows, and safe messages are preserved on step status records; status endpoint (404 for unknown operations, OK with snapshot), resume endpoint (operator-driven run to completion), readiness check (healthy for succeeded, unhealthy for retryable). |
