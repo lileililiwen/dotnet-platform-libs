@@ -1028,6 +1028,30 @@
       "version": "0.1.0"
     },
     {
+      "description": "Optional application-owned EF Core migration execution boundary: pending inspection, apply, optional seed and exclusive-execution callbacks, and secret-free failure results. Depends on Platform.Persistence.EfCore and provider-neutral EF Core only. No provider packages, locks, tenant iteration, or seed data.",
+      "frameworkReferences": [],
+      "isPackable": true,
+      "packageId": "Platform.Persistence.EfCore.Migrator",
+      "packageReferences": [
+        {
+          "name": "Microsoft.EntityFrameworkCore",
+          "version": ""
+        },
+        {
+          "name": "Microsoft.EntityFrameworkCore.Relational",
+          "version": ""
+        }
+      ],
+      "path": "src/Platform.Persistence.EfCore.Migrator/Platform.Persistence.EfCore.Migrator.csproj",
+      "projectReferences": [
+        "../Platform.Persistence.EfCore/Platform.Persistence.EfCore.csproj"
+      ],
+      "targetFrameworks": [
+        "net8.0"
+      ],
+      "version": "0.1.0"
+    },
+    {
       "description": "Optional multitenancy adapter for Platform.Persistence.EfCore with ASP.NET Core scope installation. The package owns no tenant entities, tenant catalog, or migrations.",
       "frameworkReferences": [
         "Microsoft.AspNetCore.App"

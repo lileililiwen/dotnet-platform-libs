@@ -10,6 +10,7 @@ public class DependencyDirectionTests
     {
         "src/Platform.Core/Platform.Core.csproj",
         "src/Platform.Domain/Platform.Domain.csproj",
+        "src/Platform.Persistence.EfCore.Migrator/Platform.Persistence.EfCore.Migrator.csproj",
         "src/Platform.Web.Composition/Platform.Web.Composition.csproj",
         "src/Platform.AspNetCore/Platform.AspNetCore.csproj",
         "src/Platform.Billing.Contracts/Platform.Billing.Contracts.csproj",
@@ -83,6 +84,7 @@ public class DependencyDirectionTests
         "Platform.Architecture.Tests",
         "Platform.Core.Tests",
         "Platform.Domain.Tests",
+        "Platform.Persistence.EfCore.Migrator.Tests",
         "Platform.Web.Composition.Tests",
         "Platform.AspNetCore.Tests",
         "Platform.Billing.Contracts.Tests",
@@ -231,6 +233,22 @@ public class DependencyDirectionTests
         "VisualFlow",
     };
 
+    private static readonly string[] ForbiddenMigratorPackagePrefixes =
+    {
+        "Microsoft.AspNetCore",
+        "Microsoft.EntityFrameworkCore.Sqlite",
+        "Npgsql",
+        "Stripe",
+        "StackExchange.Redis",
+        "RabbitMQ",
+        "Hangfire",
+        "Quartz",
+        "Mediator",
+        "MediatR",
+        "FluentValidation",
+        "VisualFlow",
+    };
+
     public static IEnumerable<object[]> ProductionProjectsData() =>
         ProductionProjects.Select(p => new object[] { p });
 
@@ -341,6 +359,29 @@ public class DependencyDirectionTests
         Assert.True(
             references.Length == 1 && references[0].Equals("Platform.Persistence.EfCore", StringComparison.OrdinalIgnoreCase),
             "Platform.Persistence.Postgres must reference only Platform.Persistence.EfCore but references: " + string.Join(", ", references));
+    }
+
+    [Fact]
+    public void Platform_Persistence_EfCore_Migrator_only_references_EfCore_persistence()
+    {
+        var references = ReadProjectReferences("src/Platform.Persistence.EfCore.Migrator/Platform.Persistence.EfCore.Migrator.csproj");
+
+        Assert.True(
+            references.Length == 1 && references[0].Equals("Platform.Persistence.EfCore", StringComparison.OrdinalIgnoreCase),
+            "Platform.Persistence.EfCore.Migrator must reference only Platform.Persistence.EfCore but references: " + string.Join(", ", references));
+    }
+
+    [Fact]
+    public void Platform_Persistence_EfCore_Migrator_has_no_provider_web_or_messaging_references()
+    {
+        var packages = ReadPackageReferences("src/Platform.Persistence.EfCore.Migrator/Platform.Persistence.EfCore.Migrator.csproj");
+        var violations = packages
+            .Where(package => ForbiddenMigratorPackagePrefixes.Any(prefix =>
+                package.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
+            .ToArray();
+        Assert.True(
+            violations.Length == 0,
+            "Platform.Persistence.EfCore.Migrator must not reference forbidden packages but references: " + string.Join(", ", violations));
     }
 
     [Theory]

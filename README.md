@@ -52,6 +52,7 @@ src/
   Platform.Core/                  Framework-independent contracts
   Platform.Domain/                Framework-neutral domain primitives
   Platform.Web.Composition/       Explicit ASP.NET Core module composition
+  Platform.Persistence.EfCore.Migrator/ Application-owned EF Core migration runner
   Platform.AspNetCore/            ASP.NET Core integration
   Platform.Billing.Contracts/     Subscription and entitlement contracts
   Platform.Testing/               Test-only helpers
@@ -60,6 +61,7 @@ tests/
   Platform.Core.Tests/            Unit tests for Platform.Core
   Platform.Domain.Tests/          Unit tests for Platform.Domain
   Platform.Web.Composition.Tests/ Unit + TestServer integration tests for composition
+  Platform.Persistence.EfCore.Migrator.Tests/ Unit + SQLite integration + console-adapter tests
   Platform.AspNetCore.Tests/      Unit + TestServer integration tests
   Platform.Billing.Contracts.Tests/
   Platform.Testing.Tests/         Platform.Testing + Platform.Testing.AspNetCore coverage
