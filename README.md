@@ -142,4 +142,15 @@ Incomplete or blocked work must not be reported as complete. The handoff must re
 
 ## Current status
 
-All forty-seven OpenSpec changes (Phase 1, 2, 3, 4, 5, plus the starter-kit gap audit) are implemented and archived. The repository contains seventy source projects and forty-two in-solution test projects (plus the solution-excluded `Platform.ConsumerConformance` fixture), with seven hundred and forty-six passing tests and thirty-eight generated capability specs. `Platform.Testing`, `Platform.Testing.AspNetCore`, and the other testing-support packages are not referenced by production projects; `Platform.Architecture.Tests` enforces the dependency direction with three hundred and eleven guard tests. `openspec list` is empty; the next work starts with a fresh OpenSpec proposal. See [`docs/packages.md`](docs/packages.md), `HANDOFF.md`, and `ROADMAP.md` for package, completion, and planning details.
+The two active OpenSpec changes in the recent queue are implemented and
+archived: `platform-dotnet10-baseline` and
+`platform-contract-conformance-and-adoption`. The repository contains 75
+source projects and 52 in-solution test projects (plus the solution-excluded
+`Platform.ConsumerConformance` fixture), with 1,386 passing tests in 48
+in-solution suites and 350 guard tests in `Platform.Architecture.Tests`. The
+supported baseline is SDK `10.0.400` and `net10.0`. `Platform.Testing`,
+`Platform.Testing.AspNetCore`, and the other testing-support packages are
+not referenced by production projects; `Platform.Architecture.Tests`
+enforces the dependency direction. `openspec list` is empty; the next work
+starts with a fresh OpenSpec proposal. See [`docs/packages.md`](docs/packages.md),
+`HANDOFF.md`, and `ROADMAP.md` for package, completion, and planning details.

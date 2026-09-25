@@ -114,7 +114,8 @@ capabilities and must not become a second monolithic starter-kit architecture.
 ## Status summary
 
 - Active changes: none (`openspec list` is empty).
-- Archived changes: forty-four (see `openspec/changes/archive/`).
-- Generated specs: thirty-eight (see `openspec/specs/`).
-- Source projects: seventy production/adaptor/contracts projects plus eight testing-support projects, plus the `Platform.Testing.AspNetCore` test toolkit.
-- Tests: seven hundred and forty-six passing across forty-two test projects (excluding the solution-excluded consumer-conformance fixture, which adds eighty-seven more).
+- Archived changes: fifty-two (see `openspec/changes/archive/`).
+- Generated specs: forty-six (see `openspec/specs/`).
+- Source projects: 75 (`src/`) plus 52 in-solution test projects (`tests/`), 6 samples (`samples/`), 3 template projects (`templates/`), and 1 CLI tool (`tools/`).
+- Tests: 1,386 passing across 48 in-solution test suites under SDK `10.0.400` (`grep` total over `dotnet test Platform.sln -c Release --no-build --no-restore --nologo -m:1`; architecture suite alone is 350 guard tests in `Platform.Architecture.Tests`). The solution-excluded consumer-conformance fixture (`tests/Platform.ConsumerConformance/`) adds the shared-contract envelope validation and the packed-artifact smoke test.
+- Baseline: SDK `10.0.400`, all projects `net10.0`, Microsoft framework packages at `10.0.0` (except `Microsoft.Extensions.Caching.Hybrid 9.3.0`, `Microsoft.Extensions.Http.Resilience 8.10.0`, `Microsoft.FeatureManagement 4.5.0`, and ASP.NET Core versioning helpers pinned by compatibility), third-party packages unchanged.

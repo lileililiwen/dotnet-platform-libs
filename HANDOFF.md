@@ -131,11 +131,34 @@ Verification evidence (all under SDK `10.0.400`):
   helpers plus `samples/Platform.EfCore.Sample/Migrations/CreateSampleItems.cs`).
 - Implementation commit: `de0aa67` (`Implement platform dotnet10 baseline`).
 
+## Documentation refresh
+
+- `docs/build-test-pack.md`: removed stale project-count (36 → 75) and
+  stale spec-count (19 → 46); added the SDK `10.0.400` baseline pointer and
+  the cross-links to `docs/dotnet10-migration-contract.md` and
+  `docs/workspace-consumer-bootstrap.md`; expanded the testing-support
+  packages list to enumerate the nine packable `*.Testing` projects under
+  `src/`.
+- `ROADMAP.md` (Status summary): updated counts — 75 `src/` projects, 52
+  in-solution test projects, 52 archived changes, 46 generated specs, with
+  an explicit baseline section listing the Microsoft framework package
+  exceptions (`Caching.Hybrid 9.3.0`, `Http.Resilience 8.10.0`,
+  `FeatureManagement 4.5.0`, ASP.NET Core versioning helpers).
+- `README.md` (Current status): replaced stale counts ("forty-seven
+  OpenSpec changes", "seventy source projects", "forty-two test projects",
+  "seven hundred and forty-six tests", "thirty-eight capability specs",
+  "three hundred and eleven guard tests") with the current queue
+  ("`platform-dotnet10-baseline` and `platform-contract-conformance-and-adoption`
+  are implemented and archived"), and the verified totals (75 source projects,
+  52 test projects, 1,386 passing tests in 48 suites, 350 architecture guards).
+- `docs/packages.md`: extended the `tests/Platform.ConsumerConformance` and
+  `tests/Platform.Adoption.Tests` rows to mention the new contract envelopes
+  and the `AdoptionEvidenceClassifier` truth table respectively.
+
 ## Next change
 
-`platform-contract-conformance-and-adoption` is the remaining active change
-returned by `openspec list`. Implement only that change in the next cycle,
-separately from this baseline.
+`openspec list` is empty; the next work, if any, starts with a fresh OpenSpec
+proposal.
 
 ## Completed: platform-domain-primitives
 

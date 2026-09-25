@@ -16,6 +16,14 @@ official NuGet source:
 NUGET_SOURCE=https://api.nuget.org/v3/index.json dotnet restore Platform.sln
 ```
 
+The repository pins SDK `10.0.400` (`rollForward: latestPatch`,
+`allowPrerelease: false`) in `global.json`; the supported baseline is
+.NET 10. SDK 8 and `net8.0` are no longer selectable. See
+[`docs/dotnet10-migration-contract.md`](dotnet10-migration-contract.md)
+for the downstream migration contract and
+[`docs/workspace-consumer-bootstrap.md`](workspace-consumer-bootstrap.md)
+for the workspace-side bootstrap mechanics.
+
 Package versions are defined centrally in `Directory.Packages.props`; project files declare `<PackageReference Include="..." />` without `Version` attributes.
 
 ## Build
@@ -31,7 +39,7 @@ Build defaults are centralized in `Directory.Build.props`:
 - `GenerateDocumentationFile=true`
 - `AnalysisLevel=latest-recommended`
 
-Test projects override these via `tests/Directory.Build.props` to disable packaging and documentation generation. The solution currently contains 36 source projects, including the provider-neutral AI packages and their optional adapters.
+Test projects override these via `tests/Directory.Build.props` to disable packaging and documentation generation. The solution currently contains 75 source projects (including the provider-neutral AI packages, the gap-audit additions, and the .NET 10 baseline).
 
 ## Test
 
@@ -49,7 +57,7 @@ dotnet pack Platform.sln -c Release --no-build --nologo
 
 Packages are written to each project's `bin/Release/` directory. Each package embeds the repository `README.md` via `PackageReadmeFile` and shares the repository `VersionPrefix` (`Directory.Build.props`) but may be released independently later by overriding `Version` per project.
 
-Test projects set `IsPackable=false` and are not packed. The solution pack includes the six testing-support projects under `src/` only when their project metadata allows packaging; AI package details are in [`platform-ai.md`](platform-ai.md).
+Test projects set `IsPackable=false` and are not packed. The solution pack includes the testing-support projects under `src/` only when their project metadata allows packaging (`Platform.Testing`, `Platform.Testing.AspNetCore`, `Platform.Admin.Testing`, `Platform.Ai.Testing`, `Platform.Billing.Testing`, `Platform.Identity.Testing`, `Platform.Notifications.Testing`, `Platform.Quota.Testing`, `Platform.Tenant.Lifecycle.Testing`).
 
 ## Validate OpenSpec
 
@@ -59,7 +67,7 @@ openspec validate --changes --strict --no-interactive
 openspec validate --specs   --strict --no-interactive
 ```
 
-Strict validation must pass before archiving a change. With no active changes, `openspec validate --specs --strict --no-interactive` validates the 19 synchronized generated specs.
+Strict validation must pass before archiving a change. With no active changes, `openspec validate --specs --strict --no-interactive` validates the 46 synchronized generated specs.
 
 ## Consumer conformance
 
