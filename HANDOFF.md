@@ -15,12 +15,58 @@ All six changes are implemented, strictly validated, archived, and committed:
 5. `platform-adoption-tooling` — archived at `openspec/changes/archive/2026-09-11-platform-adoption-tooling/`.
 6. `platform-application-sample-matrix` — archived at `openspec/changes/archive/2026-09-11-platform-application-sample-matrix/`.
 
-`openspec list` currently returns one remaining active change:
-`platform-contract-conformance-and-adoption` (0/15 tasks). The
-`platform-dotnet10-baseline` change below is implemented, strictly validated,
-archived, and committed; it was implemented separately from the conformance
-change per the two-spec separation request.
+`openspec list` is empty; both active changes are implemented, strictly
+validated, archived, and committed as separate changes:
+
+1. `platform-dotnet10-baseline` — archived at `openspec/changes/archive/2026-09-25-platform-dotnet10-baseline/`.
+2. `platform-contract-conformance-and-adoption` — archived at `openspec/changes/archive/2026-09-25-platform-contract-conformance-and-adoption/`.
 Details for each change follow under its `Completed:` section below.
+
+## Completed: platform-contract-conformance-and-adoption
+
+- Added canonical shared-contract fixtures (`tests/Platform.ConsumerConformance/Fixtures/contracts/`,
+  12 files: identity-subject, permission, tenant, audit, gate-result,
+  release-evidence × valid/invalid) with the deterministic
+  `ContractFixtureReader` (local JSON only, no runtime repository coupling)
+  and `ContractEnvelopeConformanceTests` (compatible accepted; missing field
+  or bad vocabulary rejected with contract + field identified). Test-only;
+  no production API impact.
+- Added `AdoptionEvidenceLevel` (`Absent`/`Configured`/`Incompatible`/
+  `Unverified`/`Verified`), `AdoptionEvidence` (`IsProductionReady` only for
+  `Verified`), and the I/O-free `AdoptionEvidenceClassifier` in
+  `Platform.Adoption`, with 6 unit tests: referenced-without-evidence stays
+  `Configured`/`Unverified`, never production-ready.
+- Moved the conformance project's explicit Microsoft 8.x pins to `10.0.0`
+  (`Mvc.Testing`, `Configuration.Json`, `DependencyInjection`,
+  `Diagnostics.HealthChecks`, `Hosting`, `Logging`).
+- Added `ContractConformanceTests` to `Platform.Architecture.Tests` (9 tests:
+  fixture completeness, identity/admin own no migrations or concrete user
+  stores/contexts, evidence surface explicit).
+- Documented staged adoption + rollback for `chinago`, `arivio`, `ploutify`,
+  `fotofy`, `smotoox`, `cvunify`, `stylify` in
+  `docs/platform-product-adoption.md` with no migration claims; updated
+  `docs/platform-consumer-conformance.md` and `docs/packages.md`.
+- Regenerated `eng/public-api-baseline.txt`: all 35 added lines are
+  pre-existing Identity-lifecycle drift (Sept-9 baseline predates those
+  contracts); this change adds 0 baseline lines (the check covers 5 contract
+  projects, excluding `Platform.Adoption`).
+- Archived at `openspec/changes/archive/2026-09-25-platform-contract-conformance-and-adoption/`
+  with promoted `openspec/specs/platform-contract-conformance/spec.md`.
+
+Verification evidence (under SDK `10.0.400`):
+
+- `./scripts/quality-gate.sh` — PASS (restore, serial build, full test,
+  `openspec validate --specs` 45 passed, `git diff --check` clean).
+- `./scripts/conformance.sh` — PASS (pack, restore, build, test). One
+  self-caught failure during implementation: `ContractConformanceResult`
+  record property `Accepted` collided with factory `Accepted()` (CS0102);
+  fixed by renaming factories to `Accept`/`Reject`; sln projects untouched.
+- `./scripts/check-public-api.sh` — PASS (exit 0 after baseline regen).
+- `./scripts/audit-packages.sh` — `AUDIT_STATUS=VERIFIED` (exit 0).
+- `openspec validate --changes --strict --no-interactive` — 1 passed.
+- Focused: Adoption evidence 6/6, arch conformance 9/9.
+- Implementation commit: `4a49bea` (`Implement platform contract
+  conformance and adoption`).
 
 ## Completed: platform-dotnet10-baseline
 
