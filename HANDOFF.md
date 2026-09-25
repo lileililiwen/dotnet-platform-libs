@@ -15,8 +15,81 @@ All six changes are implemented, strictly validated, archived, and committed:
 5. `platform-adoption-tooling` — archived at `openspec/changes/archive/2026-09-11-platform-adoption-tooling/`.
 6. `platform-application-sample-matrix` — archived at `openspec/changes/archive/2026-09-11-platform-application-sample-matrix/`.
 
-`openspec list` is empty; new work starts with a fresh OpenSpec proposal.
+`openspec list` currently returns one remaining active change:
+`platform-contract-conformance-and-adoption` (0/15 tasks). The
+`platform-dotnet10-baseline` change below is implemented, strictly validated,
+archived, and committed; it was implemented separately from the conformance
+change per the two-spec separation request.
 Details for each change follow under its `Completed:` section below.
+
+## Completed: platform-dotnet10-baseline
+
+- Pinned SDK `10.0.400` (`rollForward: latestPatch`, `allowPrerelease: false`;
+  `dotnet --version` reports `10.0.400`); SDK 8 is no longer selectable and
+  every repository-owned `net8.0` target was removed with no dual-target path.
+- Retargeted all 137 platform `src/`/`tests/`/`samples/`/`tools/`/`templates/`
+  projects plus fixtures to `net10.0`; updated `build/Platform.Consumer.props`,
+  `samples/matrix.json`, adoption fixtures, template pins, CI workflows
+  (`10.0.400`), and current docs (`README.md`, `docs/packages.md`,
+  `docs/platform-sample-matrix.md`, `docs/platform-web-edge.md`,
+  `docs/platform-template-pack.md`, `docs/workspace-consumer-bootstrap.md`).
+  Historical HANDOFF evidence was left unchanged.
+- Updated `Directory.Packages.props` Microsoft framework packages to `10.0.0`
+  (`Mvc.Testing`, `Extensions.*`, EFCore `*`, `Npgsql 10.0.0`,
+  `HealthChecks.Abstractions`, test-only DI/Logging); third-party pins
+  (`Caching.Hybrid 9.3.0`, `Http.Resilience 8.10.0`, `FeatureManagement`,
+  `Asp.Versioning`, Hangfire, MailKit, SendGrid, RabbitMQ, Redis, S3) kept.
+- Fixed SDK 10 breaks: removed inbox `Microsoft.Extensions.*` PackageReferences
+  from the six `FrameworkReference` projects (NU1510); guarded log arguments
+  with `IsEnabled` (CA1873) in `AiClient`, `WebhookInboundProcessor`,
+  `TenantLifecycleOrchestrator`; used concrete array/`List<string>` types
+  (CA1859) in `NotificationDispatcher`, `TenantConnectionReadinessCheck`,
+  `AdoptionAnalyzer`; applied SDK 10 `dotnet format` whitespace fixes (5 files).
+- Added `tests/Platform.Architecture.Tests/Dotnet10BaselineTests.cs` (9 tests:
+  SDK pin, all-project TFM scan, no-net8, 10.x pins, bootstrap, matrix,
+  template, manifest, docs). Architecture suite: 341 passed.
+- Regenerated `eng/package-manifest.json` (76 `net10.0` entries; `--check`
+  passes). Added `docs/dotnet10-migration-contract.md` (platform then
+  workspace-baseline then per-consumer order, per-package acceptance oracles,
+  consumer inventory, rollback).
+- Archived at `openspec/changes/archive/2026-09-25-platform-dotnet10-baseline/`
+  with promoted `openspec/specs/dotnet10-platform-baseline/spec.md`.
+
+Verification evidence (all under SDK `10.0.400`):
+
+- `dotnet restore Platform.sln --ignore-failed-sources -p:NuGetAudit=false --nologo -m:1` — PASS.
+- `dotnet build Platform.sln -c Release --no-restore --nologo -m:1` — 0 errors;
+  7 warnings recorded separately (pre-existing CS0618 EF `GetQueryFilter`,
+  CS8625, CS0618 Hangfire `PerformContext`, xUnit1031/xUnit2013).
+- `dotnet test Platform.sln -c Release --no-build --no-restore --nologo -m:1` —
+  all suites green except the known pre-existing Hangfire timing flake
+  (`Sequential_dispatches_use_independent_handler_state`, 30s timeout under
+  full-suite load, also documented on the SDK 8 baseline) and stale
+  `~/.templateengine` state for Template tests; both pass isolated
+  (Hangfire 1/1 in 136ms; Template 9/9 in 33s after
+  `dotnet new uninstall Platform.Application.Template`).
+- `dotnet pack Platform.sln -c Release --no-build --no-restore --nologo -m:1` —
+  PASS (76 packages); representative `Platform.Core`, `Identity.AspNetCore`,
+  `Persistence.EfCore` inspected: `lib/net10.0`, EFCore `10.0.0` deps, no 8.x
+  runtime deps; the known SDK 10 `_GetFrameworkAssemblyReferences` pack path
+  verified.
+- `scripts/generate-package-manifest.sh --check` — PASS; `git diff --check` —
+  clean; `openspec validate --changes --strict --no-interactive` — 2 passed;
+  `openspec validate --specs --strict --no-interactive` — 44 passed.
+- Recorded non-blocking pre-existing findings (not introduced by this change):
+  `scripts/check-public-api.sh` reports 35 added Identity-lifecycle lines
+  missing from the Sept-9 baseline (baseline predates those contracts; this
+  change adds no public API); `dotnet format --verify-no-changes` reports only
+  pre-existing analyzer warnings (0 whitespace errors after the fix).
+- EF migration snapshots: NOT_APPLICABLE (no model snapshots; only runner
+  helpers plus `samples/Platform.EfCore.Sample/Migrations/CreateSampleItems.cs`).
+- Implementation commit: `de0aa67` (`Implement platform dotnet10 baseline`).
+
+## Next change
+
+`platform-contract-conformance-and-adoption` is the remaining active change
+returned by `openspec list`. Implement only that change in the next cycle,
+separately from this baseline.
 
 ## Completed: platform-domain-primitives
 
