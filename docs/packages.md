@@ -4,7 +4,7 @@ This document summarizes the public surface of each platform package. It is the 
 
 ## Platform.Core
 
-Framework-independent contracts. Zero third-party dependencies; targets `net8.0`.
+Framework-independent contracts. Zero third-party dependencies; targets `net10.0`.
 
 ### Time
 
@@ -64,7 +64,7 @@ The documented middleware order is:
 
 ## Platform.Billing.Contracts
 
-Provider-neutral subscription and entitlement contracts. Zero third-party dependencies; targets `net8.0`.
+Provider-neutral subscription and entitlement contracts. Zero third-party dependencies; targets `net10.0`.
 
 ### Identifiers
 
@@ -121,7 +121,7 @@ selection. See [`docs/platform-ai.md`](platform-ai.md) for data-handling and ado
 
 ## Platform.Jobs
 
-Engine-neutral scheduling contract. Depends on `Platform.Core`, `Microsoft.Extensions.Options`, and `Microsoft.Extensions.DependencyInjection.Abstractions`; targets `net8.0`. Does not reference ASP.NET Core, EF Core, Hangfire, Quartz, or application projects.
+Engine-neutral scheduling contract. Depends on `Platform.Core`, `Microsoft.Extensions.Options`, and `Microsoft.Extensions.DependencyInjection.Abstractions`; targets `net10.0`. Does not reference ASP.NET Core, EF Core, Hangfire, Quartz, or application projects.
 
 ### Contracts
 
@@ -146,7 +146,7 @@ Engine-neutral scheduling contract. Depends on `Platform.Core`, `Microsoft.Exten
 
 ## Platform.Jobs.Hangfire
 
-Optional Hangfire adapter for the platform scheduling contracts. Depends on `Platform.Jobs`, Hangfire (`Hangfire.Core`, `Hangfire.AspNetCore`, `Hangfire.InMemory`, `Hangfire.PostgreSql`), `Microsoft.Extensions.Options`, `Microsoft.Extensions.DependencyInjection.Abstractions`, and `Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions`; targets `net8.0` and declares the `Microsoft.AspNetCore.App` framework reference for the opt-in dashboard. Does not reference EF Core, Quartz, Redis, Stripe, Npgsql directly, or application projects.
+Optional Hangfire adapter for the platform scheduling contracts. Depends on `Platform.Jobs`, Hangfire (`Hangfire.Core`, `Hangfire.AspNetCore`, `Hangfire.InMemory`, `Hangfire.PostgreSql`), `Microsoft.Extensions.Options`, `Microsoft.Extensions.DependencyInjection.Abstractions`, and `Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions`; targets `net10.0` and declares the `Microsoft.AspNetCore.App` framework reference for the opt-in dashboard. Does not reference EF Core, Quartz, Redis, Stripe, Npgsql directly, or application projects.
 
 ### Seams
 
@@ -176,7 +176,7 @@ Optional Hangfire adapter for the platform scheduling contracts. Depends on `Pla
 
 ## Platform.Mailing
 
-Provider-neutral mailing contract. Depends on `Platform.Core`, `Microsoft.Extensions.Options`, and `Microsoft.Extensions.DependencyInjection.Abstractions`; targets `net8.0`. Does not reference ASP.NET Core, EF Core, SendGrid, Mailgun, SMTP, Razor, Liquid, or application projects.
+Provider-neutral mailing contract. Depends on `Platform.Core`, `Microsoft.Extensions.Options`, and `Microsoft.Extensions.DependencyInjection.Abstractions`; targets `net10.0`. Does not reference ASP.NET Core, EF Core, SendGrid, Mailgun, SMTP, Razor, Liquid, or application projects.
 
 ### Value types
 
@@ -203,7 +203,7 @@ Provider-neutral mailing contract. Depends on `Platform.Core`, `Microsoft.Extens
 
 ## Platform.Mailing.Smtp
 
-Optional SMTP adapter over `IMailService` built on MailKit. Depends on `Platform.Mailing`, MailKit, `Microsoft.Extensions.Options`, and `Microsoft.Extensions.DependencyInjection.Abstractions`; targets `net8.0`. Does not reference ASP.NET Core, EF Core, SendGrid, or application projects.
+Optional SMTP adapter over `IMailService` built on MailKit. Depends on `Platform.Mailing`, MailKit, `Microsoft.Extensions.Options`, and `Microsoft.Extensions.DependencyInjection.Abstractions`; targets `net10.0`. Does not reference ASP.NET Core, EF Core, SendGrid, or application projects.
 
 ### Value types
 
@@ -225,7 +225,7 @@ Optional SMTP adapter over `IMailService` built on MailKit. Depends on `Platform
 
 ## Platform.Mailing.SendGrid
 
-Optional SendGrid adapter over `IMailService` built on the SendGrid client. Depends on `Platform.Mailing`, the SendGrid client, `Microsoft.Extensions.Options`, and `Microsoft.Extensions.DependencyInjection.Abstractions`; targets `net8.0`. Does not reference ASP.NET Core, EF Core, MailKit, or application projects.
+Optional SendGrid adapter over `IMailService` built on the SendGrid client. Depends on `Platform.Mailing`, the SendGrid client, `Microsoft.Extensions.Options`, and `Microsoft.Extensions.DependencyInjection.Abstractions`; targets `net10.0`. Does not reference ASP.NET Core, EF Core, MailKit, or application projects.
 
 ### Value types
 
@@ -246,7 +246,7 @@ Optional SendGrid adapter over `IMailService` built on the SendGrid client. Depe
 
 ## Platform.Eventing
 
-Transport-agnostic event-bus contract. Depends on `Platform.Core`, `Microsoft.Extensions.Options`, `Microsoft.Extensions.DependencyInjection.Abstractions`, and `Microsoft.Extensions.Logging.Abstractions`; targets `net8.0`. `System.Threading.Channels` ships in-box with `net8.0`. Does not reference ASP.NET Core, EF Core, RabbitMQ, or application projects.
+Transport-agnostic event-bus contract. Depends on `Platform.Core`, `Microsoft.Extensions.Options`, `Microsoft.Extensions.DependencyInjection.Abstractions`, and `Microsoft.Extensions.Logging.Abstractions`; targets `net10.0`. `System.Threading.Channels` ships in-box with `net10.0`. Does not reference ASP.NET Core, EF Core, RabbitMQ, or application projects.
 
 ### Value types
 
@@ -287,7 +287,7 @@ migrations or select a transport. See
 
 Optional RabbitMQ adapter over the durable eventing contracts. Depends on
 `Platform.Eventing.Contracts`, `RabbitMQ.Client`, and the `Microsoft.Extensions.*`
-abstractions; targets `net8.0`. Does not reference ASP.NET Core, EF Core, or
+abstractions; targets `net10.0`. Does not reference ASP.NET Core, EF Core, or
 application projects. See [`platform-eventing-rabbitmq.md`](platform-eventing-rabbitmq.md).
 
 - `RabbitMqDurableEventPublisher` — `IDurableEventPublisher` + `IAsyncDisposable` that resolves the envelope's payload type through the application-owned topology, publishes persistent `application/json` messages with `MessageId`/correlation/timestamp and `payload-type`/`tenant-id` headers, and completes only after a publisher confirmation. Reuses an open channel, re-creates closed or failed channels, and bounds every connect and confirmation wait.
@@ -369,7 +369,7 @@ ownership boundaries.
 
 ## Platform.Idempotency
 
-Framework-neutral idempotency contract. Depends on `Platform.Core`, `Microsoft.Extensions.Options`, and `Microsoft.Extensions.DependencyInjection.Abstractions`; targets `net8.0`. Does not reference ASP.NET Core, EF Core, StackExchange.Redis, or application projects.
+Framework-neutral idempotency contract. Depends on `Platform.Core`, `Microsoft.Extensions.Options`, and `Microsoft.Extensions.DependencyInjection.Abstractions`; targets `net10.0`. Does not reference ASP.NET Core, EF Core, StackExchange.Redis, or application projects.
 
 ### Value types
 
@@ -399,7 +399,7 @@ Framework-neutral idempotency contract. Depends on `Platform.Core`, `Microsoft.E
 
 ## Platform.RateLimiting
 
-Framework-neutral rate-limit contract. Depends on `Platform.Core`, `Microsoft.Extensions.Options`, and `Microsoft.Extensions.DependencyInjection.Abstractions`; targets `net8.0`. Does not reference ASP.NET Core, EF Core, StackExchange.Redis, or application projects.
+Framework-neutral rate-limit contract. Depends on `Platform.Core`, `Microsoft.Extensions.Options`, and `Microsoft.Extensions.DependencyInjection.Abstractions`; targets `net10.0`. Does not reference ASP.NET Core, EF Core, StackExchange.Redis, or application projects.
 
 ### Value types
 
@@ -435,7 +435,7 @@ Framework-neutral rate-limit contract. Depends on `Platform.Core`, `Microsoft.Ex
 
 ## Platform.Domain
 
-Framework-neutral domain primitives. Depends on `Platform.Core` only; targets `net8.0`. Does not reference ASP.NET Core, EF Core, Mediator, validation libraries, provider SDKs, or application projects.
+Framework-neutral domain primitives. Depends on `Platform.Core` only; targets `net10.0`. Does not reference ASP.NET Core, EF Core, Mediator, validation libraries, provider SDKs, or application projects.
 
 ### Contracts
 
@@ -466,7 +466,7 @@ Framework-neutral domain primitives. Depends on `Platform.Core` only; targets `n
 
 ## Platform.Web.Composition
 
-Optional explicit ASP.NET Core module composition. Depends on `Platform.Core` plus the `Microsoft.AspNetCore.App` framework reference; targets `net8.0`. Does not reference Mediator, FluentValidation, EF Core, provider SDKs, or application projects.
+Optional explicit ASP.NET Core module composition. Depends on `Platform.Core` plus the `Microsoft.AspNetCore.App` framework reference; targets `net10.0`. Does not reference Mediator, FluentValidation, EF Core, provider SDKs, or application projects.
 
 ### Contracts
 
@@ -485,7 +485,7 @@ Optional explicit ASP.NET Core module composition. Depends on `Platform.Core` pl
 ## Platform.Persistence.EfCore
 
 Optional provider-neutral EF Core conventions. Depends on `Platform.Core`, EF Core, relational
-abstractions, and health-check abstractions; targets `net8.0`. It does not own application
+abstractions, and health-check abstractions; targets `net10.0`. It does not own application
 entities, contexts, migrations, tenants, or business filters.
 
 - `IAuditableEntity`, `ISoftDeletable`, `ITenantScoped`, and `ITenantScope` — minimal contracts
@@ -503,7 +503,7 @@ entities, contexts, migrations, tenants, or business filters.
 
 Optional application-owned EF Core migration execution boundary. Depends on
 `Platform.Persistence.EfCore` plus provider-neutral EF Core (`Microsoft.EntityFrameworkCore`,
-`Microsoft.EntityFrameworkCore.Relational`); targets `net8.0`. It owns no contexts, migrations,
+`Microsoft.EntityFrameworkCore.Relational`); targets `net10.0`. It owns no contexts, migrations,
 connection strings, locks, tenant iteration, or seed data, and references no provider, web,
 messaging, or job packages.
 
@@ -524,7 +524,7 @@ messaging, or job packages.
 ## Platform.Adoption
 
 Provider-neutral adoption diagnostics core. Depends on nothing but the
-`net8.0` framework; targets `net8.0`. It inspects an explicit absolute
+`net10.0` framework; targets `net10.0`. It inspects an explicit absolute
 target directory and never modifies it.
 
 - `AdoptionAnalyzer` — deterministic checks: SDK pin (`global.json`),
@@ -555,7 +555,7 @@ configuration (`UsePlatformPostgres`) and does not add contexts, migrations, or 
 ## Platform.Persistence.Multitenancy
 
 Optional multitenancy adapter over `Platform.Persistence.EfCore` and `Platform.AspNetCore`.
-Targets `net8.0`. Depends on `Platform.Core`, `Platform.AspNetCore`, `Platform.Persistence.EfCore`,
+Targets `net10.0`. Depends on `Platform.Core`, `Platform.AspNetCore`, `Platform.Persistence.EfCore`,
 EF Core, and health-check abstractions. The package owns no tenant entities, tenant catalog,
 migrations, or database credentials.
 
@@ -583,7 +583,7 @@ migrations, or database credentials.
 
 ## Platform.Tenant.Lifecycle (contracts)
 
-Provider-neutral tenant provisioning and lifecycle orchestration. Framework-neutral; targets `net8.0`. Zero third-party packages and no project references.
+Provider-neutral tenant provisioning and lifecycle orchestration. Framework-neutral; targets `net10.0`. Zero third-party packages and no project references.
 
 ### State machine
 
@@ -633,7 +633,7 @@ Deterministic fakes. Depends on `Platform.Tenant.Lifecycle.Contracts`. No third-
 
 ## Platform.Testing
 
-Test-only helpers. Depends on `Platform.Core`, `Platform.AspNetCore`, and `Platform.Billing.Contracts`. No xUnit, NUnit, or mocking-framework dependencies. Targets `net8.0`. Production projects must not reference this package.
+Test-only helpers. Depends on `Platform.Core`, `Platform.AspNetCore`, and `Platform.Billing.Contracts`. No xUnit, NUnit, or mocking-framework dependencies. Targets `net10.0`. Production projects must not reference this package.
 
 ### Time
 
@@ -702,7 +702,7 @@ ASP.NET Core TestServer host builder. Depends on `Platform.Core` and the `Micros
 | `tests/Platform.ConsumerConformance` | Test-only consumer fixture that restores platform packages from a local NuGet feed and verifies registration, replacement, health, failure classification, opt-in boundaries, and end-to-end host behavior. Driven by `scripts/conformance.sh`; intentionally not part of `Platform.sln`. The fixture also enforces adoption conformance: every `Platform.*` reference is pinned to the same exact version, every `<X>.Testing` package is paired with the matching `<X>.Contracts` partner, the local `eng/package-manifest.json` is in sync with the source, and the upgrade/rollback smoke script exists. |
 ## Platform.Identity (contracts)
 
-Provider-neutral identity and authentication contracts. Framework-neutral; targets `net8.0`. Zero third-party dependencies.
+Provider-neutral identity and authentication contracts. Framework-neutral; targets `net10.0`. Zero third-party dependencies.
 
 ### Current user
 
@@ -725,7 +725,7 @@ Provider-neutral identity and authentication contracts. Framework-neutral; targe
 
 ## Platform.Authorization
 
-Module-owned permission definitions and authorization decision contracts. Framework-neutral; targets `net8.0`.
+Module-owned permission definitions and authorization decision contracts. Framework-neutral; targets `net10.0`.
 
 - `PermissionDefinition` / `PermissionCatalog` — resource/action permission keyed by `resource.action`; the catalog is module-owned and rejects duplicate keys.
 - `PlatformPolicyNames` — stable `ForPermission` / `ForRole` policy names.
@@ -868,7 +868,7 @@ audit store, schema, retention schedule, or migration. See
 
 ## Platform.Auditing.Contracts
 
-Framework-neutral; targets `net8.0`. Depends on `Platform.Core` and the four
+Framework-neutral; targets `net10.0`. Depends on `Platform.Core` and the four
 `Microsoft.Extensions.*` abstractions only. Does not reference ASP.NET Core, EF Core, Stripe,
 or application projects.
 
@@ -957,7 +957,7 @@ EF Core, Stripe, or application projects.
 
 Optional EF Core change-capture adapter. Depends on `Platform.Core`, `Platform.Auditing.Contracts`,
 and `Microsoft.EntityFrameworkCore` (+ `Microsoft.EntityFrameworkCore.Relational`) and the four
-`Microsoft.Extensions.*` abstractions; targets `net8.0`. Does not reference ASP.NET Core, Stripe,
+`Microsoft.Extensions.*` abstractions; targets `net10.0`. Does not reference ASP.NET Core, Stripe,
 or application projects. It does not own migrations or select a transport.
 
 ### Interceptor
@@ -1038,7 +1038,7 @@ adoption guide.
 Framework-neutral redaction-safe web telemetry names, option-validation helpers, and a
 structured log sink. Depends only on `Platform.Core`, `Microsoft.Extensions.DependencyInjection.Abstractions`,
 `Microsoft.Extensions.Logging.Abstractions`, `Microsoft.Extensions.Options`, and
-`System.Diagnostics.DiagnosticSource`; targets `net8.0`. Does not reference ASP.NET Core,
+`System.Diagnostics.DiagnosticSource`; targets `net10.0`. Does not reference ASP.NET Core,
 EF Core, Polly, Swashbuckle, or NSwag.
 
 - `PlatformWebTelemetryNames` — stable activity source, operation, and metric names
@@ -1063,7 +1063,7 @@ EF Core, Polly, Swashbuckle, or NSwag.
 
 Optional ASP.NET Core CORS configuration and production-time validation. Depends on
 `Platform.Core`, `Platform.Web.Telemetry`, `Microsoft.AspNetCore.App` (via
-`FrameworkReference`); targets `net8.0`. Does not reference EF Core, Stripe, or
+`FrameworkReference`); targets `net10.0`. Does not reference EF Core, Stripe, or
 application projects.
 
 - `PlatformWebCorsPolicyOptions` — per-policy `Name`, `AllowedOrigins`,
@@ -1083,7 +1083,7 @@ application projects.
 
 Optional `HttpClient` resilience conventions (retry, timeout, circuit breaker) with
 bounded defaults. Depends on `Platform.Core`, `Platform.Web.Telemetry`,
-`Microsoft.AspNetCore.App`, and `Microsoft.Extensions.Http`; targets `net8.0`. Does
+`Microsoft.AspNetCore.App`, and `Microsoft.Extensions.Http`; targets `net10.0`. Does
 not reference EF Core, Polly, or application projects.
 
 - `PlatformHttpResilienceOptions` — `AttemptTimeout` (5s), `MaxRetryAttempts` (3),
@@ -1110,7 +1110,7 @@ not reference EF Core, Polly, or application projects.
 
 Optional OpenAPI document registry and explicit mapping helper. Depends on
 `Platform.Core`, `Platform.Web.Telemetry`, and `Microsoft.AspNetCore.App` (via
-`FrameworkReference`); targets `net8.0`. Does not reference Swashbuckle, NSwag,
+`FrameworkReference`); targets `net10.0`. Does not reference Swashbuckle, NSwag,
 EF Core, or application projects.
 
 - `PlatformWebOpenApiOptions` — `Documents`, `RoutePrefix` (`/openapi`).
@@ -1136,7 +1136,7 @@ EF Core, or application projects.
 Optional ASP.NET Core API versioning and API Explorer conventions. Depends on
 `Platform.Core`, `Microsoft.AspNetCore.App` (via `FrameworkReference`), and the
 centrally managed `Asp.Versioning.Http` and `Asp.Versioning.Mvc.ApiExplorer`
-packages; targets `net8.0`. Does not reference Swashbuckle, NSwag, EF Core, or
+packages; targets `net10.0`. Does not reference Swashbuckle, NSwag, EF Core, or
 application projects.
 
 - `PlatformWebVersioningOptions` — `DefaultMajor` (1) / `DefaultMinor` (0),
@@ -1166,7 +1166,7 @@ application projects.
 
 Optional ASP.NET Core feature-flag integration. Depends on `Platform.Core`,
 `Platform.Web.Telemetry`, the `Microsoft.AspNetCore.App` framework reference, and
-`Microsoft.FeatureManagement`; targets `net8.0`. Does not own feature names,
+`Microsoft.FeatureManagement`; targets `net10.0`. Does not own feature names,
 rollout state, billing plans, tenant records, EF Core, or Polly. The host owns the
 `FeatureManagement` configuration section and the rollout rules.
 
@@ -1207,7 +1207,7 @@ rollout state, billing plans, tenant records, EF Core, or Polly. The host owns t
 
 ## Platform.Http.Resilience
 
-Optional outbound HTTP resilience integration. Framework-neutral; targets `net8.0`.
+Optional outbound HTTP resilience integration. Framework-neutral; targets `net10.0`.
 Depends on `Platform.Core`, `Platform.Web.Telemetry`, `Microsoft.Extensions.Http`,
 and `Microsoft.Extensions.Http.Resilience`. Does not reference ASP.NET Core, EF
 Core, `Microsoft.FeatureManagement`, or Polly directly, and adds no provider SDKs.

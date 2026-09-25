@@ -13,12 +13,15 @@ public sealed class IdentityAspNetCoreTests
     [Fact]
     public void Current_user_accessor_projects_subject_tenant_role_and_permission_claims()
     {
-        var context = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity([
+        var context = new DefaultHttpContext
+        {
+            User = new ClaimsPrincipal(new ClaimsIdentity([
             new Claim(ClaimTypes.NameIdentifier, "subject-1"),
             new Claim(ClaimTypes.Email, "a@example.test"),
             new Claim("tenant_id", "tenant-1"),
             new Claim(ClaimTypes.Role, "operator"),
-            new Claim("permission", "reports.read")], "test")) };
+            new Claim("permission", "reports.read")], "test"))
+        };
         var services = new ServiceCollection().AddOptions<PlatformIdentityOptions>().Services;
         services.AddSingleton<IHttpContextAccessor>(new HttpContextAccessor { HttpContext = context });
         services.AddSingleton<Platform.Identity.AspNetCore.HttpCurrentUserAccessor>();

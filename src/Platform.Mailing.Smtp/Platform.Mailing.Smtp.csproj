@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Description>Optional SMTP adapter for Platform.Mailing using MailKit. Normalized send outcomes, explicit TLS/authentication configuration, and attachments; the application owns retries, templates, and delivery records.</Description>
   </PropertyGroup>
 

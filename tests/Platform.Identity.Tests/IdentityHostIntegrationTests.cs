@@ -15,12 +15,15 @@ public sealed class IdentityHostIntegrationTests
     [Fact]
     public void Current_user_accessor_uses_configurable_subject_and_email_claim_types()
     {
-        var context = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity([
+        var context = new DefaultHttpContext
+        {
+            User = new ClaimsPrincipal(new ClaimsIdentity([
             new Claim("custom_sub", "subject-9"),
             new Claim("custom_email", "b@example.test"),
             new Claim("tenant_id", "tenant-9"),
             new Claim(ClaimTypes.Role, "operator"),
-            new Claim("permission", "reports.read")], "test")) };
+            new Claim("permission", "reports.read")], "test"))
+        };
         var services = new ServiceCollection().AddOptions<PlatformIdentityOptions>().Configure(o =>
         {
             o.SubjectClaimType = "custom_sub";
@@ -52,12 +55,15 @@ public sealed class IdentityHostIntegrationTests
     [Fact]
     public void Current_user_accessor_deduplicates_duplicate_role_and_permission_claims()
     {
-        var context = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity([
+        var context = new DefaultHttpContext
+        {
+            User = new ClaimsPrincipal(new ClaimsIdentity([
             new Claim(ClaimTypes.NameIdentifier, "subject-2"),
             new Claim(ClaimTypes.Role, "operator"),
             new Claim(ClaimTypes.Role, "operator"),
             new Claim("permission", "reports.read"),
-            new Claim("permission", "reports.read")], "test")) };
+            new Claim("permission", "reports.read")], "test"))
+        };
         var services = new ServiceCollection().AddOptions<PlatformIdentityOptions>().Services;
         services.AddSingleton<IHttpContextAccessor>(new HttpContextAccessor { HttpContext = context });
         services.AddSingleton<HttpCurrentUserAccessor>();

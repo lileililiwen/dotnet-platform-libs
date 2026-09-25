@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Description>Transport-neutral realtime connection, authorization, tenant-routing, payload, and provider-status contracts. Must not reference ASP.NET Core, SignalR, EF Core, Redis, or application projects.</Description>
   </PropertyGroup>
 

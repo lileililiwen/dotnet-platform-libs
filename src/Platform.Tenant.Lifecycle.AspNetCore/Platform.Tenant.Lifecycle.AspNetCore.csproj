@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Description>Provider-neutral readiness and status adapter for tenant lifecycle. Depends on Platform.Tenant.Lifecycle.Contracts and Platform.Tenant.Lifecycle. No third-party packages.</Description>
   </PropertyGroup>
   <ItemGroup>

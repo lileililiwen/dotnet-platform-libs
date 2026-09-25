@@ -10,8 +10,8 @@ namespace Platform.Notifications;
 /// <summary>Dispatches normalized intents to application-owned providers.</summary>
 public sealed class NotificationDispatcher : INotificationDispatcher, IDisposable
 {
-    private readonly IReadOnlyList<IMailService> mailServices;
-    private readonly IReadOnlyList<ISmsSender> smsSenders;
+    private readonly IMailService[] mailServices;
+    private readonly ISmsSender[] smsSenders;
     private readonly IIdempotencyStore idempotency;
     private readonly IClock clock;
     private readonly NotificationOptions options;
@@ -50,7 +50,7 @@ public sealed class NotificationDispatcher : INotificationDispatcher, IDisposabl
     {
         if (intent.Channel == NotificationChannel.Email)
         {
-            if (mailServices.Count == 0) return NotificationDeliveryResult.Failed(NotificationFailureCategory.Configuration, "email_provider_unconfigured");
+            if (mailServices.Length == 0) return NotificationDeliveryResult.Failed(NotificationFailureCategory.Configuration, "email_provider_unconfigured");
             var message = new MailMessage(MailAddress.Create("no-reply@platform.invalid"), [MailAddress.Create(intent.Recipient)], intent.Subject!, intent.Body);
             for (var attempt = 1; attempt <= options.MaxAttempts; attempt++)
             {
@@ -62,7 +62,7 @@ public sealed class NotificationDispatcher : INotificationDispatcher, IDisposabl
         }
         else
         {
-            if (smsSenders.Count == 0) return NotificationDeliveryResult.Failed(NotificationFailureCategory.Configuration, "sms_provider_unconfigured");
+            if (smsSenders.Length == 0) return NotificationDeliveryResult.Failed(NotificationFailureCategory.Configuration, "sms_provider_unconfigured");
             for (var attempt = 1; attempt <= options.MaxAttempts; attempt++)
             {
                 var result = await smsSenders[0].SendAsync(SmsMessage.Create(intent.Recipient, intent.Body), cancellationToken).ConfigureAwait(false);

@@ -55,7 +55,10 @@ public sealed class AiClient
             timer.Stop();
             if (result.Succeeded) { if (_usage is not null) await _usage.RecordAsync(request.Feature, result.Usage, cancellationToken); _telemetry?.Completed(request.Feature, provider.Name, result.Model, timer.Elapsed, result.Usage); }
             else _telemetry?.Failed(request.Feature, provider.Name, result.Failure!, timer.Elapsed);
-            _logger.LogDebug("AI request completed. Feature={Feature} Provider={Provider} Model={Model} InputTokens={InputTokens} OutputTokens={OutputTokens}", request.Feature.Value, provider.Name.Value, result.Model, result.Usage.InputTokens, result.Usage.OutputTokens);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("AI request completed. Feature={Feature} Provider={Provider} Model={Model} InputTokens={InputTokens} OutputTokens={OutputTokens}", request.Feature.Value, provider.Name.Value, result.Model, result.Usage.InputTokens, result.Usage.OutputTokens);
+            }
             return result;
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)

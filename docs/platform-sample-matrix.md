@@ -18,7 +18,7 @@ against the projects on disk.
 
 Start with the smallest matching stage and add the next one only
 when the application needs that capability. Every sample targets
-`net8.0`, builds independently (`dotnet build` on its own project
+`net10.0`, builds independently (`dotnet build` on its own project
 restores nothing outside its declared references), and carries a
 README with ownership and rollback notes.
 

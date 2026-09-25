@@ -16,7 +16,7 @@
         "../Platform.Identity.AspNetCore/Platform.Identity.AspNetCore.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -29,7 +29,7 @@
       "path": "src/Platform.Admin.Contracts/Platform.Admin.Contracts.csproj",
       "projectReferences": [],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -44,7 +44,7 @@
         "../Platform.Admin.Contracts/Platform.Admin.Contracts.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -57,7 +57,7 @@
       "path": "src/Platform.Adoption/Platform.Adoption.csproj",
       "projectReferences": [],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -86,7 +86,7 @@
         "../Platform.Core/Platform.Core.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -110,7 +110,7 @@
         "../Platform.Ai.Contracts/Platform.Ai.Contracts.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -123,7 +123,7 @@
       "path": "src/Platform.Ai.Contracts/Platform.Ai.Contracts.csproj",
       "projectReferences": [],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -147,7 +147,7 @@
         "../Platform.Ai.Contracts/Platform.Ai.Contracts.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -171,7 +171,7 @@
         "../Platform.Ai.Contracts/Platform.Ai.Contracts.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -186,7 +186,7 @@
         "../Platform.Ai.Contracts/Platform.Ai.Contracts.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -203,7 +203,7 @@
         "../Platform.Core/Platform.Core.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -214,27 +214,14 @@
       ],
       "isPackable": true,
       "packageId": "Platform.Auditing.AspNetCore",
-      "packageReferences": [
-        {
-          "name": "Microsoft.Extensions.DependencyInjection.Abstractions",
-          "version": ""
-        },
-        {
-          "name": "Microsoft.Extensions.Logging.Abstractions",
-          "version": ""
-        },
-        {
-          "name": "Microsoft.Extensions.Options",
-          "version": ""
-        }
-      ],
+      "packageReferences": [],
       "path": "src/Platform.Auditing.AspNetCore/Platform.Auditing.AspNetCore.csproj",
       "projectReferences": [
         "../Platform.Core/Platform.Core.csproj",
         "../Platform.Auditing.Contracts/Platform.Auditing.Contracts.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -262,7 +249,7 @@
         "../Platform.Core/Platform.Core.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -299,7 +286,7 @@
         "../Platform.Auditing.Contracts/Platform.Auditing.Contracts.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -312,7 +299,7 @@
       "path": "src/Platform.Authorization/Platform.Authorization.csproj",
       "projectReferences": [],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -328,7 +315,7 @@
         "../Platform.Core/Platform.Core.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -341,7 +328,7 @@
       "path": "src/Platform.Billing.Contracts/Platform.Billing.Contracts.csproj",
       "projectReferences": [],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -369,7 +356,7 @@
         "../Platform.Billing/Platform.Billing.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -401,7 +388,7 @@
         "../Platform.Billing/Platform.Billing.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -417,7 +404,7 @@
         "../Platform.Core/Platform.Core.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -441,7 +428,7 @@
         "../Platform.Core/Platform.Core.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -469,7 +456,7 @@
         "../Platform.Caching/Platform.Caching.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -493,7 +480,7 @@
         "../Platform.Caching/Platform.Caching.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -506,7 +493,7 @@
       "path": "src/Platform.Core/Platform.Core.csproj",
       "projectReferences": [],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -521,7 +508,7 @@
         "../Platform.Core/Platform.Core.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -549,7 +536,7 @@
         "../Platform.Core/Platform.Core.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -564,7 +551,7 @@
         "../Platform.Core/Platform.Core.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -605,7 +592,7 @@
         "../Platform.Eventing.Contracts/Platform.Eventing.Contracts.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -637,7 +624,7 @@
         "../Platform.Eventing.Contracts/Platform.Eventing.Contracts.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -660,7 +647,7 @@
         "../Platform.Web.Telemetry/Platform.Web.Telemetry.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -685,7 +672,7 @@
         "../Platform.Web.Telemetry/Platform.Web.Telemetry.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -709,7 +696,7 @@
         "../Platform.Core/Platform.Core.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -727,7 +714,7 @@
         "../Platform.Authorization/Platform.Authorization.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -740,7 +727,7 @@
       "path": "src/Platform.Identity.Contracts/Platform.Identity.Contracts.csproj",
       "projectReferences": [],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -765,7 +752,7 @@
         "../Platform.Persistence.EfCore/Platform.Persistence.EfCore.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -781,7 +768,7 @@
         "../Platform.Authorization/Platform.Authorization.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -805,7 +792,7 @@
         "../Platform.Core/Platform.Core.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -832,18 +819,6 @@
         {
           "name": "Hangfire.PostgreSql",
           "version": ""
-        },
-        {
-          "name": "Microsoft.Extensions.DependencyInjection.Abstractions",
-          "version": ""
-        },
-        {
-          "name": "Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions",
-          "version": ""
-        },
-        {
-          "name": "Microsoft.Extensions.Options",
-          "version": ""
         }
       ],
       "path": "src/Platform.Jobs.Hangfire/Platform.Jobs.Hangfire.csproj",
@@ -851,7 +826,7 @@
         "../Platform.Jobs/Platform.Jobs.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -875,7 +850,7 @@
         "../Platform.Core/Platform.Core.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -903,7 +878,7 @@
         "../Platform.Mailing/Platform.Mailing.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -931,7 +906,7 @@
         "../Platform.Mailing/Platform.Mailing.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -958,7 +933,7 @@
         "../Platform.Mailing/Platform.Mailing.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -973,7 +948,7 @@
         "../Platform.Notifications/Platform.Notifications.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -984,31 +959,14 @@
       ],
       "isPackable": true,
       "packageId": "Platform.Observability",
-      "packageReferences": [
-        {
-          "name": "Microsoft.Extensions.DependencyInjection.Abstractions",
-          "version": ""
-        },
-        {
-          "name": "Microsoft.Extensions.Hosting.Abstractions",
-          "version": ""
-        },
-        {
-          "name": "Microsoft.Extensions.Logging.Abstractions",
-          "version": ""
-        },
-        {
-          "name": "Microsoft.Extensions.Options",
-          "version": ""
-        }
-      ],
+      "packageReferences": [],
       "path": "src/Platform.Observability/Platform.Observability.csproj",
       "projectReferences": [
         "../Platform.Core/Platform.Core.csproj",
         "../Platform.Web.Telemetry/Platform.Web.Telemetry.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -1036,7 +994,7 @@
         "../Platform.Core/Platform.Core.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -1060,7 +1018,7 @@
         "../Platform.Persistence.EfCore/Platform.Persistence.EfCore.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -1075,10 +1033,6 @@
         {
           "name": "Microsoft.EntityFrameworkCore",
           "version": ""
-        },
-        {
-          "name": "Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions",
-          "version": ""
         }
       ],
       "path": "src/Platform.Persistence.Multitenancy/Platform.Persistence.Multitenancy.csproj",
@@ -1088,7 +1042,7 @@
         "../Platform.Persistence.EfCore/Platform.Persistence.EfCore.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -1108,7 +1062,7 @@
         "../Platform.Persistence.EfCore/Platform.Persistence.EfCore.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -1128,7 +1082,7 @@
         "../Platform.Core/Platform.Core.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -1146,7 +1100,7 @@
         "../Platform.Quota/Platform.Quota.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -1161,7 +1115,7 @@
         "../Platform.Quota/Platform.Quota.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -1185,7 +1139,7 @@
         "../Platform.Core/Platform.Core.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -1209,7 +1163,7 @@
         "../Platform.Core/Platform.Core.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -1227,7 +1181,7 @@
         "../Platform.Realtime/Platform.Realtime.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -1246,7 +1200,7 @@
         "../Platform.Mailing/Platform.Mailing.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -1266,7 +1220,7 @@
         "../Platform.Core/Platform.Core.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -1286,7 +1240,7 @@
         "../Platform.Storage/Platform.Storage.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -1310,7 +1264,7 @@
         "../Platform.Storage/Platform.Storage.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -1339,7 +1293,7 @@
         "../Platform.Core/Platform.Core.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -1357,12 +1311,12 @@
         "../Platform.Tenant.Lifecycle/Platform.Tenant.Lifecycle.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
     {
-      "description": "Provider-neutral tenant provisioning and lifecycle contracts. Framework-neutral; targets net8.0. Zero third-party dependencies. The platform never owns tenant entities, migrations, connection strings, plans, or seed data.",
+      "description": "Provider-neutral tenant provisioning and lifecycle contracts. Framework-neutral; targets net10.0. Zero third-party dependencies. The platform never owns tenant entities, migrations, connection strings, plans, or seed data.",
       "frameworkReferences": [],
       "isPackable": true,
       "packageId": "Platform.Tenant.Lifecycle.Contracts",
@@ -1370,7 +1324,7 @@
       "path": "src/Platform.Tenant.Lifecycle.Contracts/Platform.Tenant.Lifecycle.Contracts.csproj",
       "projectReferences": [],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -1385,7 +1339,7 @@
         "../Platform.Tenant.Lifecycle.Contracts/Platform.Tenant.Lifecycle.Contracts.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -1403,7 +1357,7 @@
         "../Platform.Eventing/Platform.Eventing.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -1425,7 +1379,7 @@
         "../Platform.Core/Platform.Core.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -1438,7 +1392,7 @@
       "path": "src/Platform.UI.Razor/Platform.UI.Razor.csproj",
       "projectReferences": [],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -1455,7 +1409,7 @@
         "../Platform.AspNetCore/Platform.AspNetCore.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -1472,7 +1426,7 @@
         "../Platform.Core/Platform.Core.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -1490,7 +1444,7 @@
         "../Platform.Web.Telemetry/Platform.Web.Telemetry.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -1508,7 +1462,7 @@
         "../Platform.Web.Telemetry/Platform.Web.Telemetry.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -1519,19 +1473,14 @@
       ],
       "isPackable": true,
       "packageId": "Platform.Web.Resilience",
-      "packageReferences": [
-        {
-          "name": "Microsoft.Extensions.Http",
-          "version": ""
-        }
-      ],
+      "packageReferences": [],
       "path": "src/Platform.Web.Resilience/Platform.Web.Resilience.csproj",
       "projectReferences": [
         "../Platform.Core/Platform.Core.csproj",
         "../Platform.Web.Telemetry/Platform.Web.Telemetry.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -1559,7 +1508,7 @@
         "../Platform.Core/Platform.Core.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -1585,7 +1534,7 @@
         "../Platform.Core/Platform.Core.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -1596,19 +1545,14 @@
       ],
       "isPackable": true,
       "packageId": "Platform.Webhooks.AspNetCore",
-      "packageReferences": [
-        {
-          "name": "Microsoft.Extensions.Http",
-          "version": ""
-        }
-      ],
+      "packageReferences": [],
       "path": "src/Platform.Webhooks.AspNetCore/Platform.Webhooks.AspNetCore.csproj",
       "projectReferences": [
         "../Platform.Core/Platform.Core.csproj",
         "../Platform.Webhooks.Contracts/Platform.Webhooks.Contracts.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -1636,7 +1580,7 @@
         "../Platform.Core/Platform.Core.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     },
@@ -1661,7 +1605,7 @@
         "../Platform.Webhooks.Contracts/Platform.Webhooks.Contracts.csproj"
       ],
       "targetFrameworks": [
-        "net8.0"
+        "net10.0"
       ],
       "version": "0.1.0"
     }

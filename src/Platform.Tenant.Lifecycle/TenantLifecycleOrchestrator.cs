@@ -147,10 +147,16 @@ public sealed class TenantLifecycleOrchestrator : ITenantLifecycleOrchestrator
         if (step.IsTenantScoped)
         {
             using var scope = _scopeCallback.BeginTenantScope(tenantId);
-            _logger.LogDebug("Running tenant-scoped step {Step} for {Operation}", step.Name, operationId);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Running tenant-scoped step {Step} for {Operation}", step.Name, operationId);
+            }
             return await step.ExecuteAsync(new TenantLifecycleStepContext(operationId, workflowName, step.Name, tenantId, Attempt: 1, Metadata: new Dictionary<string, string>()), cancellationToken).ConfigureAwait(false);
         }
-        _logger.LogDebug("Running global step {Step} for {Operation}", step.Name, operationId);
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            _logger.LogDebug("Running global step {Step} for {Operation}", step.Name, operationId);
+        }
         return await step.ExecuteAsync(new TenantLifecycleStepContext(operationId, workflowName, step.Name, tenantId, Attempt: 1, Metadata: new Dictionary<string, string>()), cancellationToken).ConfigureAwait(false);
     }
 

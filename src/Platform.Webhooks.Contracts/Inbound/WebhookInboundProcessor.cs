@@ -57,10 +57,16 @@ public sealed class WebhookInboundProcessor : IWebhookInboundProcessor
         switch (claim.Status)
         {
             case WebhookInboxClaimStatus.Duplicate:
-                _logger.LogDebug("Webhook {Provider} event {EventId} is a duplicate.", request.Provider.Value, request.EventId);
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug("Webhook {Provider} event {EventId} is a duplicate.", request.Provider.Value, request.EventId);
+                }
                 return WebhookInboundResult.Duplicate();
             case WebhookInboxClaimStatus.Busy:
-                _logger.LogDebug("Webhook {Provider} event {EventId} is busy.", request.Provider.Value, request.EventId);
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug("Webhook {Provider} event {EventId} is busy.", request.Provider.Value, request.EventId);
+                }
                 return WebhookInboundResult.Busy();
         }
         var claimed = claim.Message!;

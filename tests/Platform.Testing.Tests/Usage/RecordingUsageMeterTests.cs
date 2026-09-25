@@ -114,7 +114,7 @@ public class RecordingUsageMeterTests
 
         meter.Reset();
 
-        Assert.Equal(0, meter.Calls.Count);
+        Assert.Empty(meter.Calls);
         Assert.True(beforeResetCalls > 0);
 
         var result = await meter.CheckAsync(subject, feature);

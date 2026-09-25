@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Description>Optional RabbitMQ adapter for the platform durable eventing contracts. Confirmed publishing, application-owned topology registration, safe transient/permanent failure classification, and bounded waits; the application owns event schemas, queues, migrations, and retry policy.</Description>
   </PropertyGroup>
 

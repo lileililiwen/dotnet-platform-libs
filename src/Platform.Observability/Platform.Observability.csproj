@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Description>Opt-in host observability registration with safe correlation, logging enrichment, tracing, metrics, and provider-status contracts. Does not include an exporter; consumers add their own.</Description>
   </PropertyGroup>
   <ItemGroup>
@@ -9,11 +9,5 @@
   <ItemGroup>
     <ProjectReference Include="..\Platform.Core\Platform.Core.csproj" />
     <ProjectReference Include="..\Platform.Web.Telemetry\Platform.Web.Telemetry.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
-    <PackageReference Include="Microsoft.Extensions.Options" />
   </ItemGroup>
 </Project>

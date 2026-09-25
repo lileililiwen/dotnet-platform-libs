@@ -13,8 +13,8 @@ dotnet new platform-app -n Acme
 
 The template pack version tracks the platform package version (`0.1.0`);
 generated projects pin exact versions (`Platform.* 0.1.0`,
-`Microsoft.EntityFrameworkCore.Sqlite 8.0.10`,
-`Microsoft.AspNetCore.Mvc.Testing 8.0.10`,
+`Microsoft.EntityFrameworkCore.Sqlite 10.0.0`,
+`Microsoft.AspNetCore.Mvc.Testing 10.0.0`,
 `Microsoft.NET.Test.Sdk 17.11.1`, `xunit 2.9.2`,
 `xunit.runner.visualstudio 2.8.2`).
 

@@ -13,7 +13,7 @@ public sealed class TenantConnectionReadinessCheck : IHealthCheck
 {
     private static readonly string[] ReadyTag = { "ready" };
 
-    private readonly IReadOnlyList<ITenantInfo> _tenants;
+    private readonly ITenantInfo[] _tenants;
     private readonly ITenantConnectionReadinessProbe _probe;
 
     /// <summary>Creates a new check over the supplied tenant list.</summary>
@@ -36,7 +36,7 @@ public sealed class TenantConnectionReadinessCheck : IHealthCheck
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(context);
-        if (_tenants.Count == 0)
+        if (_tenants.Length == 0)
         {
             return HealthCheckResult.Healthy("No tenant connections to probe.");
         }

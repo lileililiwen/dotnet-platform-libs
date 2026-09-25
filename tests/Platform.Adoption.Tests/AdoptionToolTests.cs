@@ -94,7 +94,7 @@ public sealed class AdoptionToolTests
         var current = new DirectoryInfo(AppContext.BaseDirectory);
         while (current is not null)
         {
-            var tool = Path.Combine(current.FullName, "tools", "Platform.Adoption.Tool", "bin", "Release", "net8.0", "Platform.Adoption.Tool.dll");
+            var tool = Path.Combine(current.FullName, "tools", "Platform.Adoption.Tool", "bin", "Release", "net10.0", "Platform.Adoption.Tool.dll");
             if (File.Exists(tool))
             {
                 return tool;

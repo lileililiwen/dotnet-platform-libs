@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Description>Transport-agnostic event-bus contract, envelope shape, and in-process default adapter. Must not reference ASP.NET Core, EF Core, RabbitMQ, or application projects.</Description>
   </PropertyGroup>
 

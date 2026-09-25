@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Description>Optional outbound HTTP resilience integration built on the Microsoft.Extensions.Http.Resilience resilience primitives. Provides bounded retry, timeout, circuit-breaker, and concurrency policies that skip non-idempotent methods by default and preserve caller cancellation. Framework-neutral; no ASP.NET Core, EF Core, or provider references.</Description>
   </PropertyGroup>
   <ItemGroup>

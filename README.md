@@ -115,11 +115,11 @@ dotnet test   Platform.sln -c Release --nologo
 dotnet pack   Platform.sln -c Release --no-build --nologo
 ```
 
-The solution builds, tests, and packs under .NET 8. NuGet packages are written to each project's `bin/Release/` directory. See [`docs/build-test-pack.md`](docs/build-test-pack.md) for the full set of commands and [`docs/packages.md`](docs/packages.md) for the per-package contract reference.
+The solution builds, tests, and packs under .NET 10. NuGet packages are written to each project's `bin/Release/` directory. See [`docs/build-test-pack.md`](docs/build-test-pack.md) for the full set of commands and [`docs/packages.md`](docs/packages.md) for the per-package contract reference.
 
 ## Conventions
 
-- Target frameworks: production libraries target `net8.0` first; `.NET 10` targeting is added only when a concrete package needs it.
+- Target frameworks: production libraries target `net10.0`; SDK `10.0.400` is the required baseline.
 - Package versions are managed centrally in `Directory.Packages.props`. Project files declare `<PackageReference Include="..." />` without a `Version` attribute.
 - Nullable reference types, implicit usings, deterministic builds, and warnings-as-errors are enabled in `Directory.Build.props` for production code.
 - Test projects opt out of packaging via `tests/Directory.Build.props`.

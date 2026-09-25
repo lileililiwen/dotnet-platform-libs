@@ -62,7 +62,7 @@ public static class ServiceCollectionExtensions
     /// first, then <see cref="UsePlatformProblemDetails"/>. Health
     /// endpoints are added by
     /// <see cref="MapPlatformEndpoints"/>.
-/// </summary>
+    /// </summary>
     /// <param name="app">The application builder.</param>
     /// <returns>The same <paramref name="app"/> for chaining.</returns>
     public static IApplicationBuilder UsePlatformAspNetCore(this IApplicationBuilder app)

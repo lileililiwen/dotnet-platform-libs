@@ -7,10 +7,10 @@ core runtime changes.
 
 | Package | Project | Purpose |
 | --- | --- | --- |
-| `Platform.Web.Telemetry` | `net8.0` | Framework-neutral redaction-safe telemetry names, option-validation helpers, and a structured log sink. |
-| `Platform.Web.Cors` | `net8.0` | Optional ASP.NET Core CORS configuration with strict production-time validation. |
-| `Platform.Web.Resilience` | `net8.0` | Optional `HttpClient` resilience (retry, timeout, circuit breaker) with bounded defaults. |
-| `Platform.Web.OpenApi` | `net8.0` | Optional OpenAPI document registry and explicit JSON endpoint mapping. |
+| `Platform.Web.Telemetry` | `net10.0` | Framework-neutral redaction-safe telemetry names, option-validation helpers, and a structured log sink. |
+| `Platform.Web.Cors` | `net10.0` | Optional ASP.NET Core CORS configuration with strict production-time validation. |
+| `Platform.Web.Resilience` | `net10.0` | Optional `HttpClient` resilience (retry, timeout, circuit breaker) with bounded defaults. |
+| `Platform.Web.OpenApi` | `net10.0` | Optional OpenAPI document registry and explicit JSON endpoint mapping. |
 
 ## Platform.Web.Telemetry
 

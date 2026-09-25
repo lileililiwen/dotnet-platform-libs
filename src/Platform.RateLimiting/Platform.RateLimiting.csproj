@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Description>Framework-neutral rate-limit contract and in-memory default backend. Must not reference ASP.NET Core, EF Core, StackExchange.Redis, or application projects.</Description>
   </PropertyGroup>
 

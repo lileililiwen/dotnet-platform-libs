@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Description>Default tenant lifecycle orchestrator. Depends on Platform.Tenant.Lifecycle.Contracts; integration with Platform.Persistence.Multitenancy is application-owned. No third-party packages.</Description>
   </PropertyGroup>
   <ItemGroup>

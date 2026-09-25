@@ -153,7 +153,7 @@ public static class AdoptionAnalyzer
                 "SDK pin",
                 AdoptionStatus.Warning,
                 "No global.json at the target root.",
-                "Add a global.json pinning a .NET 8 SDK so consumer builds match the platform baseline.");
+                "Add a global.json pinning a .NET 10 SDK so consumer builds match the platform baseline.");
         }
 
         try
@@ -211,7 +211,7 @@ public static class AdoptionAnalyzer
                 string.Empty);
     }
 
-    private static AdoptionCheckResult CheckProjects(IReadOnlyList<string> projects, string target)
+    private static AdoptionCheckResult CheckProjects(List<string> projects, string target)
     {
         return projects.Count == 0
             ? new AdoptionCheckResult(

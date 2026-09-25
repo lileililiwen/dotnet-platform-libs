@@ -10,6 +10,7 @@ using Platform.Jobs.Hangfire;
 using Platform.Jobs.Hangfire.DependencyInjection;
 
 namespace Platform.Jobs.Hangfire.Tests;
+
 public class DependencyInjectionTests : HangfireTest
 {
     [Fact]
