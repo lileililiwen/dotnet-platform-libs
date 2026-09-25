@@ -23,7 +23,16 @@ tests/Platform.ConsumerConformance/
   Fixtures/
     ConsumerServiceCollectionFactory.cs
     ConsumerTestHostFactory.cs
+    contracts/                              # canonical shared-contract envelopes
+      ContractFixtureReader.cs              # deterministic local-JSON validator
+      identity-subject.valid.json / .invalid.json
+      permission.valid.json / .invalid.json
+      tenant.valid.json / .invalid.json
+      audit.valid.json / .invalid.json
+      gate-result.valid.json / .invalid.json
+      release-evidence.valid.json / .invalid.json
   Tests/
+    ContractEnvelopeConformanceTests.cs
     PackageFeedVerificationTests.cs
     AspNetCoreRegistrationTests.cs
     RateLimitingRegistrationTests.cs
@@ -72,6 +81,12 @@ returns exit code `0` only when every step succeeds.
 
 ## What the suite verifies
 
+- **Shared-contract envelopes** — `ContractEnvelopeConformanceTests` validates
+  canonical fixtures for identity subject, permission, tenant, audit, Gate
+  result, and release evidence contracts. Compatible documents are accepted;
+  missing required fields or incompatible status vocabularies fail with the
+  contract and field identified. Fixtures are local JSON files consumed without
+  any runtime dependency on a contract repository.
 - **Package feed** — The conformance project consumes platform packages
   exclusively via `<PackageReference>`; no `<ProjectReference>` to platform
   projects. `Platform.Architecture.Tests` enforces the same boundary for

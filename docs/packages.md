@@ -542,6 +542,12 @@ target directory and never modifies it.
   suggestions, `AdoptionInventory` project/package listing,
   `AdoptionPreview` JSON, and `AdoptionTargetException` for unusable
   targets.
+- `AdoptionEvidenceLevel` (`Absent`, `Configured`, `Incompatible`,
+  `Unverified`, `Verified`), `AdoptionEvidence`
+  (`IsProductionReady` only for `Verified`), and the deterministic,
+  I/O-free `AdoptionEvidenceClassifier` — a referenced package without
+  native consumer evidence classifies as `Configured` or `Unverified`,
+  never production-ready.
 
 The `platform-doctor` CLI (`tools/Platform.Adoption.Tool`, unpacked)
 adds the `doctor`, `inventory`, `conformance`, and `preview` commands
