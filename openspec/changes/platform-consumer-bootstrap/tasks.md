@@ -1,5 +1,31 @@
 # Tasks: One consumer bootstrap for the platform
 
+## 0. Caveats and confirmations
+
+- [ ] **Read `openspec/specs/dotnet10-platform-baseline/spec.md` first.** It
+  already asserts that a generated consumer "selects the expected local platform
+  reference and the opt-out behavior remains explicit and testable". This change
+  makes that assertion real. If any part is already satisfied, narrow the change
+  instead of duplicating it, and never contradict that spec.
+- [ ] **Public API impact must stay none.** If implementation appears to need a
+  public API change, stop and re-scope — the repository config requires stating
+  this.
+- [ ] **Scope the diagnostic to opted-in consumers.** The workspace default target
+  is `net8.0`. The unsupported-target diagnostic MUST fire only for a project that
+  imports the platform bootstrap, or every default-target project under the
+  workspace root would fail.
+- [ ] **Do not edit the workspace or the consumers.** `PlatformAsSource` and
+  `PlatformPackageVersion` live in the workspace `Directory.Build.props`; `mewo`
+  (net8.0) and `therapist-commons`/`citylens` (hand-copied defaults) are
+  consumers. Document the contract; name migration as follow-up.
+- [ ] **Extend, do not replace, `platform-consumer-adoption`.** Its
+  packed-artifact conformance, pinned-version and upgrade/rollback requirements
+  stay as they are.
+- [ ] **No committed credential.** Publish uses the `GITHUB_TOKEN` expansion
+  already declared in the workspace `nuget.config`; never commit a token.
+- [ ] **Stage only this change directory.** `.project.json` is already modified;
+  keep it out of the change's commits.
+
 ## 1. BFS — Baseline and impact coverage
 
 - [ ] Inventory `build/Platform.Consumer.props`, the workspace
