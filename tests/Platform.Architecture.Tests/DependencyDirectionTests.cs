@@ -581,6 +581,38 @@ public class DependencyDirectionTests
     }
 
     [Fact]
+    public void Production_projects_do_not_reference_any_testing_only_platform_project()
+    {
+        // Discover every Platform.*.Testing project under src/ so the rule
+        // stays in sync when new testing-only platform packages are added
+        // (e.g. Platform.Identity.Testing, Platform.Tenant.Lifecycle.Testing).
+        var testingProjects = Directory
+            .EnumerateDirectories(Path.Combine(RepositoryRoot, "src"))
+            .Where(directory => Path.GetFileName(directory).EndsWith(".Testing", StringComparison.OrdinalIgnoreCase))
+            .Select(Path.GetFileName)
+            .Where(name => !string.IsNullOrEmpty(name))
+            .Cast<string>()
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        Assert.NotEmpty(testingProjects);
+
+        foreach (var project in ProductionProjects)
+        {
+            if (testingProjects.Contains(Path.GetFileNameWithoutExtension(project) ?? string.Empty))
+            {
+                continue;
+            }
+            var references = ReadProjectReferences(project);
+            var leaks = references
+                .Where(r => testingProjects.Contains(Path.GetFileNameWithoutExtension(r) ?? string.Empty))
+                .ToArray();
+            Assert.True(
+                leaks.Length == 0,
+                $"{project} must not reference any testing-only platform project. Found: " + string.Join(", ", leaks));
+        }
+    }
+
+    [Fact]
     public void Platform_Core_has_no_package_references()
     {
         var packages = ReadPackageReferences("src/Platform.Core/Platform.Core.csproj");
