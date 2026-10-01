@@ -108,6 +108,41 @@ Provider-neutral subscription and entitlement contracts. Zero third-party depend
 - `ProviderFailureClassifier` and `ProviderFailure` — safe transient, permanent, configuration,
   authentication, and malformed-response categories without secrets or response bodies.
 
+## Platform.Billing
+
+`Platform.Billing` is the application-owned billing seam. It depends on
+`Platform.Billing.Contracts` and `Platform.Core`; targets `net10.0`. The
+package owns the `IBillingProvider` interface, the application-supplied
+checkout/portal mapping, the webhook normalization, and the provider
+status surface. The provider-specific adapters (`Platform.Billing.Stripe`,
+`Platform.Billing.LemonSqueezy`) implement `IBillingProvider`; consumers
+register exactly one. The plan, price, invoice, and product catalog stay
+in the consumer.
+
+## Platform.Billing.Testing
+
+Deterministic billing test doubles. Depends on `Platform.Billing.Contracts`
+and `Platform.Core`; targets `net10.0`. No xUnit, NUnit, or
+mocking-framework dependencies. Production projects must not reference
+this package.
+
+- `SubscriptionBuilder` — fluent builder for `Subscription`. Defaults to
+  active status, `plan.test`, `test` provider, `sub_test` provider id,
+  and a 30-day period anchored at the supplied `IClock`. `WithPlan`,
+  `WithStatus`, `WithProvider`, `WithProviderSubscriptionId`,
+  `WithPeriodStart`, `WithPeriodEnd`.
+- `EntitlementBuilder` — fluent builder for `Entitlement`. Safe inactive
+  defaults (no features, no limits). `WithTenant`, `WithSubscription`,
+  `Granting(feature)`, `Granting(IEnumerable<FeatureKey>)`,
+  `WithLimit(feature, limit)`, `CapturedAt`.
+- `FakeEntitlementStore` — in-memory store with `Configure`, `Get`,
+  `Invalidate`, `InvalidatedSubjects`, `Reset`. `Get` returns
+  `EntitlementDefaults.Inactive` for unknown or invalidated subjects.
+- `RecordingUsageMeter` — `IUsageMeter` that records every call and
+  accumulates totals per `(subject, feature)`. `SetLimit(feature, limit?)`
+  configures per-feature limits; `TotalFor`; `Calls`; `Reset` clears
+  totals and calls but preserves limits.
+
 ## Platform.Ai
 
 `Platform.Ai.Contracts` provides provider-neutral generation, streaming, structured-output,
@@ -464,6 +499,34 @@ Framework-neutral domain primitives. Depends on `Platform.Core` only; targets `n
 - `DomainException` — carries a stable `Platform.Core.Results.Error` with no HTTP or provider-specific status code. `Message` is always the safe `Error.Message`.
 - `DomainValidationException` — carries `platform.validation`. `DomainNotFoundException` — carries `platform.not_found`. `DomainConflictException` — carries `domain.conflict` (see `DomainErrorCodes.Conflict`).
 
+## Platform.Web
+
+Composable web runtime foundations built on `Platform.AspNetCore`. Depends
+on `Platform.AspNetCore` and the `Microsoft.AspNetCore.App` framework
+reference; targets `net10.0`. Does not reference EF Core, Stripe, Mediator,
+FluentValidation, or application projects. The package contributes the
+runtime contracts and middleware that the optional edge packages
+(`Platform.Web.Cors`, `Platform.Web.OpenApi`, `Platform.Web.Resilience`,
+`Platform.Web.Versioning`) and the `Platform.Web.Telemetry` host
+observability hook all share.
+
+- `PlatformWebOptions` — bounded options used by every `Platform.Web.*`
+  package and by `Platform.Starter` (route prefix defaults, environment
+  names, validation entry points).
+- `RuntimeContracts` — request, response, and tag shapes the runtime
+  middleware and the edge packages read from (without prescribing a
+  specific ASP.NET Core filter or handler type).
+- `RuntimeMiddleware` — minimal `UsePlatformWebRuntime(IApplicationBuilder)`
+  helper that wires the documented order (telemetry, correlation, error
+  mapping, readiness).
+- `PlatformWebAssemblyMarker` — `partial class Program` marker so
+  integration tests can host the assembly in-memory (the same pattern
+  the `Platform.Testing.AspNetCore` factory relies on).
+
+`Platform.Web` is the dependency root for `Platform.Starter`. Consumers
+adopting only one of the edge packages do not need to take `Platform.Web`
+explicitly — the edge package brings the foundation transitively.
+
 ## Platform.Web.Composition
 
 Optional explicit ASP.NET Core module composition. Depends on `Platform.Core` plus the `Microsoft.AspNetCore.App` framework reference; targets `net10.0`. Does not reference Mediator, FluentValidation, EF Core, provider SDKs, or application projects.
@@ -706,6 +769,45 @@ ASP.NET Core TestServer host builder. Depends on `Platform.Core` and the `Micros
 | `tests/Platform.Identity.Tests` | Identity contract coverage (anonymous user, fake credential verifier, fake external provider, permission catalog), JWT options validation (disabled-by-default, required fields, redacted diagnostics), ASP.NET Core identity host integration (claim projection, default/empty claim, anonymous fallback, permission handler, audit hook), and the new identity lifecycle contracts (refresh-token rotation + replay + expiry + revocation + 32-thread concurrent rotation + audit events; password recovery with no-enumeration for known/unknown subjects, replay rejection, invalid-challenge handling; two-factor challenge/verify with wrong code, unknown challenge, empty subject; impersonation fail-closed default, allow policy grants, active context lookup, end-after-start, unknown-grant end, invalid request shape; endpoint integration via `TestServer` for refresh rotation, refresh replay, password-recovery initiation returning `202` for known and unknown subjects, two-factor challenge + verify, and impersonation start failing closed without a policy). |
 | `tests/Platform.Web.Versioning.Tests` | `PlatformWebVersioningOptions` validation (default values, negative `DefaultMajor`, out-of-range `DefaultMinor`, reader-specific names, format/constraint non-emptiness); reader selection (URL segment default, header, query, media type, composite) and explorer options propagation (`GroupNameFormat`, `ReportApiVersions`, `RouteConstraintName`); `TestServer` coverage for opt-in behavior, default-version assumption, URL/header/query readers, two-version API Explorer groups, and the `IPlatformVersioningDefaultsProvider` seam. |
 | `tests/Platform.ConsumerConformance` | Test-only consumer fixture that restores platform packages from a local NuGet feed and verifies registration, replacement, health, failure classification, opt-in boundaries, end-to-end host behavior, and the canonical shared-contract envelopes (`identity-subject`, `permission`, `tenant`, `audit`, `gate-result`, `release-evidence`). Driven by `scripts/conformance.sh`; intentionally not part of `Platform.sln`. The fixture also enforces adoption conformance: every `Platform.*` reference is pinned to the same exact version, every `<X>.Testing` package is paired with the matching `<X>.Contracts` partner, the local `eng/package-manifest.json` is in sync with the source, and the upgrade/rollback smoke script exists. |
+## Platform.Admin.Contracts
+
+Provider-neutral administration contracts. Framework-neutral; targets
+`net10.0`. Zero third-party dependencies. The package defines the
+admin records (`IAdminStore`, `AdminRecord`, `AdminRole`,
+`AdminPermission`) and the application-owned extension points; it does
+not own the persistence, the auth scheme, the routes, or the
+endpoints.
+
+## Platform.Admin.AspNetCore
+
+Opt-in ASP.NET Core administration endpoints. Depends on
+`Platform.Admin.Contracts`, `Platform.Identity.Contracts`, and
+`Platform.Identity.AspNetCore` plus the `Microsoft.AspNetCore.App`
+framework reference; targets `net10.0`. Does not reference EF Core,
+Stripe, or application projects.
+
+- `AddPlatformAdmin(IServiceCollection)` — registers the admin
+  endpoints, the audit hook, and the request/response shapes. The
+  application supplies the `IAdminStore` (in-memory test default or
+  application-owned durable adapter) and the authorization policy.
+- `MapPlatformAdminEndpoints(IEndpointRouteBuilder)` — maps the
+  documented routes (`/admin/users`, `/admin/roles`,
+  `/admin/permissions`, `/admin/audit`) with the platform's safe
+  `ProblemDetails` mapping and the platform correlation identifier.
+- `PlatformAdminOptions` — bounded options: route prefix, audit
+  category name, page size, retention window, JSON content type.
+  `Validate()` rejects empty prefixes and non-positive page sizes.
+
+## Platform.Admin.Testing
+
+Deterministic admin test doubles. Depends on `Platform.Admin.Contracts`;
+targets `net10.0`. Production projects must not reference this package.
+
+- `InMemoryAdminStore` — thread-safe, in-memory `IAdminStore` with
+  `Add`, `Get`, `Update`, `Remove`, `List`, `Reset`, and
+  `Invocations` for assertions. Used by `tests/Platform.Admin.Tests`
+  and the `Platform.Starter.Sample` end-to-end sample.
+
 ## Platform.Identity (contracts)
 
 Provider-neutral identity and authentication contracts. Framework-neutral; targets `net10.0`. Zero third-party dependencies.
