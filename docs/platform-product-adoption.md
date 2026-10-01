@@ -5,13 +5,25 @@ platform packages independently. No product is described as migrated without
 native project evidence (restore, build, test, and gate runs inside that
 product's own repository).
 
+The shared contract that wires a product to the platform lives in
+[`docs/workspace-consumer-bootstrap.md`](workspace-consumer-bootstrap.md):
+the `PlatformConsumerBootstrap` opt-in, the `PlatformAsSource` /
+`PlatformPackageVersion` switch, the consumer defaults, the
+`PlatformConsumerOptOut` opt-out, and the unsupported-target diagnostic.
+The .NET 10 baseline that every product must adopt first is described in
+[`docs/dotnet10-migration-contract.md`](dotnet10-migration-contract.md).
+
 ## Stages (every product)
 
 1. **Inventory** — Run the adoption diagnostics against the product
    (`Platform.Adoption.Tool` with `--project-dir`) and record the per-package
    evidence levels (`Absent`, `Configured`, `Incompatible`, `Unverified`,
    `Verified`). A package without native verification evidence stays
-   `Unverified` at most; it is never called production-ready.
+   `Unverified` at most; it is never called production-ready. The
+   `PlatformConsumerBootstrap` opt-in (see
+   [`docs/workspace-consumer-bootstrap.md`](workspace-consumer-bootstrap.md))
+   is the single documented entry point; adopt it before adding any other
+   platform reference.
 2. **Pilot** — Adopt one package in a non-critical service with an exact
    version pin. Copy the `nuget.config` layout and run the consumer
    conformance fixture against the pilot's services.

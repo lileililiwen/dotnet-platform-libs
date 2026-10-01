@@ -32,6 +32,41 @@ jobs:
           ./scripts/audit-packages.sh
       - name: Pack release artifacts
         run: dotnet pack Platform.sln -c Release --no-build -p:Version="$VERSION" -o artifacts/packages --nologo -m:1
+      - name: Publish to declared feed
+        if: ${{ env.GITHUB_TOKEN != '' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NUGET_PUBLISH_SOURCE: ${{ vars.PLATFORM_PUBLISH_SOURCE || 'https://nuget.pkg.github.com/lileililiwen/index.json' }}
+        run: |
+          if [ -z "$NUGET_PUBLISH_SOURCE" ]; then
+            echo "::error::PLATFORM_PUBLISH_SOURCE is unset; refusing to push packages." >&2
+            exit 1
+          fi
+          if [ -z "$GITHUB_TOKEN" ]; then
+            echo "::error::GITHUB_TOKEN is unset; refusing to push packages." >&2
+            exit 1
+          fi
+          set -euo pipefail
+          shopt -s nullglob
+          artifacts=(artifacts/packages/*.nupkg)
+          if [ "${#artifacts[@]}" -eq 0 ]; then
+            echo "::error::No .nupkg files were produced; refusing to push an empty set." >&2
+            exit 1
+          fi
+          for nupkg in "${artifacts[@]}"; do
+            dotnet nuget push "$nupkg" \
+              --source "$NUGET_PUBLISH_SOURCE" \
+              --api-key "$GITHUB_TOKEN" \
+              --skip-duplicate \
+              --no-symbols \
+              --nologo
+          done
+      - name: Publish without credentials must fail loudly
+        if: ${{ env.GITHUB_TOKEN == '' }}
+        run: |
+          echo "::error::GITHUB_TOKEN is not available in this run; refusing to declare the release as published." >&2
+          echo "::error::Configure the repository secret GITHUB_TOKEN (or PAT with write:packages) and re-run." >&2
+          exit 1
       - name: Upload packages and audit evidence
         uses: actions/upload-artifact@v4
         with:

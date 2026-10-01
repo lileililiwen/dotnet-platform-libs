@@ -182,6 +182,16 @@ public sealed class Dotnet10BaselineTests
                     continue;
                 }
 
+                // Test fixtures under tests/**/Fixtures/** are consumer-side
+                // scenarios, not platform projects. They intentionally cover
+                // unsupported targets, opt-outs, and other negative cases,
+                // so they must be excluded from baseline target-framework
+                // and content invariants.
+                if (segments.Any(s => s.Equals("Fixtures", StringComparison.OrdinalIgnoreCase)))
+                {
+                    continue;
+                }
+
                 yield return project;
             }
         }
