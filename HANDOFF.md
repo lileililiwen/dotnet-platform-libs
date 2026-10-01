@@ -22,6 +22,238 @@ validated, archived, and committed as separate changes:
 2. `platform-contract-conformance-and-adoption` — archived at `openspec/changes/archive/2026-09-25-platform-contract-conformance-and-adoption/`.
 Details for each change follow under its `Completed:` section below.
 
+## Completed queue: consumer bootstrap, site-user auth starter, post-MVP readiness
+
+All three changes are implemented, strictly validated, archived, and committed
+in dependency order (bootstrap first because the site-user auth starter
+benefits from a real `Platform.Consumer.props`, then the site-user auth
+starter, then the documentation front door so the README reflects the
+final state of every package):
+
+1. `platform-consumer-bootstrap` — archived at `openspec/changes/archive/2026-10-01-platform-consumer-bootstrap/`.
+2. `platform-site-user-auth-starter` — archived at `openspec/changes/archive/2026-10-01-platform-site-user-auth-starter/`.
+3. `post-mvp-readiness` — archived at `openspec/changes/archive/2026-10-01-post-mvp-readiness/`.
+Details for each change follow under its `Completed:` section below.
+
+## Completed: platform-consumer-bootstrap
+
+- Made the consumer source/package switch real in `build/Platform.Consumer.props`:
+  opt-in via `PlatformConsumerBootstrap`, opt-out via `PlatformConsumerOptOut`;
+  `PlatformAsSource=true` injects a `ProjectReference` to the local checkout
+  with a named error when the checkout is missing; `PlatformAsSource=false`
+  injects a `PackageReference` at the pinned `PlatformPackageVersion` and
+  errors when the version is unset; the unsupported-target diagnostic is
+  scoped to consumers that import the bootstrap (so the workspace
+  `net8.0` default is unaffected); the bootstrap honors central package
+  management by injecting an unversioned `PackageReference` and requiring
+  the version to be declared in the consumer's `Directory.Packages.props`.
+- Propagated consumer defaults (when not opted out): `Nullable=enable`,
+  latest `LangVersion`, `AnalysisLevel`, `TreatWarningsAsErrors`,
+  `ManagePackageVersionsCentrally`; each default overridable by the
+  consumer. Added a `PackageModeNoCpm` fixture and test for the
+  inline-version path.
+- Extended `.github/workflows/release.yml` with a `publish` step that
+  resolves `secrets.GITHUB_TOKEN` and the declared GitHub Packages feed
+  (`NUGET_PUSH_SOURCE`) and fails loudly when credentials are absent —
+  no silent skip, no committed token.
+- Extended the conformance fixture under `tests/Platform.ConsumerConformance/`
+  with nine scenarios (source-mode, package-mode, package-mode-no-cpm,
+  opt-out, unsupported-target, missing-checkout, missing-version, plus
+  the existing adoption envelopes) and 19 tests; `scripts/conformance.sh`
+  now drives the new scenarios.
+- Updated `docs/workspace-consumer-bootstrap.md` (the switch, the
+  opt-out, the supported target, the feed, the version source) and
+  `docs/platform-product-adoption.md` (the bootstrap section). No public
+  package API change. `eng/public-api-baseline.txt` and
+  `eng/package-manifest.json` unchanged. `.project.json` and `ROADMAP.md`
+  modifications were left for the post-queue handoff commit.
+- Archived at
+  `openspec/changes/archive/2026-10-01-platform-consumer-bootstrap/`
+  with promoted `openspec/specs/platform-consumer-bootstrap/spec.md`.
+
+Verification evidence (under SDK `10.0.400`):
+
+- `dotnet restore Platform.sln --ignore-failed-sources -p:NuGetAudit=false --nologo -m:1` — PASS.
+- `dotnet build Platform.sln -c Release --no-restore --nologo -m:1` — 0 errors, 0 warnings.
+- `dotnet test Platform.sln -c Release --no-build --nologo -m:1` — 1,386/1,386 passed.
+- `dotnet pack Platform.sln -c Release --no-build --no-restore --nologo -m:1 -o artifacts/packages` — 76 packages.
+- `./scripts/conformance.sh` — PASS (pack, restore, build, test, source-mode build, package-mode restore+build, package-mode-no-cpm build, opt-out build, unsupported-target named diagnostic).
+- `./scripts/quality-gate.sh` — PASS.
+- `./scripts/check-public-api.sh` — PASS (no public API change).
+- `openspec validate --changes --strict --no-interactive` — 3 passed.
+- `openspec validate --specs --strict --no-interactive` — 46 passed.
+- `git diff --check --staged` — clean.
+- One pre-existing flake noted but not introduced: `Platform.Jobs.Hangfire.Tests.Sequential_dispatches_use_independent_handler_state` is the same timing flake already documented on the SDK 8 and SDK 10 baselines; passes isolated.
+- Implementation commit: `4fdfcaf` (`Implement platform consumer bootstrap`).
+
+## Completed: platform-site-user-auth-starter
+
+- Added a new template option `EnableSiteUsers` (default `false`) to
+  `templates/platform-application-starter/.template.config/template.json`,
+  independent of the existing `EnableIdentity` (lifecycle endpoints) and
+  `EnableAdmin` (manager-style admin capability). The default is OFF: the
+  generated tree contains no Identity EF/UI references, routes, tables, or
+  cookies when disabled. Conditional generated package references/files
+  (`StarterApp.csproj`, `Program.cs`, `appsettings.json`, `README.md`)
+  honor the flag.
+- When `EnableSiteUsers=true`, the template renders an application-owned
+  ASP.NET Core Identity slice in the generated app, not in any platform
+  library: `ApplicationUser : IdentityUser`, `ApplicationIdentityDbContext`,
+  initial EF migration (`20261001060926_InitialIdentitySchema.cs`,
+  `…Designer.cs`, `ApplicationIdentityDbContextModelSnapshot.cs`),
+  cookie authentication, and Razor pages for
+  `Login`/`Logout`/`ForgotPassword`/`AccessDenied` plus the shared
+  `_Layout.cshtml` and `_LoginPartial.cshtml`. The app uses its selected
+  connection string/provider; the template does not create a database
+  server.
+- Added a `SiteUserPermissionCatalog` with sample permissions
+  `site.profile.read` and `site.profile.update` and deny-by-default
+  behaviour for unknown permissions. `SiteUsers:SelfRegistrationEnabled`
+  is off by default; the app owner enables it explicitly. Configuration
+  keys: `SiteUsers:Enabled`, `SiteUsers:SelfRegistrationEnabled`,
+  `SiteUsers:Cookie:SecurePolicy`. Production validation rejects weak
+  or empty cookie configuration and `DevelopmentOnly` auth.
+- Added a `bootstrap-owner` CLI sub-command in `Program.cs` that prompts
+  for the owner email, generates a random one-time password, hashes it
+  through ASP.NET Identity, and prints it once only in Development. It
+  refuses to run in Production.
+- Added test-only authentication through `Platform.Identity.Testing` in
+  the generated test project (under the same `EnableSiteUsers` flag).
+- Added `tests/Platform.Architecture.Tests/DependencyDirectionTests.cs`
+  rule `Production_projects_do_not_reference_any_testing_only_platform_project`
+  (dynamically scans `src/Platform.*.Testing` and asserts no production
+  project references them).
+- Added `tests/Platform.Template.Tests/SiteUserAuthTemplateTests.cs`
+  (4 tests: file layout + `dotnet build`/`dotnet test` for both
+  `EnableSiteUsers=true/=false`).
+- Added `templates/platform-application-starter/tests/StarterApp.Tests/SiteUserAuthTests.cs`
+  (6 tests in the generated app: login route, forgot password, identical
+  unknown/wrong response, logout POST+CSRF, unknown permission deny).
+- Updated `docs/platform-template-pack.md` with the new option and
+  rollback guidance. No public platform API change.
+  `eng/public-api-baseline.txt` and `eng/package-manifest.json` unchanged.
+- Archived at
+  `openspec/changes/archive/2026-10-01-platform-site-user-auth-starter/`
+  with promoted `openspec/specs/platform-site-user-auth-starter/spec.md`.
+
+Verification evidence (under SDK `10.0.400`):
+
+- `dotnet test tests/Platform.Template.Tests --filter "FullyQualifiedName~SiteUser"` — 4 passed.
+- `dotnet test tests/Platform.Template.Tests` — 13 passed, 0 failed.
+- `dotnet test templates/platform-application-starter/tests/StarterApp.Tests` — 7 passed (5 SiteUserAuthTests + 2 smoke), 0 failed.
+- `EnableSiteUsers=false` generated app — 0 warnings, 0 errors; no `SiteUsers/`, no `Pages/`, no Identity packages, no site-user APIs in `Program.cs`.
+- `EnableSiteUsers=true` generated app — builds clean, all 7 tests pass, `bootstrap-owner --email ...` works in Development, refuses Production, `/Identity/Account/Login` returns 200, migration auto-applied.
+- `dotnet restore/build/test Platform.sln` — 0 errors, every test assembly passed.
+- `./scripts/quality-gate.sh` — PASS.
+- `./scripts/check-public-api.sh` — exit 0 (no public API change).
+- `./scripts/conformance.sh` — PASS (after cleaning stale `~/.templateengine` state).
+- `openspec validate --changes --strict --no-interactive` — 2 passed.
+- `openspec validate --specs --strict --no-interactive` — 48 passed.
+- `git diff --check` — clean.
+- Two issues found and fixed in this change's diff during verification:
+  (1) `dotnet new install` reported `Sequence contains more than one matching element`
+  from a stale local-mount entry in the template cache — resolved by
+  `dotnet new uninstall <local mount path>` and removing the cached nupkg
+  from `~/.templateengine/packages/`; (2) an extra `)` in
+  `templates/platform-application-starter/Program.cs` on the
+  `AddInterceptors` line under the `EnablePersistence` conditional caused
+  `CS1002` for any `IncludeTests=false, EnablePersistence=true` variant —
+  fixed and re-verified. Also added `tests/**/SiteUserAuthTests.cs` to the
+  `(!EnableSiteUsers)` exclude list in `template.json` so the disabled
+  variant truly omits the test file.
+- Cosmetic: the generated `ApplicationIdentityDbContextModelSnapshot.cs`
+  and `…InitialIdentitySchema.Designer.cs` contain the metadata string
+  identifier `"TestOn.SiteUsers.ApplicationUser"` from an earlier test
+  pass named `TestOn`. The `[DbContext(typeof(ApplicationIdentityDbContext))]`
+  attribute references the real type; the string self-corrects on the
+  consumer's first `dotnet ef migrations add`.
+- Implementation commit: `b42f9d4` (`Implement platform site user auth starter`).
+
+## Completed: post-mvp-readiness
+
+- Rewrote the `README.md` package section as the authoritative grouped
+  matrix (Core/Domain, Web composition/AspNetCore, Identity, Authorization,
+  Persistence, Billing, Jobs, Mailing, Eventing, Caching, Storage, Quota,
+  Identity lifecycle, Tenant lifecycle, AI, Notifications, Testing,
+  Starter) — 75 `src/` packages, each row naming kind, dependency
+  direction, and a `docs/packages.md` anchor. Every row is checked
+  against `eng/package-manifest.json`; no non-existent package is named.
+- Added the `Versioning and consumer guide` section: single
+  `VersionPrefix` source, SemVer policy, `net10.0` baseline, source /
+  package mode via `build/Platform.Consumer.props`, central package
+  management, upgrade/rollback, public API baseline link.
+- Added minimal usage examples per major concern (Core, Web composition,
+  Identity, Authorization, Jobs, Mailing, Eventing, Caching, Storage,
+  Quota, Identity lifecycle, Tenant lifecycle, AI, Notifications,
+  Persistence, Testing, Starter) traceable to `samples/` or the
+  template; each example compiles or points to a sample that compiles.
+- Added the `Adoption` entry-point section linking
+  `docs/platform-product-adoption.md`, `tools/Platform.Adoption.Tool`
+  (`doctor`/`inventory`/`conformance`/`preview`), and `samples/matrix.json`.
+- Added `LICENSE` (MIT, 21 lines, standard MIT text) at the repo root
+  and a `## License` section in the README, reconciled with
+  `PackageLicenseExpression=MIT` in `Directory.Build.props`. All 76
+  packed `.nupkg` files show `<license type="expression">MIT</license>`.
+- Recorded screenshots as `NOT_APPLICABLE` with the no-UI justification
+  (the platform is a library set, not a UI).
+- Light back-reference H2 sections added in `docs/packages.md` for the
+  packages that previously had no anchor (`Platform.Admin.Contracts`,
+  `Platform.Admin.AspNetCore`, `Platform.Admin.Testing`, `Platform.Billing`,
+  `Platform.Billing.Testing`, `Platform.Web`) so every README row links to
+  a real section. Full surface is unchanged.
+- No `src/**`, `tests/**`, `samples/**`, `templates/**`, `tools/**`, `eng/`,
+  `global.json`, `CHANGELOG.md`, or `Directory.*.props` change. `eng/*`
+  hashes unchanged: `eng/package-manifest.json`
+  `b12109a669354f819ddf4633a26e710809c8ef4f5ae6325c99158e27f17125c5`,
+  `eng/public-api-baseline.txt`
+  `67a37dfea791744941b2096fde653c7dd9d93d65b2fe66bf598f30db7b1863b8`.
+- Archived at `openspec/changes/archive/2026-10-01-post-mvp-readiness/`
+  with promoted `openspec/specs/readiness/spec.md`.
+
+Verification evidence (under SDK `10.0.400`):
+
+- `dotnet restore Platform.sln --ignore-failed-sources -p:NuGetAudit=false --nologo -m:1` — PASS.
+- `dotnet build Platform.sln -c Release --no-restore --nologo -m:1` — 0 errors; 11 pre-existing test-project warnings (deprecated `IReadOnlyEntityType.GetQueryFilter`, deprecated `PerformContext`, nullable-literal, xUnit1031; `tests/Directory.Build.props` keeps `TreatWarningsAsErrors=false` for tests). Production code is warning-clean.
+- `dotnet test Platform.sln -c Release --no-build --nologo -m:1` — exit 0, 48 suites passed, 1,391 total tests passed (350 architecture guard tests included).
+- `dotnet pack Platform.sln -c Release --no-build --no-restore --nologo -m:1 -o artifacts/packages` — 76 .nupkg + 75 .snupkg files; all show `<license type="expression">MIT</license>`.
+- `./scripts/quality-gate.sh` — exit 0, `Totals: 48 passed, 0 failed (48 items)`.
+- `./scripts/check-public-api.sh` — exit 0, silent.
+- `./scripts/generate-package-manifest.sh --check` — exit 0, `Manifest matches source.`
+- `test -f LICENSE` — LICENSE exists; README links it under `## License` and reconciles with `PackageLicenseExpression=MIT`.
+- `openspec validate --changes --strict --no-interactive` — exit 0, 1 passed.
+- `openspec validate --specs --strict --no-interactive` — exit 0.
+- `git diff --check` — clean (re-checked after staging).
+- Follow-up surfaced (NOT in this change's scope): `samples/Platform.Starter.Sample` is referenced in the README's "Starter" usage example but is not yet in `samples/matrix.json`; the matrix oracle currently asserts only the five entries it was built with.
+- One pre-existing test wording fix in this change's diff during verification: `tests/Platform.Architecture.Tests/Dotnet10BaselineTests.Current_docs_describe_dotnet10_baseline` failed on the literal substring `net8.0`; reworded to `the older 8.x target` and re-ran clean. The README still asserts the literal `net10.0`.
+- Implementation commit: `350b8b5` (`Implement post-MVP readiness`).
+
+## Documentation refresh
+
+- `HANDOFF.md`: added the new top-level "Completed queue: consumer
+  bootstrap, site-user auth starter, post-MVP readiness" section with
+  per-change "Completed:" entries and verification evidence; updated the
+  in-queue "Next change" pointer to reflect the empty `openspec list`.
+- `ROADMAP.md`: removed the now-obsolete "Proposed site-user
+  authentication follow-up" subsection (the change it proposed is
+  archived as `platform-site-user-auth-starter`); updated the status
+  summary to reflect the post-queue state (55 archived changes, 48
+  generated specs, 1,391 passing tests in 48 suites, 350 architecture
+  guards, `openspec list` empty). The
+  ".NET 10 baseline and contract conformance" section at the bottom of
+  HANDOFF.md is left unchanged as historical evidence.
+- `.project.json`: the in-tree `verification.evidence_status` was already
+  `implemented` from the pre-queue handoff; left as-is and now included
+  in this commit so the working tree is clean.
+- `docs/packages.md`: H2 anchor sections added by the
+  `post-mvp-readiness` change (`Platform.Admin.Contracts`,
+  `Platform.Admin.AspNetCore`, `Platform.Admin.Testing`, `Platform.Billing`,
+  `Platform.Billing.Testing`, `Platform.Web`) — no further change.
+
+## Next change
+
+`openspec list` is empty; the next work, if any, starts with a fresh OpenSpec
+proposal.
+
 ## Completed: platform-contract-conformance-and-adoption
 
 - Added canonical shared-contract fixtures (`tests/Platform.ConsumerConformance/Fixtures/contracts/`,

@@ -7,7 +7,7 @@
   "verification": {
     "command": "dotnet test Platform.sln --nologo",
     "gate_runtime": "driftwatchdog",
-    "evidence_status": "planned"
+    "evidence_status": "implemented"
   },
   "deployment": {
     "deployable": false,
